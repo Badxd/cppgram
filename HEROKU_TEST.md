@@ -65,3 +65,8 @@ The dyno filesystem is temporary. The check writes `live-dcN.session` files in
 
 Share only a sanitized `FAIL stage=...` line if the test fails. Remove bot tokens,
 API hashes, account IDs, usernames, and session files from any output first.
+
+
+<p align="center">
+  <a href="https://dashboard.heroku.com/new?template=https://github.com/Badxd/cppgram"><img src="https://img.shields.io/badge/Deploy%20to-Heroku-430098?style=for-the-badge&logo=heroku&logoColor=white" alt="Deploy to Heroku"></a>
+  
