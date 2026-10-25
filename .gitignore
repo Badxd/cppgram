@@ -44,3 +44,4 @@ out/
 *.pyc
 bot_workspace/
 *.bak
+build-new/
