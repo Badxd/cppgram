@@ -523,8 +523,64 @@ private:
                         "    return " + read_expr(d.result, "rv", false) + ";\n}\n\n");
     }
 
+    // Generic (class template) bodies that name concrete TL types go through these helpers. Clang checks a
+    // non-dependent member access at definition time, when those types are still incomplete. The helper's
+    // parameter type is dependent, so the check happens at instantiation instead.
+    bool generic_helpers_emitted_ = false;
+
+    static std::string generic_helpers_text() {
+        return "// Helpers for the class templates below. The parameter type stays dependent, so clang checks the body at\n"
+               "// instantiation time, when the referenced TL types are complete.\n"
+               "template <typename T>\n"
+               "void tl_write_optional_ptr(TlWriter& tlw, const std::optional<std::shared_ptr<T>>& v) {\n"
+               "    if (v.has_value()) { v.value()->serialize(tlw); }\n"
+               "}\n\n"
+               "template <typename T>\n"
+               "void tl_write_ptr(TlWriter& tlw, const std::shared_ptr<T>& p) {\n"
+               "    p->serialize(tlw);\n"
+               "}\n\n";
+    }
+
+    // Rewrites the two concrete-type write shapes used in generic bodies into helper calls.
+    static std::string patch_generic_writes(const std::string& body) {
+        std::ostringstream out;
+        std::istringstream in(body);
+        std::string line;
+        while (std::getline(in, line)) {
+            const std::size_t ind = line.find_first_not_of(' ');
+            if (ind == std::string::npos) {
+                out << line << "\n";
+                continue;
+            }
+            const std::string pad = line.substr(0, ind);
+            const std::string rest = line.substr(ind);
+            const std::string guard = ".has_value()) { ";
+            const std::string tail = ".value()->serialize(tlw); }";
+            if (rest.rfind("if (", 0) == 0 && rest.find(guard) != std::string::npos && rest.find(tail) != std::string::npos) {
+                const std::string name = rest.substr(4, rest.find(guard) - 4);
+                out << pad << "tl_write_optional_ptr(tlw, " << name << ");\n";
+                continue;
+            }
+            const std::string arrow = "->serialize(tlw);";
+            const bool plain_arrow = rest.size() > arrow.size() && rest.compare(rest.size() - arrow.size(), arrow.size(), arrow) == 0 &&
+                                     rest.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_") ==
+                                         rest.size() - arrow.size() ;
+            if (plain_arrow) {
+                const std::string name = rest.substr(0, rest.size() - arrow.size());
+                out << pad << "tl_write_ptr(tlw, " << name << ");\n";
+                continue;
+            }
+            out << line << "\n";
+        }
+        return out.str();
+    }
+
     void emit_generic_function(std::ostringstream& h, const Decl& d) {
         generic_names_ = std::set<std::string>(d.tparams.begin(), d.tparams.end());
+        if (!generic_helpers_emitted_) {
+            h << generic_helpers_text();
+            generic_helpers_emitted_ = true;
+        }
         h << "template <";
         for (std::size_t i = 0; i < d.tparams.size(); ++i) {
             h << (i ? ", " : "") << "class " << d.tparams[i];
@@ -535,7 +591,7 @@ private:
         emit_fields(fields, d, "    ");
         h << fields.str();
         h << "    using Result = typename " << d.tparams.front() << "::Result;\n";
-        h << "    void serialize(TlWriter& tlw) const {\n" << serialize_body(d, "        ") << "    }\n";
+        h << "    void serialize(TlWriter& tlw) const {\n" << patch_generic_writes(serialize_body(d, "        ")) << "    }\n";
         h << "    static Result read_result(TlReader& rv) { return " << d.tparams.front()
           << "::read_result(rv); }\n";
         h << "};\n\n";

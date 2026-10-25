@@ -16580,6 +16580,18 @@ struct destroy_auth_key_fail {
 
 namespace functions {
 
+// Helpers for the class templates below. The parameter type stays dependent, so clang checks the body at
+// instantiation time, when the referenced TL types are complete.
+template <typename T>
+void tl_write_optional_ptr(TlWriter& tlw, const std::optional<std::shared_ptr<T>>& v) {
+    if (v.has_value()) { v.value()->serialize(tlw); }
+}
+
+template <typename T>
+void tl_write_ptr(TlWriter& tlw, const std::shared_ptr<T>& p) {
+    p->serialize(tlw);
+}
+
 template <class X>
 struct invokeAfterMsg {
     static constexpr std::uint32_t kId = 0xcb9f372du;
@@ -16637,8 +16649,8 @@ struct initConnection {
         tlw.write_string(system_lang_code);
         tlw.write_string(lang_pack);
         tlw.write_string(lang_code);
-        if (proxy.has_value()) { proxy.value()->serialize(tlw); }
-        if (params.has_value()) { params.value()->serialize(tlw); }
+        tl_write_optional_ptr(tlw, proxy);
+        tl_write_optional_ptr(tlw, params);
         query.serialize(tlw);
     }
     static Result read_result(TlReader& rv) { return X::read_result(rv); }
@@ -16678,7 +16690,7 @@ struct invokeWithMessagesRange {
     using Result = typename X::Result;
     void serialize(TlWriter& tlw) const {
         tlw.write_uint32(kId);
-        range->serialize(tlw);
+        tl_write_ptr(tlw, range);
         query.serialize(tlw);
     }
     static Result read_result(TlReader& rv) { return X::read_result(rv); }

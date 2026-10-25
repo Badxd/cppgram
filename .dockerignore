@@ -1,0 +1,10 @@
+.git
+.gitignore
+.dockerignore
+build
+*.session
+*.sqlite
+*.sqlite3
+*.db
+live.log
+.env
