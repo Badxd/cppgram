@@ -39,15 +39,17 @@ class PlainConnection : public mtproto::PlainChannel {
 public:
     PlainConnection(mtproto::Connection& connection, bool debug) : connection_(connection), debug_(debug) {}
 
-    void send_plain(const Bytes& body) override {
-        debug_log(debug_, "handshake: sending " + std::to_string(body.size()) + " bytes");
-        connection_.send_packet(mtproto::wrap_plain_message(body, mtproto::make_message_id()));
+    // The handshake layer already wraps (auth_key_id=0, msg_id, length) and unwraps these packets,
+    // so this adapter must pass them through untouched.
+    void send_plain(const Bytes& packet) override {
+        debug_log(debug_, "handshake: sending " + std::to_string(packet.size()) + " bytes");
+        connection_.send_packet(packet);
     }
 
     Bytes receive_plain() override {
-        Bytes body = mtproto::unwrap_plain_message(connection_.receive_packet());
-        debug_log(debug_, "handshake: received " + std::to_string(body.size()) + " bytes");
-        return body;
+        Bytes packet = connection_.receive_packet();
+        debug_log(debug_, "handshake: received " + std::to_string(packet.size()) + " bytes");
+        return packet;
     }
 
 private:
