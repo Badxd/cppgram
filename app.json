@@ -1,27 +1,29 @@
 {
 "name": "CppGram Live Check",
-"description": "One-off C++ Telegram MTProto connectivity check. Worker-only deployment with no web server.",
+"description": "One-off C++ Telegram MTProto connectivity test. Worker-only deployment with no web server.",
+"repository": "https://github.com/Badxd/cppgram",
 "keywords": [
 "cppgram",
+"cpp",
 "telegram",
 "mtproto",
-"cpp",
 "connectivity-check"
 ],
 "env": {
 "TG_API_ID": {
-"description": "Telegram API ID from my.telegram.org",
+"description": "Telegram API ID from https://my.telegram.org",
 "required": true
 },
 "TG_API_HASH": {
-"description": "Telegram API hash from my.telegram.org",
+"description": "Telegram API hash from https://my.telegram.org",
 "required": true
 },
 "TG_BOT_TOKEN": {
-"description": "Fresh Telegram bot token from BotFather",
+"description": "Fresh Telegram bot token from @BotFather",
 "required": true
 }
 },
+"stack": "container",
 "formation": {
 "worker": {
 "quantity": 0
