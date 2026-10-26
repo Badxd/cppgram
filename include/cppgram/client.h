@@ -268,6 +268,16 @@ public:
     std::vector<std::int32_t> toggle_pinned_stories(const PeerRef& chat, const std::vector<std::int32_t>& story_ids,
                                                     bool pinned);
     std::string export_story_link(const PeerRef& chat, std::int32_t story_id);
+    // ---- stories part 2 (phase 20)
+    // Marks a peer's stories up to max_id as read. Returns the ids the server marked.
+    std::vector<std::int32_t> read_stories(const PeerRef& chat, std::int32_t max_id);
+    // Hides or shows every story from peers the account does not follow.
+    bool set_all_stories_hidden(bool hidden);
+    // Hides or shows one peer's stories in the stories tray.
+    bool set_peer_stories_hidden(const PeerRef& chat, bool hidden);
+    // Sends an emoji reaction to a story. Set add_to_recent to keep it in recent reactions.
+    void send_story_reaction(const PeerRef& chat, std::int32_t story_id, const std::string& emoji,
+                             bool add_to_recent = false);
 
     // ---- folder (chatlist) invite links (phase 5)
     // filter_id is the id of a chat folder. link can be a full URL or just the slug.
