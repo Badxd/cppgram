@@ -300,6 +300,14 @@ public:
     // Removes a sticker from its set. The sticker must belong to the set.
     void remove_sticker_from_set(const std::string& short_name, std::int64_t document_id);
 
+    // ---- chat extras (phase 15)
+    // Number of members online right now (messages.getOnlines).
+    std::int32_t get_chat_online_count(const PeerRef& chat);
+    // Number of messages in the chat's history (asks for 1 message and reads the total).
+    std::int32_t get_chat_history_count(const PeerRef& chat);
+    // Removes the group or channel photo.
+    void delete_chat_photo(const PeerRef& chat);
+
     // ---- boosts and stars (phase 6)
     BoostsStatusInfo get_boosts_status(const PeerRef& chat);
     std::int32_t get_boosters_count(const PeerRef& chat);
