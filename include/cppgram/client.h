@@ -281,6 +281,12 @@ public:
     void send_story_reaction(const PeerRef& chat, std::int32_t story_id, const std::string& emoji,
                              bool add_to_recent = false);
 
+    // ---- story posting (phase 27)
+    // Posts a photo or video from a local file as a story on the account's own page.
+    // period is the lifetime in seconds (6 hours, 12 hours, 1 day or 2 days). Returns the story id.
+    std::int32_t post_story(const std::string& path, bool as_photo = true, const std::string& caption = "",
+                            std::int32_t period = 86400, bool pinned = false, bool noforwards = false);
+
     // ---- folder (chatlist) invite links (phase 5)
     // filter_id is the id of a chat folder. link can be a full URL or just the slug.
     FolderInviteInfo create_folder_invite_link(std::int32_t filter_id, const std::string& title,
