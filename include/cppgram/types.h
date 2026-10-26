@@ -445,6 +445,13 @@ struct PaymentReceiptInfo {
     std::string description;
 };
 
+// Read-only status of the account's two-step verification password (phase 29).
+struct CloudPasswordStatus {
+    bool has_password = false;
+    std::string hint;
+    bool has_recovery = false;
+};
+
 // A bot connected to the account for business messages (phase 22).
 struct ConnectedBotInfo {
     std::int64_t bot_id = 0;
