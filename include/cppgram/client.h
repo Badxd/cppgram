@@ -214,6 +214,16 @@ public:
     void upgrade_star_gift(std::int32_t msg_id, bool keep_original_details = false);
     // Sends a gift owned by the account to another peer.
     void transfer_star_gift(std::int32_t msg_id, const PeerRef& to);
+
+    // ---- star gift listing (phase 18)
+    // Gifts shown on a peer's profile. Pass the returned next_offset to get the next page.
+    SavedStarGiftPage get_saved_star_gifts(const PeerRef& peer, const std::string& offset = "",
+                                           std::int32_t limit = 100,
+                                           std::optional<std::int32_t> collection_id = std::nullopt);
+    std::vector<StarGiftCollectionInfo> get_star_gift_collections(const PeerRef& peer);
+    UniqueStarGiftInfo get_unique_star_gift(const std::string& slug);
+    // Upgrade costs in Stars for a regular gift, one entry per upgrade price tier.
+    std::vector<std::int64_t> get_star_gift_upgrade_prices(std::int64_t gift_id);
     // ---- invite links (phase 2)
     InviteLinkInfo get_invite_link(const PeerRef& chat, const std::string& link);
     // Lists links created by one admin. Set revoked to true to list revoked links.

@@ -431,6 +431,45 @@ struct BoostsStatusInfo {
 };
 
 // Phase 7/8 result types.
+// A gift the account shows, hides, or keeps on a peer's profile (phase 18).
+struct SavedStarGiftInfo {
+    std::optional<std::int32_t> msg_id;    // service message id, for gifts in the account's own chat
+    std::optional<std::int64_t> saved_id;  // id for gifts saved to a channel
+    std::int64_t gift_id = 0;              // regular gift id; 0 for unique gifts
+    std::string unique_slug;               // slug of a unique gift; empty for regular gifts
+    std::int32_t date = 0;
+    bool unsaved = false;
+    bool name_hidden = false;
+    bool pinned_to_top = false;
+    bool can_upgrade = false;
+    std::optional<std::int64_t> convert_stars;
+    std::optional<std::int64_t> upgrade_stars;
+    std::optional<std::int64_t> transfer_stars;
+    std::optional<std::string> message;    // text the sender attached
+};
+
+// One page of saved gifts. next_offset is empty when there are no more pages.
+struct SavedStarGiftPage {
+    std::int32_t count = 0;
+    std::vector<SavedStarGiftInfo> gifts;
+    std::string next_offset;
+};
+
+struct StarGiftCollectionInfo {
+    std::int32_t id = 0;
+    std::string title;
+    std::int32_t gifts_count = 0;
+};
+
+// A unique (upgraded) gift looked up by its slug.
+struct UniqueStarGiftInfo {
+    std::int64_t id = 0;
+    std::int64_t gift_id = 0;  // the regular gift it was upgraded from
+    std::string title;
+    std::string slug;
+    std::int32_t num = 0;
+};
+
 struct StarGiftInfo {
     std::int64_t id = 0;
     std::int64_t stars = 0;
