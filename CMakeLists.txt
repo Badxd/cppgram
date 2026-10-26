@@ -67,26 +67,26 @@ add_library(cppgram
     src/client_forum.cpp
     src/client_folders.cpp
     src/client_invites.cpp
-    src/client_phase34.cpp
-    src/client_phase56.cpp
-    src/client_phase78.cpp
-    src/client_phase910.cpp
-    src/client_phase1112.cpp
-    src/client_phase1314.cpp
-    src/client_phase15.cpp
-    src/client_phase16.cpp
-    src/client_phase17.cpp
-    src/client_phase18.cpp
-    src/client_phase19.cpp
-    src/client_phase20.cpp
-    src/client_phase21.cpp
-    src/client_phase22.cpp
-    src/client_phase23.cpp
-    src/client_phase24.cpp
-    src/client_phase25.cpp
-    src/client_phase26.cpp
-    src/client_phase27.cpp
-    src/client_phase29.cpp
+    src/client_stories_messages.cpp
+    src/client_folder_invites.cpp
+    src/client_forum_and_stars.cpp
+    src/client_account_settings.cpp
+    src/client_contacts_and_blocks.cpp
+    src/client_business_and_stealth.cpp
+    src/client_chat_extras.cpp
+    src/client_invite_check.cpp
+    src/client_own_star_gifts.cpp
+    src/client_star_gift_listing.cpp
+    src/client_star_gift_collections.cpp
+    src/client_story_reactions.cpp
+    src/client_bot_admin.cpp
+    src/client_business_bots.cpp
+    src/client_poll_stop.cpp
+    src/client_checklists.cpp
+    src/client_inline_edit.cpp
+    src/client_payment_receipts.cpp
+    src/client_story_posting.cpp
+    src/client_account_security.cpp
     src/client_profile.cpp
     src/client_send.cpp
     src/client_session.cpp
