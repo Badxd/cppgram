@@ -431,6 +431,14 @@ struct BoostsStatusInfo {
 };
 
 // Phase 7/8 result types.
+// A bot connected to the account for business messages (phase 22).
+struct ConnectedBotInfo {
+    std::int64_t bot_id = 0;
+    std::int32_t date = 0;
+    std::string device;
+    std::string location;
+};
+
 // A gift the account shows, hides, or keeps on a peer's profile (phase 18).
 struct SavedStarGiftInfo {
     std::optional<std::int32_t> msg_id;    // service message id, for gifts in the account's own chat

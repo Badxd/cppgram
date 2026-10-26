@@ -569,6 +569,11 @@ public:
     // Admin rights a bot asks for by default when added to a group, or to a broadcast channel when broadcast = true.
     bool set_bot_default_admin_rights(const AdminRights& rights, bool broadcast = false);
 
+    // ---- connected business bots (phase 22)
+    std::vector<ConnectedBotInfo> get_connected_bots();
+    // Disconnects a business bot from the account, for all chats.
+    void disconnect_connected_bot(const PeerRef& bot);
+
     // ---- quotes, scheduling, albums, translation, presence
     // Sends text as a reply that quotes `quote_text` from the message `reply_to_id`.
     Message send_quote(const PeerRef& target, const std::string& text, std::int32_t reply_to_id,
