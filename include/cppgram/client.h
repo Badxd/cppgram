@@ -563,6 +563,11 @@ public:
     BotInfoText get_bot_info(const std::string& lang_code = "");
     // Resets the bot menu button to the default (commands list).
     bool set_default_menu_button();
+    // ---- bot admin extras (phase 21)
+    // Removes the default-scope command list for a language ("" = all languages).
+    bool reset_bot_commands(const std::string& lang_code = "");
+    // Admin rights a bot asks for by default when added to a group, or to a broadcast channel when broadcast = true.
+    bool set_bot_default_admin_rights(const AdminRights& rights, bool broadcast = false);
 
     // ---- quotes, scheduling, albums, translation, presence
     // Sends text as a reply that quotes `quote_text` from the message `reply_to_id`.
