@@ -182,6 +182,8 @@ public:
     std::vector<Message> copy_to(const Message& source, const PeerRef& to);
     // Votes for the given indices into message.poll->options. Empty list retracts the vote.
     void vote_poll(const Message& poll_message, const std::vector<std::size_t>& option_indexes);
+    // Closes a poll the account created so nobody can vote anymore (phase 23).
+    void stop_poll(const Message& poll_message);
 
     // ---- folders
     std::vector<FolderInfo> get_folders();
