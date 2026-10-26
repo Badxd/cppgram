@@ -576,6 +576,21 @@ public:
     // Disconnects a business bot from the account, for all chats.
     void disconnect_connected_bot(const PeerRef& bot);
 
+    // ---- checklists (phase 24)
+    // Sends a checklist message. Others may add tasks or complete them when the flags are set.
+    void send_todo_list(const PeerRef& chat, const std::string& title, const std::vector<TodoItemInput>& items,
+                        bool others_can_append = false, bool others_can_complete = false);
+    // Marks tasks of a checklist message done or not done, by task id.
+    void toggle_todo_items(const PeerRef& chat, std::int32_t msg_id, const std::vector<std::int32_t>& completed,
+                           const std::vector<std::int32_t>& incompleted);
+    void append_todo_items(const PeerRef& chat, std::int32_t msg_id, const std::vector<TodoItemInput>& items);
+
+    // ---- inline and receipts (phases 25, 26)
+    // Edits a message that a bot sent through inline mode. inline_id is the id the update carries.
+    bool edit_inline_message(std::int32_t dc_id, std::int64_t inline_id, std::int64_t access_hash,
+                             const std::string& text);
+    PaymentReceiptInfo get_payment_receipt(const PeerRef& chat, std::int32_t msg_id);
+
     // ---- quotes, scheduling, albums, translation, presence
     // Sends text as a reply that quotes `quote_text` from the message `reply_to_id`.
     Message send_quote(const PeerRef& target, const std::string& text, std::int32_t reply_to_id,

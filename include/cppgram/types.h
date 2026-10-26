@@ -431,6 +431,20 @@ struct BoostsStatusInfo {
 };
 
 // Phase 7/8 result types.
+// One checklist task. id must be unique within its checklist.
+struct TodoItemInput {
+    std::int32_t id = 0;
+    std::string text;
+};
+
+// Receipt of a paid invoice (phase 26).
+struct PaymentReceiptInfo {
+    std::int32_t date = 0;
+    std::int64_t bot_id = 0;
+    std::string title;
+    std::string description;
+};
+
 // A bot connected to the account for business messages (phase 22).
 struct ConnectedBotInfo {
     std::int64_t bot_id = 0;

@@ -82,6 +82,9 @@ add_library(cppgram
     src/client_phase21.cpp
     src/client_phase22.cpp
     src/client_phase23.cpp
+    src/client_phase24.cpp
+    src/client_phase25.cpp
+    src/client_phase26.cpp
     src/client_profile.cpp
     src/client_send.cpp
     src/client_session.cpp
