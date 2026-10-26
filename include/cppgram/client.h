@@ -224,6 +224,15 @@ public:
     UniqueStarGiftInfo get_unique_star_gift(const std::string& slug);
     // Upgrade costs in Stars for a regular gift, one entry per upgrade price tier.
     std::vector<std::int64_t> get_star_gift_upgrade_prices(std::int64_t gift_id);
+
+    // ---- star gift collections (phase 19). msg_ids are own-chat gift message ids.
+    StarGiftCollectionInfo create_star_gift_collection(const PeerRef& peer, const std::string& title,
+                                                       const std::vector<std::int32_t>& msg_ids);
+    // Renames the collection (if title is set) and adds or removes gifts.
+    StarGiftCollectionInfo update_star_gift_collection(const PeerRef& peer, std::int32_t collection_id,
+                                                       std::optional<std::string> title = std::nullopt,
+                                                       const std::vector<std::int32_t>& add_msg_ids = {},
+                                                       const std::vector<std::int32_t>& remove_msg_ids = {});
     // ---- invite links (phase 2)
     InviteLinkInfo get_invite_link(const PeerRef& chat, const std::string& link);
     // Lists links created by one admin. Set revoked to true to list revoked links.
