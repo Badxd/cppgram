@@ -204,6 +204,16 @@ public:
     void approve_all_join_requests(const PeerRef& chat, bool approved = true, const std::string& link = "");
     // Previews an invite hash (the part after t.me/+) without joining. Phase 16.
     ChatInvitePreview check_chat_invite(const std::string& invite_hash);
+
+    // ---- own star gifts (phase 17). msg_id is the id of the gift's service message in the account's own chat.
+    // Shows the gift on the profile (save = true) or hides it (save = false).
+    bool save_star_gift(std::int32_t msg_id, bool save = true);
+    // Converts a gift into Stars. Returns the server's answer.
+    bool convert_star_gift(std::int32_t msg_id);
+    // Upgrades a regular gift to a unique one.
+    void upgrade_star_gift(std::int32_t msg_id, bool keep_original_details = false);
+    // Sends a gift owned by the account to another peer.
+    void transfer_star_gift(std::int32_t msg_id, const PeerRef& to);
     // ---- invite links (phase 2)
     InviteLinkInfo get_invite_link(const PeerRef& chat, const std::string& link);
     // Lists links created by one admin. Set revoked to true to list revoked links.
