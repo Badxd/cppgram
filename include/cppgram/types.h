@@ -363,6 +363,172 @@ struct FolderInfo {
     bool exclude_archived = false;
 };
 
+// An exported invite link with its admin, usage and state (phase 2 invite API).
+struct InviteLinkInfo {
+    std::string link;
+    std::string title;
+    std::int64_t admin_id = 0;
+    std::int32_t date = 0;
+    std::optional<std::int32_t> start_date;
+    std::optional<std::int32_t> expire_date;
+    std::optional<std::int32_t> usage_limit;
+    std::int32_t usage = 0;
+    std::int32_t requested = 0;
+    bool revoked = false;
+    bool permanent = false;
+    bool request_needed = false;
+};
+
+// Per-admin invite counts for a chat.
+struct AdminInviteCount {
+    std::int64_t admin_id = 0;
+    std::int32_t invites = 0;
+    std::int32_t revoked_invites = 0;
+};
+
+// Phase 3/4 result types.
+struct MessageReadParticipant {
+    std::int64_t user_id = 0;
+    std::int32_t date = 0;
+};
+
+struct AvailableEffectInfo {
+    std::int64_t id = 0;
+    std::string emoticon;
+    bool premium_required = false;
+};
+
+struct StoryInfo {
+    std::int32_t id = 0;
+    std::int32_t date = 0;
+    std::int32_t expire_date = 0;
+    bool pinned = false;
+    bool noforwards = false;
+    std::string caption;
+};
+
+// Phase 5/6 result types.
+struct FolderInviteInfo {
+    std::string url;
+    std::string title;
+    std::int32_t peer_count = 0;
+};
+
+struct FolderInviteCheck {
+    bool already_joined = false;
+    std::string title;
+    std::int32_t peer_count = 0;
+};
+
+struct BoostsStatusInfo {
+    bool my_boost = false;
+    std::int32_t level = 0;
+    std::int32_t current_level_boosts = 0;
+    std::int32_t boosts = 0;
+    std::int32_t gift_boosts = 0;
+    std::optional<std::int32_t> next_level_boosts;
+    std::string boost_url;
+};
+
+// Phase 7/8 result types.
+// A gift the account shows, hides, or keeps on a peer's profile (phase 18).
+struct SavedStarGiftInfo {
+    std::optional<std::int32_t> msg_id;    // service message id, for gifts in the account's own chat
+    std::optional<std::int64_t> saved_id;  // id for gifts saved to a channel
+    std::int64_t gift_id = 0;              // regular gift id; 0 for unique gifts
+    std::string unique_slug;               // slug of a unique gift; empty for regular gifts
+    std::int32_t date = 0;
+    bool unsaved = false;
+    bool name_hidden = false;
+    bool pinned_to_top = false;
+    bool can_upgrade = false;
+    std::optional<std::int64_t> convert_stars;
+    std::optional<std::int64_t> upgrade_stars;
+    std::optional<std::int64_t> transfer_stars;
+    std::optional<std::string> message;    // text the sender attached
+};
+
+// One page of saved gifts. next_offset is empty when there are no more pages.
+struct SavedStarGiftPage {
+    std::int32_t count = 0;
+    std::vector<SavedStarGiftInfo> gifts;
+    std::string next_offset;
+};
+
+struct StarGiftCollectionInfo {
+    std::int32_t id = 0;
+    std::string title;
+    std::int32_t gifts_count = 0;
+};
+
+// A unique (upgraded) gift looked up by its slug.
+struct UniqueStarGiftInfo {
+    std::int64_t id = 0;
+    std::int64_t gift_id = 0;  // the regular gift it was upgraded from
+    std::string title;
+    std::string slug;
+    std::int32_t num = 0;
+};
+
+struct StarGiftInfo {
+    std::int64_t id = 0;
+    std::int64_t stars = 0;
+    bool limited = false;
+    bool sold_out = false;
+    std::optional<std::int32_t> remaining;
+    std::optional<std::int32_t> total;
+};
+
+struct StarsTransactionInfo {
+    std::string id;
+    std::int64_t amount = 0;  // whole Stars, negative for spending
+    std::int32_t date = 0;
+    bool refund = false;
+    bool pending = false;
+    bool failed = false;
+};
+
+// Phase 9/10 result types.
+struct GlobalPrivacyInfo {
+    bool archive_and_mute_new_noncontact_peers = false;
+    bool keep_archived_unmuted = false;
+    bool keep_archived_folders = false;
+    bool new_noncontact_peers_require_premium = false;
+    bool display_gifts_button = false;
+};
+
+// Phase 11/12 result types.
+struct QuickReplyInfo {
+    std::int32_t shortcut_id = 0;
+    std::string shortcut;
+    std::int32_t message_count = 0;
+};
+
+struct BlockedUserInfo {
+    std::int64_t user_id = 0;
+    std::int32_t date = 0;
+};
+
+// Result of previewing an invite hash without joining (messages.checkChatInvite).
+struct ChatInvitePreview {
+    bool already_joined = false;  // the account is already a member; chat is set
+    bool peek = false;            // preview of a chat the account has not joined
+    std::optional<Chat> chat;     // set for already_joined and peek
+    std::int32_t expires = 0;     // peek only: unix time the preview expires
+    std::string title;
+    std::optional<std::string> about;
+    std::int32_t participants_count = 0;
+    std::vector<User> participants;  // a few members the server chooses to show
+    bool is_channel = false;
+    bool is_broadcast = false;
+    bool is_megagroup = false;
+    bool is_public = false;
+    bool request_needed = false;  // joining needs admin approval
+    bool verified = false;
+    bool scam = false;
+    bool fake = false;
+};
+
 struct ChatInviteJoiner {
     PeerRef user;
     std::int32_t date = 0;

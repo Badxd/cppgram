@@ -128,8 +128,10 @@ public:
     // ---- messages
     Message send_message(const std::string& target, const std::string& text,
                          std::optional<std::int32_t> reply_to_id = std::nullopt);
+    // effect_id: Telegram message effect (for example a confetti or fire animation). Pass std::nullopt for none.
     Message send_message(const PeerRef& target, const std::string& text,
-                         std::optional<std::int32_t> reply_to_id = std::nullopt);
+                         std::optional<std::int32_t> reply_to_id = std::nullopt,
+                         std::optional<std::int64_t> effect_id = std::nullopt);
     Message edit_message(const PeerRef& target, std::int32_t message_id, const std::string& text);
     void delete_messages(const PeerRef& target, const std::vector<std::int32_t>& message_ids, bool revoke = true);
     std::vector<Message> get_messages(const PeerRef& target, const std::vector<std::int32_t>& message_ids);
@@ -157,7 +159,8 @@ public:
 
     // ---- formatted text (HTML or MarkdownV2 input, parsed into entities)
     Message send_text(const PeerRef& target, const std::string& text, ParseMode mode = ParseMode::None,
-                      std::optional<std::int32_t> reply_to_id = std::nullopt);
+                      std::optional<std::int32_t> reply_to_id = std::nullopt,
+                      std::optional<std::int64_t> effect_id = std::nullopt);
     Message edit_text(const PeerRef& target, std::int32_t message_id, const std::string& text,
                       ParseMode mode = ParseMode::None);
 
@@ -199,6 +202,158 @@ public:
     void approve_join_request(const PeerRef& chat, const PeerRef& user, bool approved = true);
     // Approves or declines every pending request, or only those for one invite link.
     void approve_all_join_requests(const PeerRef& chat, bool approved = true, const std::string& link = "");
+    // Previews an invite hash (the part after t.me/+) without joining. Phase 16.
+    ChatInvitePreview check_chat_invite(const std::string& invite_hash);
+
+    // ---- own star gifts (phase 17). msg_id is the id of the gift's service message in the account's own chat.
+    // Shows the gift on the profile (save = true) or hides it (save = false).
+    bool save_star_gift(std::int32_t msg_id, bool save = true);
+    // Converts a gift into Stars. Returns the server's answer.
+    bool convert_star_gift(std::int32_t msg_id);
+    // Upgrades a regular gift to a unique one.
+    void upgrade_star_gift(std::int32_t msg_id, bool keep_original_details = false);
+    // Sends a gift owned by the account to another peer.
+    void transfer_star_gift(std::int32_t msg_id, const PeerRef& to);
+
+    // ---- star gift listing (phase 18)
+    // Gifts shown on a peer's profile. Pass the returned next_offset to get the next page.
+    SavedStarGiftPage get_saved_star_gifts(const PeerRef& peer, const std::string& offset = "",
+                                           std::int32_t limit = 100,
+                                           std::optional<std::int32_t> collection_id = std::nullopt);
+    std::vector<StarGiftCollectionInfo> get_star_gift_collections(const PeerRef& peer);
+    UniqueStarGiftInfo get_unique_star_gift(const std::string& slug);
+    // Upgrade costs in Stars for a regular gift, one entry per upgrade price tier.
+    std::vector<std::int64_t> get_star_gift_upgrade_prices(std::int64_t gift_id);
+
+    // ---- star gift collections (phase 19). msg_ids are own-chat gift message ids.
+    StarGiftCollectionInfo create_star_gift_collection(const PeerRef& peer, const std::string& title,
+                                                       const std::vector<std::int32_t>& msg_ids);
+    // Renames the collection (if title is set) and adds or removes gifts.
+    StarGiftCollectionInfo update_star_gift_collection(const PeerRef& peer, std::int32_t collection_id,
+                                                       std::optional<std::string> title = std::nullopt,
+                                                       const std::vector<std::int32_t>& add_msg_ids = {},
+                                                       const std::vector<std::int32_t>& remove_msg_ids = {});
+    // ---- invite links (phase 2)
+    InviteLinkInfo get_invite_link(const PeerRef& chat, const std::string& link);
+    // Lists links created by one admin. Set revoked to true to list revoked links.
+    std::vector<InviteLinkInfo> get_admin_invite_links(const PeerRef& chat, const PeerRef& admin, bool revoked = false,
+                                                       std::int32_t limit = 100);
+    std::vector<AdminInviteCount> get_admins_with_invites(const PeerRef& chat);
+    // Changes an existing link. Unset fields stay as they are on the server.
+    InviteLinkInfo edit_invite_link(const PeerRef& chat, const std::string& link,
+                                    std::optional<std::int32_t> expire_date = std::nullopt,
+                                    std::optional<std::int32_t> usage_limit = std::nullopt,
+                                    std::optional<bool> request_needed = std::nullopt,
+                                    std::optional<std::string> title = std::nullopt);
+    // Deletes all revoked links created by one admin.
+    void delete_revoked_invite_links(const PeerRef& chat, const PeerRef& admin);
+
+    // ---- messages extras (phase 3)
+    std::vector<MessageReadParticipant> get_message_read_participants(const PeerRef& chat, std::int32_t message_id);
+    void delete_scheduled_messages(const PeerRef& chat, const std::vector<std::int32_t>& message_ids);
+    std::vector<AvailableEffectInfo> get_available_effects();
+    // Adds an emoji reaction to a message. big = animated big reaction, add_to_recent = add to recent list.
+    void send_reaction_with_options(const PeerRef& chat, std::int32_t message_id, const std::string& emoji,
+                                    bool big = false, bool add_to_recent = false);
+    // Removes all of your reactions from a message.
+    void clear_reaction(const PeerRef& chat, std::int32_t message_id);
+
+    // ---- stories (phase 4)
+    std::vector<StoryInfo> get_pinned_stories(const PeerRef& chat, std::int32_t offset_id = 0, std::int32_t limit = 100);
+    std::vector<StoryInfo> get_stories_archive(const PeerRef& chat, std::int32_t offset_id = 0, std::int32_t limit = 100);
+    std::vector<StoryInfo> get_stories_by_id(const PeerRef& chat, const std::vector<std::int32_t>& story_ids);
+    // Returns the ids that were deleted.
+    std::vector<std::int32_t> delete_stories(const PeerRef& chat, const std::vector<std::int32_t>& story_ids);
+    // Returns the ids that changed.
+    std::vector<std::int32_t> toggle_pinned_stories(const PeerRef& chat, const std::vector<std::int32_t>& story_ids,
+                                                    bool pinned);
+    std::string export_story_link(const PeerRef& chat, std::int32_t story_id);
+    // ---- stories part 2 (phase 20)
+    // Marks a peer's stories up to max_id as read. Returns the ids the server marked.
+    std::vector<std::int32_t> read_stories(const PeerRef& chat, std::int32_t max_id);
+    // Hides or shows every story from peers the account does not follow.
+    bool set_all_stories_hidden(bool hidden);
+    // Hides or shows one peer's stories in the stories tray.
+    bool set_peer_stories_hidden(const PeerRef& chat, bool hidden);
+    // Sends an emoji reaction to a story. Set add_to_recent to keep it in recent reactions.
+    void send_story_reaction(const PeerRef& chat, std::int32_t story_id, const std::string& emoji,
+                             bool add_to_recent = false);
+
+    // ---- folder (chatlist) invite links (phase 5)
+    // filter_id is the id of a chat folder. link can be a full URL or just the slug.
+    FolderInviteInfo create_folder_invite_link(std::int32_t filter_id, const std::string& title,
+                                               const std::vector<PeerRef>& peers);
+    std::vector<FolderInviteInfo> get_folder_invite_links(std::int32_t filter_id);
+    FolderInviteInfo edit_folder_invite_link(std::int32_t filter_id, const std::string& link,
+                                             std::optional<std::string> title = std::nullopt,
+                                             std::optional<std::vector<PeerRef>> peers = std::nullopt);
+    void delete_folder_invite_link(std::int32_t filter_id, const std::string& link);
+    FolderInviteCheck check_folder_invite_link(const std::string& link);
+    void join_folder_invite_link(const std::string& link, const std::vector<PeerRef>& peers);
+
+    // ---- forum topics extras (phase 7)
+    void set_forum_topic_closed(const PeerRef& channel, std::int32_t topic_id, bool closed = true);
+    // The general topic has id 1.
+    void set_general_topic_hidden(const PeerRef& channel, bool hidden = true);
+    std::vector<ForumTopicInfo> get_forum_topics_by_id(const PeerRef& channel, const std::vector<std::int32_t>& topic_ids);
+
+    // ---- stars gifts and history (phase 8)
+    std::vector<StarGiftInfo> get_star_gifts();
+    std::vector<StarsTransactionInfo> get_stars_transactions(std::int32_t limit = 50);
+
+    // ---- account settings (phase 9)
+    // Days after which an inactive account is deleted (between 30 and 730).
+    std::int32_t get_account_ttl_days();
+    void set_account_ttl_days(std::int32_t days);
+    // True if the username is free and valid for this account.
+    bool check_username(const std::string& username);
+    GlobalPrivacyInfo get_global_privacy_settings();
+    void set_archive_and_mute_new_noncontact(bool enabled);
+
+    // ---- emoji and recent stickers (phase 10)
+    void clear_recent_stickers(bool attached = false);
+    // Document ids of the default emoji statuses.
+    std::vector<std::int64_t> get_default_emoji_status_ids();
+    // Returns the document ids that the server found among the given custom emoji ids.
+    std::vector<std::int64_t> get_custom_emoji_document_ids(const std::vector<std::int64_t>& ids);
+
+    // ---- quick replies and blocked users (phase 11)
+    std::vector<QuickReplyInfo> get_quick_replies();
+    // Returns the users you have blocked, most recent first, up to limit.
+    std::vector<BlockedUserInfo> get_blocked_users(std::int32_t limit = 100);
+
+    // ---- counts (phase 12)
+    std::int32_t get_contacts_count();
+    std::int32_t get_dialogs_count();
+
+    // ---- business away and greeting messages (phase 13)
+    // Sends the saved quick reply shortcut_id as an away message, always on, to everyone.
+    void set_business_away_message(std::int32_t shortcut_id, bool offline_only = false);
+    void clear_business_away_message();
+    // Sends the saved quick reply shortcut_id to new chats after no_activity_days of silence.
+    void set_business_greeting_message(std::int32_t shortcut_id, std::int32_t no_activity_days = 7);
+    void clear_business_greeting_message();
+
+    // ---- stealth mode and sticker set edits (phase 14)
+    void enable_stealth_mode(bool past = true, bool future = false);
+    // Moves a sticker inside its set. Position starts at 0.
+    void change_sticker_position(const std::string& short_name, std::int64_t document_id, std::int32_t position);
+    // Removes a sticker from its set. The sticker must belong to the set.
+    void remove_sticker_from_set(const std::string& short_name, std::int64_t document_id);
+
+    // ---- chat extras (phase 15)
+    // Number of members online right now (messages.getOnlines).
+    std::int32_t get_chat_online_count(const PeerRef& chat);
+    // Number of messages in the chat's history (asks for 1 message and reads the total).
+    std::int32_t get_chat_history_count(const PeerRef& chat);
+    // Removes the group or channel photo.
+    void delete_chat_photo(const PeerRef& chat);
+
+    // ---- boosts and stars (phase 6)
+    BoostsStatusInfo get_boosts_status(const PeerRef& chat);
+    std::int32_t get_boosters_count(const PeerRef& chat);
+    // Your own Stars balance (whole Stars, nanos ignored).
+    std::int64_t get_stars_balance();
 
     // ---- forum topics (supergroups with topics enabled)
     ForumTopicInfo create_forum_topic(const PeerRef& channel, const std::string& title, std::int32_t icon_color = 0);
@@ -408,6 +563,11 @@ public:
     BotInfoText get_bot_info(const std::string& lang_code = "");
     // Resets the bot menu button to the default (commands list).
     bool set_default_menu_button();
+    // ---- bot admin extras (phase 21)
+    // Removes the default-scope command list for a language ("" = all languages).
+    bool reset_bot_commands(const std::string& lang_code = "");
+    // Admin rights a bot asks for by default when added to a group, or to a broadcast channel when broadcast = true.
+    bool set_bot_default_admin_rights(const AdminRights& rights, bool broadcast = false);
 
     // ---- quotes, scheduling, albums, translation, presence
     // Sends text as a reply that quotes `quote_text` from the message `reply_to_id`.

@@ -47,7 +47,7 @@ std::shared_ptr<tl::MessageEntity> to_tl_entity(const TextEntity& e) {
 }  // namespace
 
 Message Client::send_text(const PeerRef& target, const std::string& text, ParseMode mode,
-                          std::optional<std::int32_t> reply_to_id) {
+                          std::optional<std::int32_t> reply_to_id, std::optional<std::int64_t> effect_id) {
     require_session();
     FormattedText formatted = parse_text(text, mode);
     fn::messages_sendMessage req;
@@ -57,6 +57,7 @@ Message Client::send_text(const PeerRef& target, const std::string& text, ParseM
     if (reply_to_id) {
         req.reply_to = std::make_shared<tl::InputReplyTo>(tl::InputReplyTo{ty::inputReplyToMessage{*reply_to_id}});
     }
+    req.effect = effect_id;
     if (!formatted.entities.empty()) {
         std::vector<std::shared_ptr<tl::MessageEntity>> entities;
         for (const auto& e : formatted.entities) entities.push_back(to_tl_entity(e));
