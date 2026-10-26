@@ -689,7 +689,7 @@ Message Client::send_message(const std::string& target, const std::string& text,
 }
 
 Message Client::send_message(const PeerRef& target, const std::string& text,
-                             std::optional<std::int32_t> reply_to_id) {
+                             std::optional<std::int32_t> reply_to_id, std::optional<std::int64_t> effect_id) {
     require_session();
     fn::messages_sendMessage req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(target));
@@ -698,6 +698,7 @@ Message Client::send_message(const PeerRef& target, const std::string& text,
     if (reply_to_id) {
         req.reply_to = std::make_shared<tl::InputReplyTo>(tl::InputReplyTo{ty::inputReplyToMessage{*reply_to_id}});
     }
+    req.effect = effect_id;
     const tl::Updates updates = session_->call(req);
     if (auto msg = find_sent_message(updates, target, text, 0)) {
         return *msg;

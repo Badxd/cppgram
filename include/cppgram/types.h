@@ -363,6 +363,113 @@ struct FolderInfo {
     bool exclude_archived = false;
 };
 
+// An exported invite link with its admin, usage and state (phase 2 invite API).
+struct InviteLinkInfo {
+    std::string link;
+    std::string title;
+    std::int64_t admin_id = 0;
+    std::int32_t date = 0;
+    std::optional<std::int32_t> start_date;
+    std::optional<std::int32_t> expire_date;
+    std::optional<std::int32_t> usage_limit;
+    std::int32_t usage = 0;
+    std::int32_t requested = 0;
+    bool revoked = false;
+    bool permanent = false;
+    bool request_needed = false;
+};
+
+// Per-admin invite counts for a chat.
+struct AdminInviteCount {
+    std::int64_t admin_id = 0;
+    std::int32_t invites = 0;
+    std::int32_t revoked_invites = 0;
+};
+
+// Phase 3/4 result types.
+struct MessageReadParticipant {
+    std::int64_t user_id = 0;
+    std::int32_t date = 0;
+};
+
+struct AvailableEffectInfo {
+    std::int64_t id = 0;
+    std::string emoticon;
+    bool premium_required = false;
+};
+
+struct StoryInfo {
+    std::int32_t id = 0;
+    std::int32_t date = 0;
+    std::int32_t expire_date = 0;
+    bool pinned = false;
+    bool noforwards = false;
+    std::string caption;
+};
+
+// Phase 5/6 result types.
+struct FolderInviteInfo {
+    std::string url;
+    std::string title;
+    std::int32_t peer_count = 0;
+};
+
+struct FolderInviteCheck {
+    bool already_joined = false;
+    std::string title;
+    std::int32_t peer_count = 0;
+};
+
+struct BoostsStatusInfo {
+    bool my_boost = false;
+    std::int32_t level = 0;
+    std::int32_t current_level_boosts = 0;
+    std::int32_t boosts = 0;
+    std::int32_t gift_boosts = 0;
+    std::optional<std::int32_t> next_level_boosts;
+    std::string boost_url;
+};
+
+// Phase 7/8 result types.
+struct StarGiftInfo {
+    std::int64_t id = 0;
+    std::int64_t stars = 0;
+    bool limited = false;
+    bool sold_out = false;
+    std::optional<std::int32_t> remaining;
+    std::optional<std::int32_t> total;
+};
+
+struct StarsTransactionInfo {
+    std::string id;
+    std::int64_t amount = 0;  // whole Stars, negative for spending
+    std::int32_t date = 0;
+    bool refund = false;
+    bool pending = false;
+    bool failed = false;
+};
+
+// Phase 9/10 result types.
+struct GlobalPrivacyInfo {
+    bool archive_and_mute_new_noncontact_peers = false;
+    bool keep_archived_unmuted = false;
+    bool keep_archived_folders = false;
+    bool new_noncontact_peers_require_premium = false;
+    bool display_gifts_button = false;
+};
+
+// Phase 11/12 result types.
+struct QuickReplyInfo {
+    std::int32_t shortcut_id = 0;
+    std::string shortcut;
+    std::int32_t message_count = 0;
+};
+
+struct BlockedUserInfo {
+    std::int64_t user_id = 0;
+    std::int32_t date = 0;
+};
+
 struct ChatInviteJoiner {
     PeerRef user;
     std::int32_t date = 0;

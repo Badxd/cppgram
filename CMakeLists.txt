@@ -66,6 +66,13 @@ add_library(cppgram
     src/client_chats.cpp
     src/client_forum.cpp
     src/client_folders.cpp
+    src/client_invites.cpp
+    src/client_phase34.cpp
+    src/client_phase56.cpp
+    src/client_phase78.cpp
+    src/client_phase910.cpp
+    src/client_phase1112.cpp
+    src/client_phase1314.cpp
     src/client_profile.cpp
     src/client_send.cpp
     src/client_session.cpp
