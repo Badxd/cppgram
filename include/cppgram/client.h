@@ -202,6 +202,8 @@ public:
     void approve_join_request(const PeerRef& chat, const PeerRef& user, bool approved = true);
     // Approves or declines every pending request, or only those for one invite link.
     void approve_all_join_requests(const PeerRef& chat, bool approved = true, const std::string& link = "");
+    // Previews an invite hash (the part after t.me/+) without joining. Phase 16.
+    ChatInvitePreview check_chat_invite(const std::string& invite_hash);
     // ---- invite links (phase 2)
     InviteLinkInfo get_invite_link(const PeerRef& chat, const std::string& link);
     // Lists links created by one admin. Set revoked to true to list revoked links.

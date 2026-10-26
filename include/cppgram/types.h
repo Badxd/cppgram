@@ -470,6 +470,26 @@ struct BlockedUserInfo {
     std::int32_t date = 0;
 };
 
+// Result of previewing an invite hash without joining (messages.checkChatInvite).
+struct ChatInvitePreview {
+    bool already_joined = false;  // the account is already a member; chat is set
+    bool peek = false;            // preview of a chat the account has not joined
+    std::optional<Chat> chat;     // set for already_joined and peek
+    std::int32_t expires = 0;     // peek only: unix time the preview expires
+    std::string title;
+    std::optional<std::string> about;
+    std::int32_t participants_count = 0;
+    std::vector<User> participants;  // a few members the server chooses to show
+    bool is_channel = false;
+    bool is_broadcast = false;
+    bool is_megagroup = false;
+    bool is_public = false;
+    bool request_needed = false;  // joining needs admin approval
+    bool verified = false;
+    bool scam = false;
+    bool fake = false;
+};
+
 struct ChatInviteJoiner {
     PeerRef user;
     std::int32_t date = 0;
