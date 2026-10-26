@@ -597,6 +597,9 @@ public:
                              const std::string& text);
     PaymentReceiptInfo get_payment_receipt(const PeerRef& chat, std::int32_t msg_id);
 
+    // ---- account security, read-only (phase 29). Never changes the password or phone number.
+    CloudPasswordStatus get_cloud_password_status();
+
     // ---- quotes, scheduling, albums, translation, presence
     // Sends text as a reply that quotes `quote_text` from the message `reply_to_id`.
     Message send_quote(const PeerRef& target, const std::string& text, std::int32_t reply_to_id,
