@@ -182,6 +182,8 @@ public:
     std::vector<Message> copy_to(const Message& source, const PeerRef& to);
     // Votes for the given indices into message.poll->options. Empty list retracts the vote.
     void vote_poll(const Message& poll_message, const std::vector<std::size_t>& option_indexes);
+    // Closes a poll the account created so nobody can vote anymore (phase 23).
+    void stop_poll(const Message& poll_message);
 
     // ---- folders
     std::vector<FolderInfo> get_folders();
@@ -278,6 +280,12 @@ public:
     // Sends an emoji reaction to a story. Set add_to_recent to keep it in recent reactions.
     void send_story_reaction(const PeerRef& chat, std::int32_t story_id, const std::string& emoji,
                              bool add_to_recent = false);
+
+    // ---- story posting (phase 27)
+    // Posts a photo or video from a local file as a story on the account's own page.
+    // period is the lifetime in seconds (6 hours, 12 hours, 1 day or 2 days). Returns the story id.
+    std::int32_t post_story(const std::string& path, bool as_photo = true, const std::string& caption = "",
+                            std::int32_t period = 86400, bool pinned = false, bool noforwards = false);
 
     // ---- folder (chatlist) invite links (phase 5)
     // filter_id is the id of a chat folder. link can be a full URL or just the slug.
@@ -568,6 +576,26 @@ public:
     bool reset_bot_commands(const std::string& lang_code = "");
     // Admin rights a bot asks for by default when added to a group, or to a broadcast channel when broadcast = true.
     bool set_bot_default_admin_rights(const AdminRights& rights, bool broadcast = false);
+
+    // ---- connected business bots (phase 22)
+    std::vector<ConnectedBotInfo> get_connected_bots();
+    // Disconnects a business bot from the account, for all chats.
+    void disconnect_connected_bot(const PeerRef& bot);
+
+    // ---- checklists (phase 24)
+    // Sends a checklist message. Others may add tasks or complete them when the flags are set.
+    void send_todo_list(const PeerRef& chat, const std::string& title, const std::vector<TodoItemInput>& items,
+                        bool others_can_append = false, bool others_can_complete = false);
+    // Marks tasks of a checklist message done or not done, by task id.
+    void toggle_todo_items(const PeerRef& chat, std::int32_t msg_id, const std::vector<std::int32_t>& completed,
+                           const std::vector<std::int32_t>& incompleted);
+    void append_todo_items(const PeerRef& chat, std::int32_t msg_id, const std::vector<TodoItemInput>& items);
+
+    // ---- inline and receipts (phases 25, 26)
+    // Edits a message that a bot sent through inline mode. inline_id is the id the update carries.
+    bool edit_inline_message(std::int32_t dc_id, std::int64_t inline_id, std::int64_t access_hash,
+                             const std::string& text);
+    PaymentReceiptInfo get_payment_receipt(const PeerRef& chat, std::int32_t msg_id);
 
     // ---- quotes, scheduling, albums, translation, presence
     // Sends text as a reply that quotes `quote_text` from the message `reply_to_id`.
