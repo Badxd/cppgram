@@ -22,6 +22,9 @@ Bytes be_bytes(const BIGNUM* n, std::size_t size) {
 }
 
 // In-process Telegram-like server: answers each request synchronously with the protocol replies.
+constexpr const char* kSafePrimeHex =
+    "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF6955817183995497CEA956AE515D2261898FA051015728E5A8AACAA68FFFFFFFFFFFFFFFF";
+
 class FakeServer : public PlainChannel {
 public:
     FakeServer() {
@@ -37,9 +40,9 @@ public:
         private_exp_ = d ? BN_dup(d) : nullptr;
         modulus_bn_ = BN_dup(n);
 
-        // 2048-bit prime for the DH group (primality only; the client does not check safe-prime structure).
+        // RFC 3526 group 14: a 2048-bit safe prime with generator 2 (verified safe prime).
         dh_prime_ = BN_new();
-        BN_generate_prime_ex(dh_prime_, 2048, 0, nullptr, nullptr, nullptr);
+        BN_hex2bn(&dh_prime_, kSafePrimeHex);
         dh_prime_bytes_ = be_bytes(dh_prime_, 256);
     }
     ~FakeServer() override {
@@ -226,6 +229,33 @@ TEST(Handshake, PlainPacketRoundTrip) {
     const Bytes packet = wrap_plain_message(body, 0x1234500000000004ull);
     EXPECT_EQ(unwrap_plain_message(packet), body);
     EXPECT_EQ(make_message_id() % 4, 0u);
+}
+
+TEST(Handshake, AcceptsValidDhParams) {
+    BIGNUM* p = BN_new();
+    BN_hex2bn(&p, kSafePrimeHex);
+    const Bytes prime = be_bytes(p, 256);
+    BN_free(p);
+    const Bytes g_a = Bytes(255, 0x01);
+    EXPECT_NO_THROW(validate_dh_params(prime, 2, g_a));
+}
+
+TEST(Handshake, RejectsNonSafePrime) {
+    // Composite 2048-bit value: the primality check must reject it.
+    Bytes composite(256, 0x00);
+    composite[0] = 0xFF;
+    composite[255] = 0x01;  // odd, but composite
+    EXPECT_THROW(validate_dh_params(composite, 2, Bytes(255, 0x01)), AuthError);
+}
+
+TEST(Handshake, RejectsOutOfRangeGA) {
+    BIGNUM* p = BN_new();
+    BN_hex2bn(&p, kSafePrimeHex);
+    const Bytes prime = be_bytes(p, 256);
+    BN_free(p);
+    EXPECT_THROW(validate_dh_params(prime, 2, Bytes{0x01}), AuthError);  // g_a == 1
+    EXPECT_THROW(validate_dh_params(prime, 2, prime), AuthError);        // g_a == p
+    EXPECT_THROW(validate_dh_params(prime, 8, Bytes(255, 0x01)), AuthError);  // g outside 2..7
 }
 
 TEST(Handshake, TelegramKeysParse) {

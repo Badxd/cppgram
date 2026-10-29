@@ -52,4 +52,8 @@ struct HandshakeOptions {
 
 AuthKeyResult create_auth_key(PlainChannel& channel, const HandshakeOptions& options = {});
 
+// Validates server DH parameters: p must be a safe 2048-bit prime, g must satisfy its residue
+// condition for p, and 1 < g_a < p - 1. Throws AuthError on any failure.
+void validate_dh_params(const Bytes& prime_be, std::int32_t g, const Bytes& g_a_be);
+
 }  // namespace cppgram::mtproto

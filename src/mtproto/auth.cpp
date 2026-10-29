@@ -7,7 +7,65 @@
 
 #include "cppgram/mtproto/schema/api.h"
 
+#include <openssl/bn.h>
+#include <memory>
+
+
 namespace cppgram::mtproto {
+
+namespace {
+
+struct BnDeleter {
+    void operator()(BIGNUM* b) const { BN_free(b); }
+};
+using BnPtr = std::unique_ptr<BIGNUM, BnDeleter>;
+
+}  // namespace
+
+// Checks the server DH parameters the way the MTProto spec requires:
+// p is a safe 2048-bit prime, g satisfies its residue condition, and 1 < g_a < p - 1.
+void validate_dh_params(const Bytes& prime_be, std::int32_t g, const Bytes& g_a_be) {
+    BN_CTX* raw_ctx = BN_CTX_new();
+    if (raw_ctx == nullptr) throw AuthError("out of memory while checking DH parameters");
+    std::unique_ptr<BN_CTX, decltype(&BN_CTX_free)> ctx(raw_ctx, &BN_CTX_free);
+
+    BnPtr p(BN_bin2bn(prime_be.data(), static_cast<int>(prime_be.size()), nullptr));
+    BnPtr g_a(BN_bin2bn(g_a_be.data(), static_cast<int>(g_a_be.size()), nullptr));
+    BnPtr p_minus_1(BN_new());
+    BnPtr q(BN_new());
+    if (!p || !g_a || !p_minus_1 || !q) throw AuthError("out of memory while checking DH parameters");
+
+    if (BN_num_bits(p.get()) != 2048) throw AuthError("DH prime is not 2048 bits");
+    if (BN_check_prime(p.get(), ctx.get(), nullptr) != 1) throw AuthError("DH prime is not prime");
+
+    // Safe prime: q = (p - 1) / 2 must also be prime.
+    if (BN_copy(p_minus_1.get(), p.get()) == nullptr || BN_sub_word(p_minus_1.get(), 1) != 1) {
+        throw AuthError("DH parameter arithmetic failed");
+    }
+    if (BN_rshift1(q.get(), p_minus_1.get()) != 1 || BN_check_prime(q.get(), ctx.get(), nullptr) != 1) {
+        throw AuthError("DH prime is not a safe prime");
+    }
+
+    // Generator residue conditions from the MTProto spec.
+    const BN_ULONG p_mod_24 = BN_mod_word(p.get(), 24);
+    const BN_ULONG p_mod_8 = p_mod_24 % 8;
+    bool g_ok = false;
+    switch (g) {
+        case 2: g_ok = p_mod_8 == 7; break;
+        case 3: g_ok = BN_mod_word(p.get(), 3) == 2; break;
+        case 4: g_ok = true; break;
+        case 5: { const BN_ULONG m = BN_mod_word(p.get(), 5); g_ok = m == 1 || m == 4; break; }
+        case 6: g_ok = p_mod_24 == 19 || p_mod_24 == 23; break;
+        case 7: { const BN_ULONG m = BN_mod_word(p.get(), 7); g_ok = m == 3 || m == 5 || m == 6; break; }
+        default: g_ok = false;
+    }
+    if (!g_ok) throw AuthError("DH generator does not match the prime");
+
+    // 1 < g_a < p - 1
+    if (BN_cmp(g_a.get(), BN_value_one()) <= 0 || BN_cmp(g_a.get(), p_minus_1.get()) >= 0) {
+        throw AuthError("g_a is out of range");
+    }
+}
 
 namespace {
 
@@ -240,6 +298,7 @@ AuthKeyResult create_auth_key(PlainChannel& channel, const HandshakeOptions& opt
     if (dh_inner.g_a.size() > 256) {
         throw AuthError("g_a too large");
     }
+    validate_dh_params(dh_inner.dh_prime, dh_inner.g, dh_inner.g_a);
 
     // Step 5: our exponent, g_b and the auth key
     const Bytes b = random_bytes(256);
