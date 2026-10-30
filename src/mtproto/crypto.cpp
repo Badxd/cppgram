@@ -142,6 +142,17 @@ Bytes sha1(const Bytes& data) {
     return digest(EVP_sha1(), data);
 }
 
+bool constant_time_equal(const Bytes& a, const Bytes& b) {
+    if (a.size() != b.size()) {
+        return false;
+    }
+    unsigned char diff = 0;
+    for (std::size_t i = 0; i < a.size(); ++i) {
+        diff |= static_cast<unsigned char>(a[i] ^ b[i]);
+    }
+    return diff == 0;
+}
+
 Bytes sha256(const Bytes& data) {
     return digest(EVP_sha256(), data);
 }
@@ -308,7 +319,7 @@ Bytes decrypt_packet(const Bytes& auth_key, const Bytes& packet, bool outgoing) 
     const Bytes msg_key = slice(packet, 8, 16);
     const AesParams params = derive_aes_params(auth_key, msg_key, outgoing);
     const Bytes plain = aes_ige_decrypt(slice(packet, 24, packet.size() - 24), params.key, params.iv);
-    if (compute_msg_key(auth_key, plain, outgoing) != msg_key) {
+    if (!constant_time_equal(compute_msg_key(auth_key, plain, outgoing), msg_key)) {
         throw CryptoError("msg_key mismatch");
     }
     return plain;

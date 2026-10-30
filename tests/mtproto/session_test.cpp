@@ -245,3 +245,12 @@ TEST(SecurityHardening, PrivateFileIsOwnerOnly) {
     EXPECT_EQ(st.st_mode & 0777, 0600u);
     ::unlink(path.c_str());
 }
+
+TEST(SecurityHardening, ConstantTimeEqualMatchesNormalCompare) {
+    using cppgram::mtproto::Bytes;
+    using cppgram::mtproto::constant_time_equal;
+    EXPECT_TRUE(constant_time_equal(Bytes{1, 2, 3}, Bytes{1, 2, 3}));
+    EXPECT_FALSE(constant_time_equal(Bytes{1, 2, 3}, Bytes{1, 2, 4}));
+    EXPECT_FALSE(constant_time_equal(Bytes{1, 2}, Bytes{1, 2, 3}));
+    EXPECT_TRUE(constant_time_equal(Bytes{}, Bytes{}));
+}
