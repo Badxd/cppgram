@@ -13,5 +13,8 @@
 - `tools/check_examples.sh` syntax-checks all examples.
 - `tools/run_sanitizers.sh` runs the test suite under sanitizers locally.
 
+### Fuzzing
+- libFuzzer targets for the TL reader, session string decoder, and HTML/Markdown parser (`fuzz/`, `-DBUILD_FUZZERS=ON`).
+
 ### Docs
 - `SECURITY.md`, `AUDIT.md`.

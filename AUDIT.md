@@ -13,7 +13,7 @@ Status of the audit checkpoints. Each item says what was verified and what was n
 | `parser.cpp` attribute loop | Reviewed | Always advances `pos`; terminates |
 | SQL in `storage.cpp` | Reviewed | Prepared statements with bound parameters |
 | Sanitizers | Wired in CI and `tools/run_sanitizers.sh` | Not yet run to completion in this sandbox |
-| Fuzzers | Not started | Planned: TL reader, `decode_session_string`, HTML parser |
+| Fuzzers | Smoke run clean | `fuzz/`: TL reader (1.56M runs), session string (36M runs), HTML/Markdown parser (1.39M runs), 90 s each, zero ASan/UBSan reports. Longer runs still needed |
 | Benchmarks | Not started | — |
 | Full clean baseline build | Not done in this batch | Incremental rebuild only; run a clean build before release |
 
