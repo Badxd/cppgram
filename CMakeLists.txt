@@ -73,6 +73,7 @@ add_library(cppgram
     src/client_account_settings.cpp
     src/client_contacts_and_blocks.cpp
     src/client_business_and_stealth.cpp
+    src/client_batch5.cpp
     src/dc.cpp
     src/client_chat_extras.cpp
     src/client_invite_check.cpp

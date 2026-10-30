@@ -383,6 +383,15 @@ public:
     void mark_unread(const PeerRef& chat, bool unread = true);
     // Moves the chat to the archive folder (1) or back to the main list (0).
     void archive_chat(const PeerRef& chat, bool archived = true);
+    // Archives or unarchives several chats in order. Stops at the first failing chat.
+    void archive_chats(const std::vector<PeerRef>& chats, bool archived = true);
+    // Saves (or removes, when `remove` is true) a sticker in the recent stickers list.
+    bool add_recent_sticker(const DocumentRef& sticker);
+    bool remove_recent_sticker(const DocumentRef& sticker);
+    // Redeems a Premium gift code (the slug from a t.me/giftcode link).
+    void apply_gift_code(const std::string& slug);
+    // Applies the given boost slots to a channel or group.
+    void apply_boost(const PeerRef& chat, const std::vector<std::int32_t>& slots);
     // Channels/supergroups. seconds = 0 turns slow mode off.
     void set_slow_mode(const PeerRef& channel, std::int32_t seconds);
     // Default permissions for everyone in a group or channel.

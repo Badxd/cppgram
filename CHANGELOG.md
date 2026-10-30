@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### API
+- New: `archive_chats`, `add_recent_sticker`, `remove_recent_sticker`, `apply_gift_code`, `apply_boost`.
+
 ### Security
 - DH parameters from the server are validated (2048-bit safe prime, generator residue, `1 < g_a < p-1`).
 - `random_id` values come from OpenSSL `RAND_bytes` instead of `std::mt19937_64`.
