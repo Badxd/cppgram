@@ -2,6 +2,8 @@
 
 #include <sqlite3.h>
 
+#include "secure_file.h"
+
 #include <stdexcept>
 
 namespace cppgram {
@@ -17,6 +19,7 @@ void check(int rc, sqlite3* db, const char* what) {
 }  // namespace
 
 SqliteStorage::SqliteStorage(const std::string& path) {
+    detail::ensure_private_file(path);
     check(sqlite3_open(path.c_str(), &db_), db_, "open sqlite session store");
     const char* schema =
         "CREATE TABLE IF NOT EXISTS session ("

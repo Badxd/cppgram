@@ -7,6 +7,7 @@
 #include <fstream>
 
 #include "cppgram/mtproto/schema/api.h"
+#include "../secure_file.h"
 
 namespace cppgram::mtproto {
 
@@ -114,6 +115,7 @@ void save_session_file(const std::string& path, const SessionData& data) {
     if (data.auth_key.size() != 256) {
         throw std::runtime_error("cannot save session without a 256-byte auth key");
     }
+    detail::ensure_private_file(path);
     std::ofstream out(path, std::ios::binary | std::ios::trunc);
     if (!out) {
         throw std::runtime_error("cannot open session file for writing: " + path);

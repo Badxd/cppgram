@@ -218,3 +218,30 @@ TEST(Client, RequiresConnectBeforeCalls) {
     EXPECT_THROW(client.send_message(std::string(""), "hi"), std::runtime_error);
     EXPECT_THROW(client.get_me(), std::runtime_error);
 }
+
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <set>
+
+#include "../../src/secure_file.h"
+#include "../../src/secure_random.h"
+
+TEST(SecurityHardening, SecureRandomIdsAreDistinct) {
+    std::set<std::int64_t> seen;
+    for (int i = 0; i < 256; ++i) seen.insert(cppgram::detail::secure_random_i64());
+    EXPECT_EQ(seen.size(), 256u);
+}
+
+TEST(SecurityHardening, PrivateFileIsOwnerOnly) {
+    const std::string path = "/tmp/cppgram_perm_test_" + std::to_string(::getpid());
+    ::unlink(path.c_str());
+    cppgram::detail::ensure_private_file(path);
+    struct stat st{};
+    ASSERT_EQ(::stat(path.c_str(), &st), 0);
+    EXPECT_EQ(st.st_mode & 0777, 0600u);
+    ::chmod(path.c_str(), 0644);  // existing file with loose mode must be tightened
+    cppgram::detail::ensure_private_file(path);
+    ASSERT_EQ(::stat(path.c_str(), &st), 0);
+    EXPECT_EQ(st.st_mode & 0777, 0600u);
+    ::unlink(path.c_str());
+}
