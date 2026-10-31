@@ -30,9 +30,11 @@ jobs:
           sudo apt-get install -y cmake libcurl4-openssl-dev libssl-dev zlib1g-dev libsqlite3-dev libgtest-dev
       - name: Configure (ASan + UBSan, tests on)
         run: |
-          cmake -S . -B build-san -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON \
-            -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" \
-            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          # No debug info: with -g the api_impl_*.cpp compiles are OOM-killed on 8 GB machines.
+          cmake -S . -B build-san -DCMAKE_BUILD_TYPE=None -DENABLE_TESTS=ON \
+            -DCMAKE_CXX_FLAGS="-O0 -g0 -fsanitize=address,undefined -fno-omit-frame-pointer" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address,undefined"
       - name: Build
         run: cmake --build build-san -j1
       - name: Test

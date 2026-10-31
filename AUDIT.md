@@ -16,7 +16,7 @@ are recorded in the commit messages and the baseline section below.
 | 7. Update synchronization | Partly done | pts gate (`classify_pts`, 4 tests; two expectations were wrong in the first draft and were corrected to the rule local + count == pts), gap -> `updates.getDifference` catch-up, persisted pts/qts/date/seq, catch-up after reconnect, bounded update queue with backpressure (`max_pending_updates`, never drops, 1 test). Not yet: per-channel pts, backpressure during invoke() (updates can still queue while a request waits), live verification |
 | 8. Message, chat, media APIs | Partly done | 18 new API methods (batches 5-7); live calls not tested |
 | 9. Storage and schema generation | Partly done | Prepared statements reviewed; generator reproducibility not checked |
-| 10. Tests, fuzzing, sanitizers | Partly done | 81 mtproto tests; 3 fuzz targets; ASan/UBSan CI job written, never run in CI |
+| 10. Tests, fuzzing, sanitizers | Partly done | mtproto 101 + bot 79 tests pass under ASan/UBSan/LSan; 3 fuzz targets (short runs); CI sanitizer job written, not yet run on GitHub |
 | 11. Benchmarks | Not started | No numbers exist yet |
 | 12. Docs, CI, release | Partly done | SECURITY.md, AUDIT.md, CHANGELOG.md, CI workflow (never executed) |
 
@@ -67,7 +67,8 @@ Warnings at 2bdbd22:
 
 - libFuzzer smoke runs (90 s each): TL reader 1.56M execs, session string 36M, HTML/Markdown parser 1.39M; no ASan/UBSan reports.
 - Longer 10-minute runs were started and stopped early (about 6.1M, 67M and 3M execs), still no reports. A full-length run is still needed.
-- ASan+UBSan build and tests: not run to completion in this sandbox.
+- ASan + UBSan + LeakSanitizer (`detect_leaks=1`), `-O0 -g0`, GCC: `cppgram_mtproto_test` 101/101 pass, `cppgram_bot_test` 79/79 pass, zero sanitizer reports. Debug info (`-g`) made the `api_impl_*.cpp` compiles run out of memory on this 8 GB machine, so the sanitizer build is configured without it.
+- Not yet covered: ThreadSanitizer (the library has a single-threaded client; no thread-safety claim is made), sanitizer runs of the fuzz targets.
 
 ## Not implemented (explicit)
 
