@@ -284,7 +284,27 @@ std::vector<Bytes> MtSession::take_updates() {
     return out;
 }
 
+bool MtSession::remember_server_msg_id(std::uint64_t msg_id) {
+    if (!seen_msg_ids_.insert(msg_id).second) return false;
+    seen_msg_order_.push_back(msg_id);
+    if (seen_msg_order_.size() > kSeenMsgIdCapacity) {
+        seen_msg_ids_.erase(seen_msg_order_.front());
+        seen_msg_order_.pop_front();
+    }
+    return true;
+}
+
 void MtSession::dispatch(const InnerMessage& inner, Waiting* waiting) {
+    if (!remember_server_msg_id(inner.message_id)) {
+        // Replay or resend of a message we already handled: acknowledge it so the server stops resending,
+        // but do not process the content again (no duplicate updates, no second rpc_result handling).
+        if ((inner.seq_no & 1u) != 0) send_ack(inner.message_id);
+        return;
+    }
+    dispatch_body(inner, waiting);
+}
+
+void MtSession::dispatch_body(const InnerMessage& inner, Waiting* waiting) {
     // Server content messages must be acknowledged, otherwise the server resends them.
     if ((inner.seq_no & 1u) != 0) {
         send_ack(inner.message_id);
@@ -369,7 +389,7 @@ void MtSession::dispatch(const InnerMessage& inner, Waiting* waiting) {
             InnerMessage sub = inner;
             sub.body = gunzip(r.read_bytes());
             sub.seq_no = 0;  // already acknowledged above
-            dispatch(sub, waiting);
+            dispatch_body(sub, waiting);  // same message id as the wrapper: already recorded
             return;
         }
         default:

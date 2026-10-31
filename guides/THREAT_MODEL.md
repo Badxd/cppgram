@@ -40,7 +40,7 @@ and can read the account's messages, without the 2FA password. Revoke it from an
 |---|---|---|
 | Passive network observer | Yes | Traffic is encrypted; sizes and timing are visible |
 | Active man in the middle on the TCP path | Partly | Wrong DH parameters are rejected; tampered packets fail the msg_key check. No certificate pinning is needed because MTProto does not use TLS |
-| Replay of old encrypted packets | Partly | Not detected by the session layer: server message ids are not checked for duplicates (finding F16). Limited impact: rpc_result is matched to pending requests only, and replayed updates are dropped by the pts gate |
+| Replay of old encrypted packets | Partly | Server message ids are checked for duplicates (recent 4096 ids; finding F16, fixed with an offline test). A replay older than that window is not detected at the session layer |
 | Local user without root reading the session | No | Protect with file permissions and a private directory; encrypted storage is not implemented |
 | Attacker with the session file | No | Equivalent to account access |
 | Malicious server or DC | Partly | Malformed TL is rejected by bounded readers; no defence against Telegram itself |

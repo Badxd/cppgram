@@ -60,6 +60,7 @@ add_library(cppgram
     src/client_login.cpp
     src/transfer.cpp
     src/mtproto/cancel.cpp
+    src/channel_pts.cpp
     src/client_extra.cpp
     src/client_more.cpp
     src/client_media.cpp
