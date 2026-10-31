@@ -14,7 +14,7 @@ are recorded in the commit messages and the baseline section below.
 | 5. Auth and session persistence | Partly done | Atomic save, 0600 perms; schema versioning and corruption detection open |
 | 6. Networking, retries, backoff | Not started | Flood-wait parsing exists; backoff/jitter not implemented |
 | 7. Update synchronization | Not started | |
-| 8. Message, chat, media APIs | Partly done | 27 new API methods added in batches; live calls not tested |
+| 8. Message, chat, media APIs | Partly done | 18 new API methods (batches 5-7); live calls not tested |
 | 9. Storage and schema generation | Partly done | Prepared statements reviewed; generator reproducibility not checked |
 | 10. Tests, fuzzing, sanitizers | Partly done | 81 mtproto tests; 3 fuzz targets; ASan/UBSan CI job written, never run in CI |
 | 11. Benchmarks | Not started | No numbers exist yet |
