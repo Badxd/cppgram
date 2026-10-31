@@ -19,6 +19,15 @@
 - Fixed: `download_media` writes to `<path>.part`, checks the received size against the message, and renames on success. A failed download no longer leaves a partial file at the destination (finding F17).
 - Changed: `read_file` reads in one call instead of byte by byte.
 
+### CI and tooling
+- Fixed: CI installs `libboost-dev` and `nlohmann-json3-dev` (both are required by `find_package`). Both jobs now.
+- Fixed: the sanitizer job passes each CMake flag as one argument, with the same configuration as `tools/run_sanitizers.sh`. Both configure commands were run locally from scratch and succeed.
+- New: `tools/check_headers.sh` compiles each of the 39 public headers alone. `*.inc.h` fragments are skipped.
+
+### Examples and guides (batch 10)
+- New examples: `send-text-history` (send, edit, history, delete), `media-transfer` (upload, download with progress), `graceful-shutdown` (SIGINT/SIGTERM and `Client::stop()`). Syntax-checked only.
+- New guides: `VPS_OPERATIONS.md`, `VERSIONING.md`, `MIGRATION.md`, and an index at `guides/README.md`, linked from `README.md`.
+
 ### Examples and docs
 - New: `examples/mtproto-login` (user login over MTProto, session restore, `run()` with stop). Syntax-checked only.
 - New: `.env.example` (placeholders); `.gitignore` allows it.

@@ -12,7 +12,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake libcurl4-openssl-dev libssl-dev zlib1g-dev libsqlite3-dev libgtest-dev
+          sudo apt-get install -y cmake libboost-dev nlohmann-json3-dev libcurl4-openssl-dev libssl-dev zlib1g-dev libsqlite3-dev libgtest-dev
       - name: Configure (Release, tests on)
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON
       - name: Build (single job to stay under runner memory)
@@ -27,14 +27,15 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake libcurl4-openssl-dev libssl-dev zlib1g-dev libsqlite3-dev libgtest-dev
+          sudo apt-get install -y cmake libboost-dev nlohmann-json3-dev libcurl4-openssl-dev libssl-dev zlib1g-dev libsqlite3-dev libgtest-dev
       - name: Configure (ASan + UBSan, tests on)
+        # Same configuration as tools/run_sanitizers.sh. No debug info: -g makes the api_impl_*.cpp
+        # compiles run out of memory on 8 GB runners.
         run: |
-          # No debug info: with -g the api_impl_*.cpp compiles are OOM-killed on 8 GB machines.
           cmake -S . -B build-san -DCMAKE_BUILD_TYPE=None -DENABLE_TESTS=ON \
-            -DCMAKE_CXX_FLAGS="-O0 -g0 -fsanitize=address,undefined -fno-omit-frame-pointer" \
-            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" \
-            -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address,undefined"
+            "-DCMAKE_CXX_FLAGS=-O0 -g0 -fsanitize=address,undefined -fno-omit-frame-pointer" \
+            "-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined" \
+            "-DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=address,undefined"
       - name: Build
         run: cmake --build build-san -j1
       - name: Test

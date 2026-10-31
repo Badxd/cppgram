@@ -88,6 +88,11 @@ int main() {
 }
 ```
 
+## Documentation
+
+See [guides/](guides/README.md) for installation, authentication, sessions, architecture, the API support
+matrix, operations, the threat model, benchmarks and migration notes.
+
 ## Build
 
 ```sh
