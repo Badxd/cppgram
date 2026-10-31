@@ -254,3 +254,55 @@ TEST(SecurityHardening, ConstantTimeEqualMatchesNormalCompare) {
     EXPECT_FALSE(constant_time_equal(Bytes{1, 2}, Bytes{1, 2, 3}));
     EXPECT_TRUE(constant_time_equal(Bytes{}, Bytes{}));
 }
+
+namespace {
+
+// Answers every request with unrelated packets forever, never with an rpc_result.
+class ChattySilentServer : public PacketChannel {
+public:
+    explicit ChattySilentServer(Bytes key) : key_(std::move(key)) {}
+    void send_packet(const Bytes&) override {}
+    Bytes receive_packet() override {
+        InnerMessage msg;
+        msg.salt = 1;
+        msg.session_id = 2;
+        msg.message_id = make_message_id() + 4;
+        msg.seq_no = 0;  // no ack needed, keeps the test focused on the deadline
+        msg.body = Bytes{1, 2, 3, 4, 5, 6, 7, 8};  // unknown constructor, ignored by dispatch
+        return encrypt_packet(key_, serialize_inner(msg), false);
+    }
+
+private:
+    Bytes key_;
+};
+
+}  // namespace
+
+TEST(Session, InvokeHonoursRequestTimeoutWhenServerKeepsTalking) {
+    const Bytes key = random_bytes(256);
+    ChattySilentServer server(key);
+    MtSession session(server, SessionData{2, key, 0x1111222233334444ull, 0});
+    session.set_request_timeout(std::chrono::milliseconds(150));
+    const auto start = std::chrono::steady_clock::now();
+    EXPECT_THROW(session.invoke(Bytes{0x10, 0x20, 0x30, 0x40}), ConnectionTimeout);
+    const auto took = std::chrono::steady_clock::now() - start;
+    EXPECT_LT(took, std::chrono::seconds(5));
+}
+
+TEST(SessionStorage, AtomicSaveLeavesNoTempFileAndRoundTrips) {
+    const std::string path = "/tmp/cppgram_atomic_test_" + std::to_string(::getpid()) + ".session";
+    const std::string tmp = path + ".tmp";
+    ::unlink(path.c_str());
+    SessionData first{2, random_bytes(256), 0x1111111111111111ull, -5};
+    SessionData second{4, random_bytes(256), 0x2222222222222222ull, 7};
+    save_session_file(path, first);
+    save_session_file(path, second);  // replace an existing session
+    SessionData loaded;
+    ASSERT_TRUE(load_session_file(path, loaded));
+    EXPECT_EQ(loaded.dc_id, 4);
+    EXPECT_EQ(loaded.server_salt, 0x2222222222222222ull);
+    EXPECT_EQ(loaded.auth_key, second.auth_key);
+    struct stat st{};
+    EXPECT_NE(::stat(tmp.c_str(), &st), 0) << "temp file must not survive a successful save";
+    ::unlink(path.c_str());
+}

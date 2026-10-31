@@ -1,5 +1,8 @@
 #include "cppgram/mtproto/transport.h"
 
+#include <cstdio>
+#include <string>
+
 #include "cppgram/mtproto/crypto.h"
 
 namespace cppgram::mtproto {

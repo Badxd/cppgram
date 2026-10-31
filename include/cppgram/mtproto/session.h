@@ -2,6 +2,7 @@
 // update queueing, and on-disk session storage.
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <deque>
 #include <stdexcept>
@@ -63,7 +64,13 @@ public:
     MtSession(PacketChannel& channel, SessionData data);
 
     // Sends one TL request body and returns the TL body of its result. Updates received meanwhile are queued.
+    // Throws ConnectionTimeout if no matching rpc_result arrives within the request timeout, even when
+    // unrelated packets keep arriving. Requests are never resent after a timeout.
     Bytes invoke(const Bytes& request_body);
+
+    // Overall deadline for one invoke() call (default 30 s).
+    void set_request_timeout(std::chrono::milliseconds timeout) noexcept { request_timeout_ = timeout; }
+    std::chrono::milliseconds request_timeout() const noexcept { return request_timeout_; }
 
     // Typed call: serializes the request and parses its result with the generated read_result().
     template <class Request>
@@ -87,6 +94,8 @@ public:
     const SessionData& data() const noexcept { return data_; }
 
 private:
+    std::chrono::milliseconds request_timeout_{std::chrono::seconds(30)};
+
     struct Waiting {
         std::uint64_t msg_id = 0;
         bool found = false;

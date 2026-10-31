@@ -3,7 +3,11 @@
 
 #include <zlib.h>
 
+#include <chrono>
+#include <cstdio>
 #include <cstring>
+#include <fcntl.h>
+#include <unistd.h>
 #include <fstream>
 
 #include "cppgram/mtproto/schema/api.h"
@@ -115,18 +119,43 @@ void save_session_file(const std::string& path, const SessionData& data) {
     if (data.auth_key.size() != 256) {
         throw std::runtime_error("cannot save session without a 256-byte auth key");
     }
-    detail::ensure_private_file(path);
-    std::ofstream out(path, std::ios::binary | std::ios::trunc);
-    if (!out) {
-        throw std::runtime_error("cannot open session file for writing: " + path);
+    // Crash-safe replace: write a private temp file, fsync it, then rename over the old session.
+    // A crash at any point leaves either the old session or the new one, never a half-written file.
+    const std::string tmp = path + ".tmp";
+    detail::ensure_private_file(tmp);
+    {
+        std::ofstream out(tmp, std::ios::binary | std::ios::trunc);
+        if (!out) {
+            throw std::runtime_error("cannot open session temp file for writing: " + tmp);
+        }
+        out.write(kSessionMagic, 4);
+        put_u64(out, static_cast<std::uint64_t>(static_cast<std::int64_t>(data.dc_id)));
+        put_u64(out, static_cast<std::uint64_t>(data.time_offset));
+        put_u64(out, data.server_salt);
+        out.write(reinterpret_cast<const char*>(data.auth_key.data()), static_cast<std::streamsize>(data.auth_key.size()));
+        out.flush();
+        if (!out) {
+            std::remove(tmp.c_str());
+            throw std::runtime_error("failed to write session file: " + tmp);
+        }
     }
-    out.write(kSessionMagic, 4);
-    put_u64(out, static_cast<std::uint64_t>(static_cast<std::int64_t>(data.dc_id)));
-    put_u64(out, static_cast<std::uint64_t>(data.time_offset));
-    put_u64(out, data.server_salt);
-    out.write(reinterpret_cast<const char*>(data.auth_key.data()), static_cast<std::streamsize>(data.auth_key.size()));
-    if (!out) {
-        throw std::runtime_error("failed to write session file: " + path);
+    const int fd = ::open(tmp.c_str(), O_RDONLY);
+    if (fd < 0 || ::fsync(fd) != 0) {
+        if (fd >= 0) ::close(fd);
+        std::remove(tmp.c_str());
+        throw std::runtime_error("failed to sync session file: " + tmp);
+    }
+    ::close(fd);
+    if (std::rename(tmp.c_str(), path.c_str()) != 0) {
+        std::remove(tmp.c_str());
+        throw std::runtime_error("failed to replace session file: " + path);
+    }
+    // Best effort: persist the rename itself.
+    const std::string dir = path.find('/') == std::string::npos ? "." : path.substr(0, path.rfind('/') + 1);
+    const int dfd = ::open(dir.c_str(), O_RDONLY);
+    if (dfd >= 0) {
+        ::fsync(dfd);
+        ::close(dfd);
     }
 }
 
@@ -187,11 +216,15 @@ void MtSession::send_content(const Bytes& body) {
 }
 
 Bytes MtSession::invoke(const Bytes& request_body) {
+    const auto deadline = std::chrono::steady_clock::now() + request_timeout_;
     for (int attempt = 0; attempt < 3; ++attempt) {
         const std::uint64_t msg_id = send_encrypted(request_body, true);
         Waiting waiting;
         waiting.msg_id = msg_id;
         while (!waiting.found && !waiting.salt_changed) {
+            if (std::chrono::steady_clock::now() >= deadline) {
+                throw ConnectionTimeout("request timed out waiting for rpc_result");
+            }
             process_one_into(&waiting);
         }
         if (waiting.found) {
