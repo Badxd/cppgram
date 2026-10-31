@@ -19,6 +19,16 @@
 - Fixed: `download_media` writes to `<path>.part`, checks the received size against the message, and renames on success. A failed download no longer leaves a partial file at the destination (finding F17).
 - Changed: `read_file` reads in one call instead of byte by byte.
 
+### Examples and docs
+- New: `examples/mtproto-login` (user login over MTProto, session restore, `run()` with stop). Syntax-checked only.
+- New: `.env.example` (placeholders); `.gitignore` allows it.
+- New guides: `guides/LINUX_INSTALL.md` (tested environment and package versions), `SESSIONS.md`, `ARCHITECTURE.md`, `TROUBLESHOOTING.md`.
+
+### Fixes
+- Generator: no unused `fl_flags` variable in generated code (F7). Regenerated output verified with `tools/check_schema.sh`.
+- Test: handshake test uses the OpenSSL 3 EVP API instead of deprecated RSA calls (F8).
+- Transport: documented that a malformed frame keeps throwing until the connection is replaced (F9), with a regression test.
+
 ### Tooling and measurements
 - New: `bench/bench_main.cpp` and `tools/run_benchmarks.sh` (option `ENABLE_BENCHMARKS`). Results and the environment are in `guides/BENCHMARKS.md`.
 - Documented: `guides/THREAT_MODEL.md`, `guides/API_SUPPORT.md`.

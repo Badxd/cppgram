@@ -4726,7 +4726,7 @@ void types::exportedChatlistInvite::serialize(TlWriter& tlw) const {
 
 types::exportedChatlistInvite types::exportedChatlistInvite::read_body(TlReader& rv) {
     types::exportedChatlistInvite out;
-    std::uint32_t fl_flags = rv.read_uint32();
+    rv.read_uint32();  // flags word with no conditional fields
     out.title = rv.read_string();
     out.url = rv.read_string();
     out.peers = tl::read_vector<std::shared_ptr<tl::Peer>>(rv, [&](TlReader& r836) -> std::shared_ptr<tl::Peer> { return tl::read_boxed<tl::Peer>(r836); });
@@ -5041,7 +5041,7 @@ void types::stories_allStoriesNotModified::serialize(TlWriter& tlw) const {
 
 types::stories_allStoriesNotModified types::stories_allStoriesNotModified::read_body(TlReader& rv) {
     types::stories_allStoriesNotModified out;
-    std::uint32_t fl_flags = rv.read_uint32();
+    rv.read_uint32();  // flags word with no conditional fields
     out.state = rv.read_string();
     out.stealth_mode = tl::read_boxed<tl::StoriesStealthMode>(rv);
     return out;

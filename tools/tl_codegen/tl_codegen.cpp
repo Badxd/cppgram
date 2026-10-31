@@ -6,6 +6,7 @@
 // and writes:
 //   - one header with all constructor/function structs, abstract type variants and generic templates
 //   - api_impl_N.cpp files with out-of-line serialize/deserialize definitions
+#include <algorithm>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -469,8 +470,17 @@ private:
         os << qualified << " " << qualified << "::read_body(TlReader& rv) {\n";
         os << "    " << qualified << " out;\n";
         for (const Param& p : d.params) {
-            if (p.is_flags_def) {
+            if (!p.is_flags_def) {
+                continue;
+            }
+            // A flags word that no field tests is read and discarded, so no unused variable is emitted.
+            const bool used = std::any_of(d.params.begin(), d.params.end(), [&p](const Param& q) {
+                return q.flag_bit.has_value() && q.flags_field == p.name;
+            });
+            if (used) {
                 os << "    std::uint32_t fl_" << p.name << " = rv.read_uint32();\n";
+            } else {
+                os << "    rv.read_uint32();  // flags word with no conditional fields\n";
             }
         }
         for (const Param& p : d.params) {

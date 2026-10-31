@@ -115,3 +115,14 @@ TEST(TransportFraming, EmptyBufferYieldsNothing) {
     Transport dec(TransportKind::Intermediate);
     EXPECT_FALSE(dec.next().has_value());
 }
+
+// F9: after a malformed frame the decoder does not advance, so the same error is raised again. Callers must
+// drop the connection; this test pins that documented behaviour.
+TEST(TransportFraming, MalformedIntermediateFrameKeepsThrowing) {
+    Transport rx(TransportKind::Intermediate);
+    // A negative length word (transport error code -404 as little-endian int32).
+    const Bytes bad{0x6c, 0xfe, 0xff, 0xff};
+    rx.feed(bad);
+    EXPECT_THROW(rx.next(), TransportError);
+    EXPECT_THROW(rx.next(), TransportError);
+}

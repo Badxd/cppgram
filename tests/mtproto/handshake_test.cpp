@@ -1,9 +1,11 @@
+#include <openssl/core_names.h>
+#include <openssl/evp.h>
 #include <gtest/gtest.h>
 
 #include <ctime>
 #include <deque>
 #include <openssl/bn.h>
-#include <openssl/rsa.h>
+#include <stdexcept>
 
 #include "cppgram/mtproto/auth.h"
 #include "cppgram/mtproto/crypto.h"
@@ -28,17 +30,27 @@ constexpr const char* kSafePrimeHex =
 class FakeServer : public PlainChannel {
 public:
     FakeServer() {
-        rsa_ = RSA_new();
-        BIGNUM* e = BN_new();
-        BN_set_word(e, 65537);
-        RSA_generate_key_ex(rsa_, 2048, e, nullptr);
-        BN_free(e);
-        const BIGNUM *n = nullptr, *ed = nullptr, *d = nullptr;
-        RSA_get0_key(rsa_, &n, &ed, &d);
+        // OpenSSL 3 EVP API (RSA_new/RSA_generate_key_ex are deprecated).
+        EVP_PKEY* key = nullptr;
+        EVP_PKEY_CTX* kctx = EVP_PKEY_CTX_new_from_name(nullptr, "RSA", nullptr);
+        unsigned int bits = 2048;
+        OSSL_PARAM params[] = {OSSL_PARAM_construct_uint(OSSL_PKEY_PARAM_RSA_BITS, &bits),
+                               OSSL_PARAM_construct_end()};
+        if (kctx == nullptr || EVP_PKEY_keygen_init(kctx) <= 0 || EVP_PKEY_CTX_set_params(kctx, params) <= 0 ||
+            EVP_PKEY_keygen(kctx, &key) <= 0) {
+            EVP_PKEY_CTX_free(kctx);
+            throw std::runtime_error("test RSA key generation failed");
+        }
+        EVP_PKEY_CTX_free(kctx);
+        BIGNUM* n = nullptr;
+        BIGNUM* d = nullptr;
+        EVP_PKEY_get_bn_param(key, OSSL_PKEY_PARAM_RSA_N, &n);
+        EVP_PKEY_get_bn_param(key, OSSL_PKEY_PARAM_RSA_D, &d);
+        EVP_PKEY_free(key);
         modulus_ = be_bytes(n, 256);
         exponent_ = Bytes{0x01, 0x00, 0x01};
-        private_exp_ = d ? BN_dup(d) : nullptr;
-        modulus_bn_ = BN_dup(n);
+        private_exp_ = d;  // owned by this object, freed in the destructor
+        modulus_bn_ = n;
 
         // RFC 3526 group 14: a 2048-bit safe prime with generator 2 (verified safe prime).
         dh_prime_ = BN_new();
@@ -46,7 +58,6 @@ public:
         dh_prime_bytes_ = be_bytes(dh_prime_, 256);
     }
     ~FakeServer() override {
-        RSA_free(rsa_);
         BN_free(private_exp_);
         BN_free(modulus_bn_);
         BN_free(dh_prime_);
@@ -195,7 +206,6 @@ private:
         return out;
     }
 
-    RSA* rsa_ = nullptr;
     Bytes modulus_, exponent_;
     BIGNUM* private_exp_ = nullptr;
     BIGNUM* modulus_bn_ = nullptr;

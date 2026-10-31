@@ -31,6 +31,10 @@ public:
     // Appends received bytes to the internal buffer.
     void feed(const Bytes& data);
     // Returns the next complete payload, or nullopt if more bytes are needed.
+    // Throws TransportError on a malformed or oversized frame (for example a negative length word in
+    // intermediate mode). The read position does not advance on error, so every later call throws again
+    // for the same bytes. The caller must close the connection and create a new Transport.
+    // encode() throws TransportError for an abridged payload whose size is not a multiple of 4.
     std::optional<Bytes> next();
 
 private:

@@ -16,9 +16,9 @@ are recorded in the commit messages and the baseline section below.
 | 7. Update synchronization | Partly done (no change this batch) | pts gate (`classify_pts`, 4 tests; two expectations were wrong in the first draft and were corrected to the rule local + count == pts), gap -> `updates.getDifference` catch-up, persisted pts/qts/date/seq, catch-up after reconnect, bounded update queue with backpressure (`max_pending_updates`, never drops, 1 test). Not yet: per-channel pts, backpressure during invoke() (updates can still queue while a request waits), live verification |
 | 8. Message, chat, media APIs | Partly done | 18 new API methods (batches 5-7); live calls not tested. This batch: upload planning and size checks, atomic download with size check (F17), single-read file loading. Still open: upload progress callback, upload/download resume, streaming upload (file still read into memory), per-message validation tests |
 | 9. Storage and schema generation | Done for listed items | Session format v2 and sqlite versioning (earlier batch); `tools/check_schema.sh` reproducibility check, byte-identical output |
-| 10. Tests, fuzzing, sanitizers | Partly done. ctest 216/216 pass in the Release tree (this batch added 3 suites); sanitizer runs not repeated this batch | mtproto 101 + bot 79 tests pass under ASan/UBSan/LSan; 3 fuzz targets (short runs); CI sanitizer job written, not yet run on GitHub |
+| 10. Tests, fuzzing, sanitizers | Partly done. Fuzzing: 150 s per target, see Fuzzing below; no crashes found | ctest 217/217 pass in the Release tree; sanitizer runs not repeated in this batch | mtproto 101 + bot 79 tests pass under ASan/UBSan/LSan; 3 fuzz targets (short runs); CI sanitizer job written, not yet run on GitHub |
 | 11. Benchmarks | Done for local work | `bench/bench_main.cpp`, results and environment in `guides/BENCHMARKS.md`. Network, RPC dispatch, update dispatch and connection startup are not measured |
-| 12. Docs, CI, release | Partly done | SECURITY.md, AUDIT.md, CHANGELOG.md, guides/AUTHENTICATION.md, guides/THREAT_MODEL.md, guides/API_SUPPORT.md, guides/BENCHMARKS.md. CI workflow never executed on GitHub. Install, architecture and troubleshooting guides not written yet |
+| 12. Docs, CI, release | Partly done | guides/: AUTHENTICATION, THREAT_MODEL, API_SUPPORT, BENCHMARKS, LINUX_INSTALL, SESSIONS, ARCHITECTURE, TROUBLESHOOTING. SECURITY.md, CHANGELOG.md, `.env.example`. New example `examples/mtproto-login` (syntax-checked). CI workflow never executed on GitHub. Migration guide and release process not reviewed |
 
 ## Baseline (checkpoint 2)
 
@@ -54,9 +54,9 @@ Warnings at 2bdbd22:
 | F16 | Medium | Open | MTProto | Server message ids are not checked for duplicates, so replayed encrypted packets are accepted at the session layer. Impact is limited: rpc_result must match a pending request, and replayed updates are dropped by the pts gate. Documented in `guides/THREAT_MODEL.md` | `session.cpp` dispatch; no test |
 | F17 | Medium | Fixed (not live-tested) | Files | `download_media` wrote directly to the destination and kept a partial file after a failed download; it also did not compare the size with the message. Now writes `<path>.part`, checks the size, renames on success | `client.cpp` `download_media`; `transfer.h` tests cover the size arithmetic only |
 | F18 | Low | Documented | Build | The Release cache in the working tree used for this session had `CMAKE_CXX_FLAGS_RELEASE=-O0`, so benchmarks built there were unoptimized (about 5x slower for crypto). The benchmark report states both numbers. Not a repository defect | `guides/BENCHMARKS.md` |
-| F7 | Low | Open | Codegen | Generated `api_impl_3.cpp`/`api_impl_4.cpp` declare unused `fl_flags`; fix belongs in the generator | Baseline warnings |
-| F8 | Low | Open | Tests | Handshake test uses deprecated RSA API (OpenSSL 3) | Baseline warnings |
-| F9 | Low | Open | Transport | After a transport error (e.g. negative length word), the decoder stays in the error state; the caller must reconnect. Not documented in the header yet | `transport.cpp` `next()` |
+| F7 | Low | Fixed | Codegen | Generated `api_impl_3.cpp`/`api_impl_4.cpp` declared an unused `fl_flags` when a flags word had no conditional fields. Generator now reads and discards it: two functions in api_impl_3.cpp and one in api_impl_4.cpp changed | `tools/tl_codegen/tl_codegen.cpp`; `tools/check_schema.sh` OK; 0 warnings in the Release build |
+| F8 | Low | Fixed | Tests | Handshake test used deprecated RSA API | Test now uses `EVP_PKEY_CTX` keygen (OpenSSL 3); ctest passes |
+| F9 | Low | Fixed (documented, tested) | Transport | After a malformed frame the decoder does not advance and throws again; the caller must reconnect | Header comment in `transport.h`; `TransportFraming.MalformedIntermediateFrameKeepsThrowing` |
 | F10 | Low | Fixed | MTProto | msg_key verification used `operator!=` (not constant time) | `constant_time_equal`, used in `decrypt_packet` |
 
 ## Reviewed, no defect found
@@ -87,3 +87,29 @@ Warnings at 2bdbd22:
 - Debug build baseline.
 - Working tree after this batch: ctest 187/187 pass in build/Release (GCC, -O0, -j1), 0 warnings in the rebuild; `tools/check_schema.sh` OK. in build/Release (GCC, -O0, -j1). Debug and sanitizer runs not done.
 - Live Telegram testing of this batch (must run on the VPS with a dedicated test account).
+
+## Fuzzing (checkpoint 10)
+
+Built with clang++ 18, `-fsanitize=fuzzer,address -O1 -g`, linked against the Release `libcppgram.a`
+(no sanitizer in the library itself). Each target ran for 150 seconds with an empty or seed corpus.
+
+| Target | Executions | Peak RSS | Crashes, timeouts, OOMs | Coverage note |
+|---|---:|---:|---:|---|
+| fuzz_tl_reader | 3,930,214 | 533 MB | 0 | 30 coverage points, 445 new units |
+| fuzz_session_string | 93,404,083 | 565 MB | 0 | 23 coverage points: most inputs fail fast in the base64/CRC check, so coverage is low |
+| fuzz_html_parser | 3,008,357 | 447 MB | 0 | 23 coverage points |
+
+Honest reading: no defect was found, but the coverage numbers are small. The session-string target needs a seed
+corpus of valid strings to reach the body parser. Longer runs and corpora are still open.
+
+Logs: local scratch directory only (not in the repository).
+
+## Session-state and networking checks added in this batch
+
+- `Cancel.*` (3 tests): cancellable sleeps.
+- `AuthState.*`, `AuthErrorMapping.*` (13 tests): transition table and RPC-error mapping.
+- `TransferPlan.*`, `FileNameSafety.*` (13 tests): upload planning and file-name sanitising.
+- `TransportFraming.MalformedIntermediateFrameKeepsThrowing` (F9).
+- Not covered by tests: the `Client` login methods themselves, the atomic download path, `Client::stop()` during a
+  live `run()`. These need a mock transport or a live account.
+
