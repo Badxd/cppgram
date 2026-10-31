@@ -398,6 +398,26 @@ public:
     void set_contact_note(const PeerRef& user, const std::string& note);
     // Accepts a terms-of-service document. `terms_id` is the JSON id from the server's TermsOfService.
     bool accept_terms_of_service(const std::string& terms_id);
+    // ---- batch 7: account and chat settings
+    // Default self-destruct period for new accounts, in days (account.getAccountTTL).
+    std::int32_t get_account_ttl();
+    bool set_account_ttl(std::int32_t days);
+    // Auto-delete timer for messages in a chat, in seconds; 0 turns it off (messages.setHistoryTTL).
+    void set_chat_ttl(const PeerRef& chat, std::int32_t period_seconds);
+    // Public username of a channel or supergroup; empty string removes it (channels.updateUsername).
+    bool set_chat_username(const PeerRef& channel, const std::string& username);
+    // Links a broadcast channel to its discussion group (channels.setDiscussionGroup).
+    bool set_chat_discussion_group(const PeerRef& broadcast, const PeerRef& group);
+    // Lets anyone join by sending a message, for a group with a linked channel (channels.toggleJoinToSend).
+    void toggle_join_to_send(const PeerRef& channel, bool enabled);
+    // Turns forum topics on or off for a supergroup (channels.toggleForum).
+    void toggle_forum_topics(const PeerRef& channel, bool enabled, bool tabs = false);
+    // Chat name colour in messages (channels.updateColor, profile = false).
+    void set_chat_accent_color(const PeerRef& channel, std::int32_t color);
+    // Chat colour on the profile page (channels.updateColor, profile = true).
+    void set_chat_profile_accent_color(const PeerRef& channel, std::int32_t color);
+    // Shows or hides the chat folder tags for the account (messages.toggleDialogFilterTags).
+    bool toggle_folder_tags(bool enabled);
     // Channels/supergroups. seconds = 0 turns slow mode off.
     void set_slow_mode(const PeerRef& channel, std::int32_t seconds);
     // Default permissions for everyone in a group or channel.

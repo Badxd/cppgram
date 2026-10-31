@@ -5,6 +5,7 @@
 ### API
 - New: `archive_chats`, `add_recent_sticker`, `remove_recent_sticker`, `apply_gift_code`, `apply_boost`.
 - New: `unpin_all_messages`, `set_contact_note`, `accept_terms_of_service`.
+- New: `get_account_ttl`, `set_account_ttl`, `set_chat_ttl`, `set_chat_username`, `set_chat_discussion_group`, `toggle_join_to_send`, `toggle_forum_topics`, `set_chat_accent_color`, `set_chat_profile_accent_color`, `toggle_folder_tags`.
 
 ### Security
 - DH parameters from the server are validated (2048-bit safe prime, generator residue, `1 < g_a < p-1`).
