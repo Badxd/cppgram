@@ -392,6 +392,12 @@ public:
     void apply_gift_code(const std::string& slug);
     // Applies the given boost slots to a channel or group.
     void apply_boost(const PeerRef& chat, const std::vector<std::int32_t>& slots);
+    // Unpins every pinned message in a chat, or only those in one topic when top_msg_id is set.
+    void unpin_all_messages(const PeerRef& chat, std::optional<std::int32_t> top_msg_id = std::nullopt);
+    // Sets a private note on a contact. The user must already be resolved (access hash known).
+    void set_contact_note(const PeerRef& user, const std::string& note);
+    // Accepts a terms-of-service document. `terms_id` is the JSON id from the server's TermsOfService.
+    bool accept_terms_of_service(const std::string& terms_id);
     // Channels/supergroups. seconds = 0 turns slow mode off.
     void set_slow_mode(const PeerRef& channel, std::int32_t seconds);
     // Default permissions for everyone in a group or channel.

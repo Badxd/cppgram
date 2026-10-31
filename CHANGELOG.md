@@ -4,6 +4,7 @@
 
 ### API
 - New: `archive_chats`, `add_recent_sticker`, `remove_recent_sticker`, `apply_gift_code`, `apply_boost`.
+- New: `unpin_all_messages`, `set_contact_note`, `accept_terms_of_service`.
 
 ### Security
 - DH parameters from the server are validated (2048-bit safe prime, generator residue, `1 < g_a < p-1`).
