@@ -4511,7 +4511,7 @@ void types::buttonTypeRequestPeer::serialize(TlWriter& tlw) const {
 
 types::buttonTypeRequestPeer types::buttonTypeRequestPeer::read_body(TlReader& rv) {
     types::buttonTypeRequestPeer out;
-    std::uint32_t fl_flags = rv.read_uint32();
+    rv.read_uint32();  // flags word with no conditional fields
     out.button_id = rv.read_int32();
     out.peer_type = tl::read_boxed<tl::RequestPeerType>(rv);
     out.max_quantity = rv.read_int32();

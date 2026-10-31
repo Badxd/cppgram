@@ -1,4 +1,5 @@
 #include "cppgram/client.h"
+#include "secure_random.h"
 
 #include <memory>
 #include <random>
@@ -13,8 +14,7 @@ namespace tl = mtproto::tl;
 namespace {
 
 std::int64_t story_random_id() {
-    static std::mt19937_64 rng{std::random_device{}()};
-    return static_cast<std::int64_t>(rng());
+    return detail::secure_random_i64();
 }
 
 }  // namespace

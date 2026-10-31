@@ -1,4 +1,5 @@
 #include "cppgram/client.h"
+#include "secure_random.h"
 
 #include <random>
 #include <stdexcept>
@@ -14,8 +15,7 @@ namespace tl = mtproto::tl;
 namespace {
 
 std::int64_t next_random_id() {
-    static std::mt19937_64 engine{std::random_device{}()};
-    return static_cast<std::int64_t>(engine());
+    return detail::secure_random_i64();
 }
 
 std::shared_ptr<tl::InputChannel> input_channel_of(const PeerRef& p) {

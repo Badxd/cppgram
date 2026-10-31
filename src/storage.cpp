@@ -2,6 +2,10 @@
 
 #include <sqlite3.h>
 
+#include "cppgram/mtproto/session.h"
+
+#include "secure_file.h"
+
 #include <stdexcept>
 
 namespace cppgram {
@@ -16,8 +20,22 @@ void check(int rc, sqlite3* db, const char* what) {
 
 }  // namespace
 
+namespace {
+constexpr int kStoreSchemaVersion = 2;
+}  // namespace
+
 SqliteStorage::SqliteStorage(const std::string& path) {
+    detail::ensure_private_file(path);
     check(sqlite3_open(path.c_str(), &db_), db_, "open sqlite session store");
+    sqlite3_busy_timeout(db_, 5000);  // wait for a competing writer instead of failing at once
+    char* pragma_err = nullptr;
+    if (sqlite3_exec(db_, "PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;", nullptr, nullptr, &pragma_err) != SQLITE_OK) {
+        const std::string msg = pragma_err ? pragma_err : "unknown error";
+        sqlite3_free(pragma_err);
+        sqlite3_close(db_);
+        db_ = nullptr;
+        throw std::runtime_error("configure sqlite session store: " + msg);
+    }
     const char* schema =
         "CREATE TABLE IF NOT EXISTS session ("
         " id INTEGER PRIMARY KEY CHECK (id = 1),"
@@ -35,6 +53,44 @@ SqliteStorage::SqliteStorage(const std::string& path) {
         sqlite3_close(db_);
         db_ = nullptr;
         throw std::runtime_error("create sqlite schema: " + msg);
+    }
+
+    // Schema versioning: refuse a store written by a newer library, and stamp a fresh or legacy one.
+    sqlite3_stmt* ver = nullptr;
+    check(sqlite3_prepare_v2(db_, "PRAGMA user_version", -1, &ver, nullptr), db_, "read schema version");
+    const int version = sqlite3_step(ver) == SQLITE_ROW ? sqlite3_column_int(ver, 0) : 0;
+    sqlite3_finalize(ver);
+    if (version > kStoreSchemaVersion) {
+        sqlite3_close(db_);
+        db_ = nullptr;
+        throw mtproto::SessionCorruptError("session store schema version " + std::to_string(version) +
+                                           " is newer than this library supports (" +
+                                           std::to_string(kStoreSchemaVersion) + ")");
+    }
+    if (version < kStoreSchemaVersion) {
+        char* uerr = nullptr;
+        const std::string stamp = "PRAGMA user_version = " + std::to_string(kStoreSchemaVersion) + ";";
+        if (sqlite3_exec(db_, stamp.c_str(), nullptr, nullptr, &uerr) != SQLITE_OK) {
+            const std::string msg = uerr ? uerr : "unknown error";
+            sqlite3_free(uerr);
+            sqlite3_close(db_);
+            db_ = nullptr;
+            throw std::runtime_error("stamp sqlite schema version: " + msg);
+        }
+    }
+
+    // Integrity check on open: a damaged store is reported, never silently reused or overwritten.
+    sqlite3_stmt* qc = nullptr;
+    check(sqlite3_prepare_v2(db_, "PRAGMA quick_check", -1, &qc, nullptr), db_, "quick_check");
+    std::string verdict = "no result";
+    if (sqlite3_step(qc) == SQLITE_ROW) {
+        verdict = reinterpret_cast<const char*>(sqlite3_column_text(qc, 0));
+    }
+    sqlite3_finalize(qc);
+    if (verdict != "ok") {
+        sqlite3_close(db_);
+        db_ = nullptr;
+        throw mtproto::SessionCorruptError("session store failed integrity check: " + verdict);
     }
 }
 

@@ -1,4 +1,5 @@
 #include "cppgram/client.h"
+#include "secure_random.h"
 
 #include <random>
 #include <stdexcept>
@@ -13,11 +14,6 @@ namespace ty = mtproto::tl::types;
 namespace tl = mtproto::tl;
 
 namespace {
-
-std::int64_t next_random_id_more() {
-    static std::mt19937_64 engine{std::random_device{}()};
-    return static_cast<std::int64_t>(engine());
-}
 
 std::shared_ptr<tl::InputChannel> channel_input(const PeerRef& p) {
     if (p.kind != PeerKind::Channel) throw std::invalid_argument("expected a channel or supergroup");
@@ -311,6 +307,7 @@ void Client::log_out() {
     require_session();
     fn::auth_logOut req;
     session_->call(req);
+    if (next_auth_state(auth_state_, AuthEvent::LoggedOut)) auth_state_ = *next_auth_state(auth_state_, AuthEvent::LoggedOut);
     disconnect();
 }
 

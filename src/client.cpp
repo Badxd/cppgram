@@ -1,5 +1,7 @@
 #include "cppgram/client.h"
+#include "cppgram/update_gate.h"
 
+#include <thread>
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
@@ -11,8 +13,10 @@
 #include <stdexcept>
 
 #include "cppgram/mtproto/auth.h"
+#include "cppgram/mtproto/cancel.h"
 #include "cppgram/session_string.h"
 #include "cppgram/storage.h"
+#include "cppgram/transfer.h"
 
 namespace cppgram {
 
@@ -78,7 +82,15 @@ Bytes read_file(const std::string& path) {
     if (!in) {
         throw std::runtime_error("cannot open file: " + path);
     }
-    return Bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    in.seekg(0, std::ios::end);
+    const std::streamoff size = in.tellg();
+    if (size < 0) throw std::runtime_error("cannot determine size of file: " + path);
+    in.seekg(0, std::ios::beg);
+    Bytes data(static_cast<std::size_t>(size));
+    if (size > 0 && !in.read(reinterpret_cast<char*>(data.data()), size)) {
+        throw std::runtime_error("cannot read file: " + path);
+    }
+    return data;
 }
 
 std::string mime_for(const std::string& name) {
@@ -104,6 +116,11 @@ tl::InputPeer self_input_peer() {
 
 }  // namespace
 
+static double client_jitter01() {
+    const mtproto::Bytes rnd = mtproto::random_bytes(8);
+    return static_cast<double>(mtproto::le_u64_from(rnd)) / 18446744073709551615.0;
+}
+
 Client::Client(ClientOptions options) : options_(std::move(options)) {}
 
 Client::~Client() {
@@ -118,11 +135,27 @@ void Client::require_session() const {
 
 void Client::connect() {
     disconnect();
+    auth_state_ = AuthState::Connecting;
     const bool debug = options_.debug;
     connection_ = std::make_unique<mtproto::Connection>(mtproto::TransportKind::Intermediate);
     debug_log(debug, "tcp: connecting to " + options_.dc_ip + ":" + std::to_string(options_.dc_port) +
                          " (dc " + std::to_string(options_.dc_id) + ")");
-    connection_->connect(options_.dc_ip, options_.dc_port);
+    // Connect with bounded retries. A refused or timed-out TCP connect is transient; the same connection
+    // object cannot be reused after a failed connect, so each attempt gets a fresh Connection.
+    mtproto::validate_retry_policy(options_.retry);
+    for (int attempt = 1;; ++attempt) {
+        try {
+            connection_->connect(options_.dc_ip, options_.dc_port);
+            break;
+        } catch (const mtproto::ConnectionError& e) {
+            if (!mtproto::may_retry(options_.retry, attempt)) throw;
+            const auto delay = mtproto::backoff_delay(options_.retry, attempt, client_jitter01());
+            debug_log(debug, std::string("tcp: connect failed (") + e.what() + "), retrying");
+            mtproto::sleep_cancellable(std::chrono::duration_cast<std::chrono::milliseconds>(delay),
+                                       stop_source_.get_token());
+            connection_ = std::make_unique<mtproto::Connection>(mtproto::TransportKind::Intermediate);
+        }
+    }
     debug_log(debug, "tcp: connected");
     connection_->set_receive_timeout(options_.connect_timeout_ms);
 
@@ -165,6 +198,9 @@ void Client::connect() {
         debug_log(debug, "session: reusing saved auth key from " + path);
     }
     session_ = std::make_unique<mtproto::MtSession>(*connection_, data);
+    session_->set_stop_token(stop_source_.get_token());
+    session_->set_retry_policy(options_.retry);
+    session_->set_update_queue_limit(options_.max_pending_updates);
     if (storage_) {
         if (const auto saved = storage_->load_state()) {
             state_.pts = saved->pts;
@@ -195,10 +231,12 @@ void Client::connect() {
         }
     }
     connection_->set_receive_timeout(0);
+    auth_state_ = AuthState::Unauthenticated;  // authorization is unknown until probe_session()
     debug_log(debug, "session: initConnection done");
 }
 
 void Client::disconnect() {
+    auth_state_ = AuthState::Disconnected;
     session_.reset();
     if (connection_) {
         connection_->close();
@@ -214,6 +252,7 @@ void Client::login_bot(const std::string& bot_token) {
     req.api_hash = options_.api_hash;
     req.bot_auth_token = bot_token;
     session_->call(req);
+    if (auth_state_ == AuthState::Unauthenticated) apply_auth_event(AuthEvent::SessionRestored);
     sync_updates_state();
 }
 
@@ -293,15 +332,18 @@ void Client::handle_update(const tl::Update& update) {
 
 bool Client::accept_pts(std::int32_t pts, std::int32_t pts_count) {
     if (!state_.valid) return true;
-    const std::int32_t expected = state_.pts + pts_count;
-    if (pts == expected) {
-        state_.pts = pts;
-        persist_state();
-        return true;
+    switch (classify_pts(state_.pts, pts, pts_count)) {
+        case PtsDecision::Apply:
+            state_.pts = pts;
+            persist_state();
+            return true;
+        case PtsDecision::Duplicate:
+            return false;
+        case PtsDecision::Gap:
+            // Some updates were missed. getDifference returns them, so drop this one.
+            catch_up();
+            return false;
     }
-    if (expected > pts) return false;  // already applied
-    // Gap: some updates were missed. getDifference returns them, so drop this one.
-    catch_up();
     return false;
 }
 
@@ -512,22 +554,65 @@ void Client::ping() {
     session_->send_content(w.bytes());
 }
 
+void Client::reconnect_after_drop() {
+    // connect() resets the authorization state, so remember it and check the key again afterwards.
+    const bool was_authorized = auth_state_ == AuthState::Authorized;
+    for (;;) {
+        if (!reconnect_budget_.record_failure()) {
+            throw mtproto::ConnectionError("gave up reconnecting after " + std::to_string(options_.max_reconnects) +
+                                           " failed attempts");
+        }
+        session_.reset();
+        if (connection_) {
+            connection_->close();
+            connection_.reset();
+        }
+        mtproto::sleep_cancellable(
+            mtproto::backoff_delay(options_.retry, reconnect_budget_.failures, client_jitter01()),
+            stop_source_.get_token());
+        try {
+            connect();
+            connection_->set_receive_timeout(options_.keepalive_ms);
+            if (was_authorized) probe_session();  // AuthRevoked/AuthExpired is recorded in auth_state()
+            catch_up();  // recover updates missed while disconnected
+            return;
+        } catch (const mtproto::ConnectionError&) {
+            // Still down: loop, which spends one more unit of the budget.
+        }
+    }
+}
+
 void Client::run() {
     require_session();
+    // A new run starts unstopped; stop() from an earlier run no longer applies.
+    stop_source_ = std::stop_source{};
+    session_->set_stop_token(stop_source_.get_token());
     running_ = true;
     // Restored state (SQLite session) means updates may have been missed while offline.
     if (storage_ && state_.valid) catch_up();
     connection_->set_receive_timeout(options_.keepalive_ms);
     try {
+        reconnect_budget_ = mtproto::ReconnectBudget{options_.max_reconnects, 0};
         while (running_) {
             drain_updates();
+            // Backpressure: do not read more packets while the update queue is at its limit.
+            while (session_->update_queue_full()) drain_updates();
             try {
                 session_->process_one();
+                reconnect_budget_.reset();
             } catch (const mtproto::ConnectionTimeout&) {
                 ping();
+            } catch (const mtproto::ConnectionError&) {
+                if (!options_.auto_reconnect) throw;
+                reconnect_after_drop();
             }
         }
         drain_updates();
+    } catch (const mtproto::OperationCancelled&) {
+        // stop() interrupted a backoff: a clean exit, not an error.
+        if (connection_) connection_->set_receive_timeout(0);
+        running_ = false;
+        return;
     } catch (...) {
         if (connection_) connection_->set_receive_timeout(0);
         running_ = false;
@@ -831,18 +916,26 @@ void Client::answer_callback_query(std::int64_t query_id, const std::string& tex
 }
 
 std::shared_ptr<tl::InputFile> Client::upload(const std::string& path, std::string& out_name, std::int64_t& out_size) {
+    // Check the size before reading the file: empty files and files over the Telegram limit fail early.
+    std::error_code ec;
+    const auto file_size = std::filesystem::file_size(path, ec);
+    if (ec) throw std::runtime_error("cannot read file size: " + path);
+    UploadPlan plan;
+    try {
+        plan = plan_upload(file_size);
+    } catch (const std::exception& e) {
+        throw std::runtime_error(std::string("upload rejected for ") + path + ": " + e.what());
+    }
     const Bytes data = read_file(path);
+    if (data.size() != file_size) throw std::runtime_error("file changed while reading: " + path);
     out_name = std::filesystem::path(path).filename().string();
     out_size = static_cast<std::int64_t>(data.size());
     const std::int64_t file_id = random_i64();
-    const bool big = data.size() > kSmallFileLimit;
-    const std::size_t parts = (data.size() + kPartSize - 1) / kPartSize;
-    if (parts == 0) {
-        throw std::runtime_error("cannot upload an empty file");
-    }
+    const bool big = plan.big_file;
+    const std::size_t parts = plan.part_count;
     for (std::size_t i = 0; i < parts; ++i) {
-        const std::size_t off = i * kPartSize;
-        const std::size_t len = std::min(kPartSize, data.size() - off);
+        const std::size_t off = upload_part_offset(plan, static_cast<std::uint32_t>(i));
+        const std::size_t len = std::min<std::size_t>(plan.part_size, data.size() - off);
         Bytes chunk(data.begin() + static_cast<std::ptrdiff_t>(off), data.begin() + static_cast<std::ptrdiff_t>(off + len));
         if (big) {
             fn::upload_saveBigFilePart req;
@@ -919,34 +1012,61 @@ std::int64_t Client::download_media(const Message& message, const std::string& p
     } else {
         throw std::runtime_error("message has no downloadable media");
     }
-    std::ofstream out(path, std::ios::binary | std::ios::trunc);
-    if (!out) {
-        throw std::runtime_error("cannot open for writing: " + path);
-    }
-    std::int64_t offset = 0;
-    for (;;) {
-        fn::upload_getFile req;
-        req.location = location;
-        req.offset = offset;
-        req.limit = kDownloadChunk;
-        req.cdn_supported = true;
-        const tl::upload_File file = session_->call(req);
-        const auto* f = std::get_if<ty::upload_file>(&file.value);
-        if (f == nullptr) {
-            const auto* redirect = std::get_if<ty::upload_fileCdnRedirect>(&file.value);
-            if (redirect == nullptr) throw std::runtime_error("upload.getFile returned an unexpected type");
-            const std::int64_t total = offset + download_via_cdn(*redirect, out);
-            if (progress) progress(total, message.media.size);
-            return total;
+    // Data goes to "<path>.part" and is renamed to path only after the size checks pass. A failed or
+    // interrupted download leaves no partial file at the destination; the .part file is removed.
+    const std::string temp_path = path + ".part";
+    struct TempFileGuard {
+        std::string file;
+        bool keep = false;
+        ~TempFileGuard() {
+            if (!keep) {
+                std::error_code ignored;
+                std::filesystem::remove(file, ignored);
+            }
         }
-        out.write(reinterpret_cast<const char*>(f->bytes.data()), static_cast<std::streamsize>(f->bytes.size()));
-        offset += static_cast<std::int64_t>(f->bytes.size());
-        if (progress) progress(offset, message.media.size);
-        if (f->bytes.size() < static_cast<std::size_t>(kDownloadChunk)) {
-            break;
+    } guard{temp_path};
+
+    std::int64_t total = 0;
+    {
+        std::ofstream out(temp_path, std::ios::binary | std::ios::trunc);
+        if (!out) {
+            throw std::runtime_error("cannot open for writing: " + temp_path);
         }
+        std::int64_t offset = 0;
+        for (;;) {
+            fn::upload_getFile req;
+            req.location = location;
+            req.offset = offset;
+            req.limit = kDownloadChunk;
+            req.cdn_supported = true;
+            const tl::upload_File file = session_->call(req);
+            const auto* f = std::get_if<ty::upload_file>(&file.value);
+            if (f == nullptr) {
+                const auto* redirect = std::get_if<ty::upload_fileCdnRedirect>(&file.value);
+                if (redirect == nullptr) throw std::runtime_error("upload.getFile returned an unexpected type");
+                offset += download_via_cdn(*redirect, out);
+                break;
+            }
+            out.write(reinterpret_cast<const char*>(f->bytes.data()), static_cast<std::streamsize>(f->bytes.size()));
+            if (!out) throw std::runtime_error("write failed while downloading to " + temp_path);
+            offset += static_cast<std::int64_t>(f->bytes.size());
+            if (progress) progress(offset, message.media.size);
+            if (f->bytes.size() < static_cast<std::size_t>(kDownloadChunk)) break;
+        }
+        out.flush();
+        if (!out) throw std::runtime_error("write failed while downloading to " + temp_path);
+        total = offset;
     }
-    return offset;
+    if (message.media.size > 0 && total != message.media.size) {
+        throw std::runtime_error("download size mismatch: received " + std::to_string(total) + " bytes, expected " +
+                                 std::to_string(message.media.size));
+    }
+    std::error_code ec;
+    std::filesystem::rename(temp_path, path, ec);
+    if (ec) throw std::runtime_error("cannot move download into place: " + ec.message());
+    guard.keep = true;
+    if (progress) progress(total, message.media.size);
+    return total;
 }
 
 std::int64_t Client::download_via_cdn(const ty::upload_fileCdnRedirect& redirect, std::ofstream& out) {

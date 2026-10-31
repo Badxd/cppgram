@@ -1,7 +1,9 @@
 // cppgram - high-level client: connection, updates dispatcher, filters, messages, chats, media.
 #pragma once
 
+#include <atomic>
 #include <cstdint>
+#include <stop_token>
 #include <fstream>
 #include <functional>
 #include <memory>
@@ -10,8 +12,10 @@
 #include <utility>
 #include <vector>
 
+#include "cppgram/auth_state.h"
 #include "cppgram/convert.h"
 #include "cppgram/filters.h"
+#include "cppgram/mtproto/retry.h"
 #include "cppgram/mtproto/connection.h"
 #include "cppgram/mtproto/schema/api.h"
 #include "cppgram/mtproto/session.h"
@@ -37,9 +41,20 @@ struct ClientOptions {
     std::string lang_code = "en";
     // Idle time before run() sends a keepalive ping.
     int keepalive_ms = 15000;
+    // When run() loses the connection, reconnect with backoff (ClientOptions::retry) and catch up on missed
+    // updates. Gives up after max_reconnects consecutive failed attempts. Calls in flight at the drop
+    // fail with ConnectionError and are NOT resent.
+    bool auto_reconnect = true;
+    int max_reconnects = 5;
+    // Updates buffered before run() handles them. When full, run() drains the queue before reading more
+    // packets (backpressure). Updates are never dropped.
+    std::size_t max_pending_updates = 1024;
     // Socket receive timeout used while connecting (TCP + handshake + initConnection).
     // Expiry throws mtproto::ConnectionTimeout instead of blocking forever.
     int connect_timeout_ms = 10000;
+    // Retry policy: TCP connect retries with backoff and jitter, and bounded FLOOD_WAIT sleep-and-resend.
+    // Defaults: 3 attempts, 500 ms base, 10 s cap, flood waits up to 60 s.
+    mtproto::RetryPolicy retry{};
     // Checks each CDN download part against the SHA-256 Telegram sends with it, before writing it to disk.
     bool verify_cdn_hashes = true;
     // Prints each connection stage (TCP, each handshake packet, session setup) to stderr.
@@ -53,6 +68,13 @@ struct UploadedFile {
     std::string name;
     std::int64_t size = 0;
     std::shared_ptr<mtproto::tl::InputFile> handle;
+};
+
+// Result of auth.sendCode. delivery names where the code went (for example "app", "sms", "call").
+struct LoginCodeInfo {
+    std::string phone_code_hash;
+    std::string delivery;
+    int timeout_seconds = 0;  // 0 when Telegram did not send a timeout
 };
 
 class Client {
@@ -112,7 +134,12 @@ public:
     void on_raw_update(RawUpdateHandler handler);
     // Blocks, dispatching updates to handlers, until stop() is called from a handler or another thread.
     void run();
-    void stop() noexcept { running_ = false; }
+    // Stops run() after the current receive returns (at most keepalive_ms later) and interrupts any
+    // retry or reconnect backoff in progress. Safe to call from another thread or a handler.
+    void stop() noexcept {
+        running_ = false;
+        stop_source_.request_stop();
+    }
 
     // ---- raw access: any generated request
     template <class Request>
@@ -383,6 +410,41 @@ public:
     void mark_unread(const PeerRef& chat, bool unread = true);
     // Moves the chat to the archive folder (1) or back to the main list (0).
     void archive_chat(const PeerRef& chat, bool archived = true);
+    // Archives or unarchives several chats in order. Stops at the first failing chat.
+    void archive_chats(const std::vector<PeerRef>& chats, bool archived = true);
+    // Saves (or removes, when `remove` is true) a sticker in the recent stickers list.
+    bool add_recent_sticker(const DocumentRef& sticker);
+    bool remove_recent_sticker(const DocumentRef& sticker);
+    // Redeems a Premium gift code (the slug from a t.me/giftcode link).
+    void apply_gift_code(const std::string& slug);
+    // Applies the given boost slots to a channel or group.
+    void apply_boost(const PeerRef& chat, const std::vector<std::int32_t>& slots);
+    // Unpins every pinned message in a chat, or only those in one topic when top_msg_id is set.
+    void unpin_all_messages(const PeerRef& chat, std::optional<std::int32_t> top_msg_id = std::nullopt);
+    // Sets a private note on a contact. The user must already be resolved (access hash known).
+    void set_contact_note(const PeerRef& user, const std::string& note);
+    // Accepts a terms-of-service document. `terms_id` is the JSON id from the server's TermsOfService.
+    bool accept_terms_of_service(const std::string& terms_id);
+    // ---- batch 7: account and chat settings
+    // Default self-destruct period for new accounts, in days (account.getAccountTTL).
+    std::int32_t get_account_ttl();
+    bool set_account_ttl(std::int32_t days);
+    // Auto-delete timer for messages in a chat, in seconds; 0 turns it off (messages.setHistoryTTL).
+    void set_chat_ttl(const PeerRef& chat, std::int32_t period_seconds);
+    // Public username of a channel or supergroup; empty string removes it (channels.updateUsername).
+    bool set_chat_username(const PeerRef& channel, const std::string& username);
+    // Links a broadcast channel to its discussion group (channels.setDiscussionGroup).
+    bool set_chat_discussion_group(const PeerRef& broadcast, const PeerRef& group);
+    // Lets anyone join by sending a message, for a group with a linked channel (channels.toggleJoinToSend).
+    void toggle_join_to_send(const PeerRef& channel, bool enabled);
+    // Turns forum topics on or off for a supergroup (channels.toggleForum).
+    void toggle_forum_topics(const PeerRef& channel, bool enabled, bool tabs = false);
+    // Chat name colour in messages (channels.updateColor, profile = false).
+    void set_chat_accent_color(const PeerRef& channel, std::int32_t color);
+    // Chat colour on the profile page (channels.updateColor, profile = true).
+    void set_chat_profile_accent_color(const PeerRef& channel, std::int32_t color);
+    // Shows or hides the chat folder tags for the account (messages.toggleDialogFilterTags).
+    bool toggle_folder_tags(bool enabled);
     // Channels/supergroups. seconds = 0 turns slow mode off.
     void set_slow_mode(const PeerRef& channel, std::int32_t seconds);
     // Default permissions for everyone in a group or channel.
@@ -546,6 +608,21 @@ public:
     // Sets the bot menu button to open a URL with the given label.
     bool set_menu_button_url(const std::string& text, const std::string& url);
 
+    // ---- user login state machine (see cppgram/auth_state.h)
+    // Current authorization state. Updated by the login methods below and by connect()/disconnect().
+    AuthState auth_state() const noexcept { return auth_state_; }
+    // Checks whether the loaded session is authorized (users.getUsers on self). Returns true when it is.
+    // Unauthorized keys move the state to AuthRevoked; other failures are rethrown after classification.
+    bool probe_session();
+    // Requests a login code (auth.sendCode). Keep phone_code_hash for sign_in_code(). Phone numbers are
+    // never logged. Throws RpcError with the Telegram name (rpc_message()) on failure.
+    LoginCodeInfo send_login_code(const std::string& phone_number);
+    // Submits the login code (auth.signIn). Returns true when Authorized. Returns false when the account
+    // has 2FA: the state is then PasswordRequired and sign_in_password() must be called.
+    bool sign_in_code(const std::string& phone_number, const std::string& code, const std::string& phone_code_hash);
+    // Submits the 2FA password (SRP). Returns true when Authorized.
+    bool sign_in_password(const std::string& password);
+
     // ---- two-step verification (2FA)
     PasswordInfo get_password_info();
     // Checks the 2FA password with SRP (auth.checkPassword). Wrong password throws RpcError PASSWORD_HASH_INVALID.
@@ -631,6 +708,9 @@ private:
     void handle_membership_update(const mtproto::tl::Update& update);
     std::shared_ptr<mtproto::tl::InputUser> input_user_ptr(PeerRef user) const;
     bool accept_pts(std::int32_t pts, std::int32_t pts_count);
+    // Tears down the dead connection and reconnects with backoff, then catches up. Throws when the budget is spent.
+    void reconnect_after_drop();
+    mtproto::ReconnectBudget reconnect_budget_{};
     void apply_update_state(const mtproto::tl::updates_State& state);
     void dispatch_message(const Message& message);
     void cache_users_chats(const std::vector<std::shared_ptr<mtproto::tl::User>>& users,
@@ -673,7 +753,14 @@ private:
         bool valid = false;
     };
     UpdateState state_;
-    bool running_ = false;
+    std::atomic<bool> running_{false};
+    std::stop_source stop_source_;
+    AuthState auth_state_ = AuthState::Unauthenticated;
+    // Applies one event; throws std::logic_error when the event is not legal in the current state.
+    void apply_auth_event(AuthEvent event);
+    // Maps a Telegram RPC error to an auth event and applies it when the transition is legal.
+    // Returns the event so callers can decide what to do with it. Never throws.
+    AuthEvent note_rpc_error(std::int32_t code, const std::string& message) noexcept;
 };
 
 }  // namespace cppgram

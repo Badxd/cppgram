@@ -24,6 +24,9 @@ struct InnerMessage {
 std::uint32_t crc32(const Bytes& data, std::uint32_t previous = 0);
 Bytes sha1(const Bytes& data);
 Bytes sha256(const Bytes& data);
+
+// Compares two byte strings in time independent of where they differ.
+bool constant_time_equal(const Bytes& a, const Bytes& b);
 Bytes md5(const Bytes& data);
 Bytes random_bytes(std::size_t size);
 Bytes slice(const Bytes& data, std::size_t offset, std::size_t size);

@@ -16,7 +16,7 @@ if(ENABLE_COVERAGE)
     target_link_options(cppgram_bot_test PRIVATE --coverage)
 endif()
 
-add_executable(cppgram_mtproto_test mtproto/mtproto_test.cpp mtproto/handshake_test.cpp mtproto/session_test.cpp mtproto/highlevel_test.cpp mtproto/parser_test.cpp mtproto/storage_test.cpp mtproto/srp_test.cpp)
+add_executable(cppgram_mtproto_test mtproto/mtproto_test.cpp mtproto/handshake_test.cpp mtproto/session_test.cpp mtproto/highlevel_test.cpp mtproto/parser_test.cpp mtproto/storage_test.cpp mtproto/srp_test.cpp mtproto/transport_test.cpp mtproto/retry_test.cpp mtproto/update_gate_test.cpp mtproto/auth_state_test.cpp mtproto/transfer_test.cpp mtproto/cancel_test.cpp)
 target_link_libraries(cppgram_mtproto_test PRIVATE cppgram::cppgram GTest::gtest_main)
 
 include(GoogleTest)
