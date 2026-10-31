@@ -261,7 +261,9 @@ void MtSession::process_one_into(Waiting* waiting) {
 }
 
 std::vector<Bytes> MtSession::take_updates() {
-    std::vector<Bytes> out(pending_updates_.begin(), pending_updates_.end());
+    std::vector<Bytes> out;
+    out.reserve(pending_updates_.size());
+    for (Bytes& body : pending_updates_) out.push_back(std::move(body));
     pending_updates_.clear();
     return out;
 }

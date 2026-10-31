@@ -482,3 +482,63 @@ TEST(ClientRetry, ConnectRetriesBoundedThenFailsFast) {
     EXPECT_THROW(client.connect(), ConnectionError);
     EXPECT_LT(std::chrono::steady_clock::now() - start, std::chrono::seconds(5));
 }
+
+namespace {
+
+// Sends `count` server packets, each carrying an updateShort body tagged with its index.
+class UpdateBurstServer : public PacketChannel {
+public:
+    UpdateBurstServer(Bytes key, int count) : key_(std::move(key)), count_(count) {}
+    void send_packet(const Bytes&) override {}
+    Bytes receive_packet() override {
+        InnerMessage msg;
+        msg.salt = 1;
+        msg.session_id = 2;
+        msg.message_id = make_message_id() + 4;
+        msg.seq_no = 1;
+        TlWriter w;
+        w.write_uint32(ty::updateShort::kId);
+        w.write_uint32(static_cast<std::uint32_t>(sent_));  // tag so order can be checked
+        msg.body = w.take();
+        ++sent_;
+        return encrypt_packet(key_, serialize_inner(msg), false);
+    }
+    int remaining() const { return count_ - sent_; }
+
+private:
+    Bytes key_;
+    int count_;
+    int sent_ = 0;
+};
+
+}  // namespace
+
+TEST(UpdateQueue, BackpressureSignalsFullAndNothingIsDropped) {
+    const Bytes key = random_bytes(256);
+    UpdateBurstServer server(key, 5);
+    MtSession session(server, SessionData{2, key, 0x1111222233334444ull, 0});
+    session.set_update_queue_limit(3);
+    for (int i = 0; i < 3; ++i) session.process_one();
+    EXPECT_TRUE(session.update_queue_full());
+    EXPECT_EQ(session.pending_update_count(), 3u);
+
+    const auto first = session.take_updates();  // consumer drains
+    ASSERT_EQ(first.size(), 3u);
+    EXPECT_FALSE(session.update_queue_full());
+
+    for (int i = 0; i < 2; ++i) session.process_one();
+    const auto second = session.take_updates();
+    ASSERT_EQ(second.size(), 2u);
+
+    // Order and content are preserved across drains: tags 0..4 in sequence.
+    const std::vector<Bytes> all = [&] {
+        auto v = first;
+        v.insert(v.end(), second.begin(), second.end());
+        return v;
+    }();
+    for (std::size_t i = 0; i < all.size(); ++i) {
+        TlReader r(all[i]);
+        EXPECT_EQ(r.read_uint32(), ty::updateShort::kId);
+        EXPECT_EQ(r.read_uint32(), static_cast<std::uint32_t>(i));
+    }
+}

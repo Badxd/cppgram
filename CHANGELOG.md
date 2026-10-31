@@ -14,6 +14,7 @@
 - TCP connect retries with bounded exponential backoff and jitter (`ClientOptions::retry`).
 - Session files are written atomically (temp, fsync, rename).
 - `run()` reconnects after a dropped connection (bounded by `ClientOptions::max_reconnects`) and catches up on missed updates.
+- Update queue is bounded by `ClientOptions::max_pending_updates`; `run()` drains it before reading more packets. Updates are never dropped.
 - Update gating is a pure function (`cppgram/update_gate.h`): apply, duplicate or gap.
 
 ### Security

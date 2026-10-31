@@ -93,8 +93,15 @@ public:
     // Receives and dispatches exactly one packet. Throws ConnectionTimeout if the channel times out.
     void process_one();
 
-    // Raw TL bodies of updates received since the last call (updates, updateShort, ...).
+    // Raw TL bodies of updates received since the last call (updates, updateShort, ...). Moves them out.
     std::vector<Bytes> take_updates();
+
+    // Backpressure: the queue is never trimmed (no update is dropped). Once it holds `limit` updates,
+    // the owner (Client::run) must drain it before reading more packets.
+    void set_update_queue_limit(std::size_t limit) noexcept { update_queue_limit_ = limit; }
+    std::size_t update_queue_limit() const noexcept { return update_queue_limit_; }
+    std::size_t pending_update_count() const noexcept { return pending_updates_.size(); }
+    bool update_queue_full() const noexcept { return pending_updates_.size() >= update_queue_limit_; }
 
     const SessionData& data() const noexcept { return data_; }
 
@@ -120,6 +127,7 @@ private:
     std::uint64_t session_id_;
     std::uint32_t content_counter_ = 0;
     std::deque<Bytes> pending_updates_;
+    std::size_t update_queue_limit_ = 1024;
 };
 
 // Decompresses a gzip_packed payload (RFC 1952 data).

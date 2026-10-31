@@ -43,6 +43,9 @@ struct ClientOptions {
     // fail with ConnectionError and are NOT resent.
     bool auto_reconnect = true;
     int max_reconnects = 5;
+    // Updates buffered before run() handles them. When full, run() drains the queue before reading more
+    // packets (backpressure). Updates are never dropped.
+    std::size_t max_pending_updates = 1024;
     // Socket receive timeout used while connecting (TCP + handshake + initConnection).
     // Expiry throws mtproto::ConnectionTimeout instead of blocking forever.
     int connect_timeout_ms = 10000;

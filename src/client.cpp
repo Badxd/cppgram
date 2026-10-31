@@ -187,6 +187,7 @@ void Client::connect() {
     }
     session_ = std::make_unique<mtproto::MtSession>(*connection_, data);
     session_->set_retry_policy(options_.retry);
+    session_->set_update_queue_limit(options_.max_pending_updates);
     if (storage_) {
         if (const auto saved = storage_->load_state()) {
             state_.pts = saved->pts;
@@ -571,6 +572,8 @@ void Client::run() {
         reconnect_budget_ = mtproto::ReconnectBudget{options_.max_reconnects, 0};
         while (running_) {
             drain_updates();
+            // Backpressure: do not read more packets while the update queue is at its limit.
+            while (session_->update_queue_full()) drain_updates();
             try {
                 session_->process_one();
                 reconnect_budget_.reset();

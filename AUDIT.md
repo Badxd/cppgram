@@ -13,7 +13,7 @@ are recorded in the commit messages and the baseline section below.
 | 4. Transport, encryption, RPC | Done for listed items | Transport framing tested (11 cases); RPC deadline (F3); time sync (F6) fixed |
 | 5. Auth and session persistence | Partly done | Atomic save, 0600 perms; schema versioning and corruption detection open |
 | 6. Networking, retries, backoff | Partly done | Retry policy with equal-jitter backoff; TCP connect retries bounded; FLOOD_WAIT sleep-and-resend bounded; mid-session reconnect in `run()` with a bounded budget (not live-tested). Not yet: cancellation during sleep |
-| 7. Update synchronization | Partly done | pts gate (`classify_pts`, 4 tests; two expectations were wrong in the first draft and were corrected to the rule local + count == pts), gap -> `updates.getDifference` catch-up, persisted pts/qts/date/seq, catch-up after reconnect. Not yet: per-channel pts, bounded update queue with backpressure, live verification |
+| 7. Update synchronization | Partly done | pts gate (`classify_pts`, 4 tests; two expectations were wrong in the first draft and were corrected to the rule local + count == pts), gap -> `updates.getDifference` catch-up, persisted pts/qts/date/seq, catch-up after reconnect, bounded update queue with backpressure (`max_pending_updates`, never drops, 1 test). Not yet: per-channel pts, backpressure during invoke() (updates can still queue while a request waits), live verification |
 | 8. Message, chat, media APIs | Partly done | 18 new API methods (batches 5-7); live calls not tested |
 | 9. Storage and schema generation | Partly done | Prepared statements reviewed; generator reproducibility not checked |
 | 10. Tests, fuzzing, sanitizers | Partly done | 81 mtproto tests; 3 fuzz targets; ASan/UBSan CI job written, never run in CI |
@@ -73,11 +73,11 @@ Warnings at 2bdbd22:
 
 - Live verification of the reconnect path (needs the VPS and a test account).
 - Per-channel pts sequences (channel updates are not gated yet).
-- Bounded update queue with backpressure (checkpoint 7).
+- Backpressure while invoke() waits for a reply: updates received during that wait queue up, bounded only by the request timeout.
 - Cancellation while sleeping in a flood wait or backoff (checkpoint 6).
 - Update difference and gap recovery (checkpoint 7).
 - Encrypted session storage, session export/import.
 - Benchmarks.
 - Debug build baseline.
-- Working tree after this batch: ctest 179/179 pass in build/Release (GCC, -O0, -j1). Debug and sanitizer runs not done.
+- Working tree after this batch: ctest 180/180 pass in build/Release (GCC, -O0, -j1). Debug and sanitizer runs not done.
 - Live Telegram testing of this batch (must run on the VPS with a dedicated test account).
