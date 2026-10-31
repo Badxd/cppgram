@@ -15,10 +15,6 @@ namespace tl = mtproto::tl;
 
 namespace {
 
-std::int64_t next_random_id_more() {
-    return detail::secure_random_i64();
-}
-
 std::shared_ptr<tl::InputChannel> channel_input(const PeerRef& p) {
     if (p.kind != PeerKind::Channel) throw std::invalid_argument("expected a channel or supergroup");
     if (!p.has_access_hash) throw std::runtime_error("channel access hash unknown; resolve the channel first");

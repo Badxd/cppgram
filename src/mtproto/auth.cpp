@@ -145,11 +145,6 @@ Bytes build_hashed_object(const Bytes& object) {
     return concat(data, pad);
 }
 
-Bytes exchange(PlainChannel& channel, const Bytes& body) {
-    channel.send_plain(body);
-    return channel.receive_plain();
-}
-
 }  // namespace
 
 Bytes hex_to_bytes(std::string_view hex) {
