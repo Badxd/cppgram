@@ -1,4 +1,5 @@
 #include "cppgram/client.h"
+#include "cppgram/update_gate.h"
 
 #include <thread>
 #include <algorithm>
@@ -314,15 +315,18 @@ void Client::handle_update(const tl::Update& update) {
 
 bool Client::accept_pts(std::int32_t pts, std::int32_t pts_count) {
     if (!state_.valid) return true;
-    const std::int32_t expected = state_.pts + pts_count;
-    if (pts == expected) {
-        state_.pts = pts;
-        persist_state();
-        return true;
+    switch (classify_pts(state_.pts, pts, pts_count)) {
+        case PtsDecision::Apply:
+            state_.pts = pts;
+            persist_state();
+            return true;
+        case PtsDecision::Duplicate:
+            return false;
+        case PtsDecision::Gap:
+            // Some updates were missed. getDifference returns them, so drop this one.
+            catch_up();
+            return false;
     }
-    if (expected > pts) return false;  // already applied
-    // Gap: some updates were missed. getDifference returns them, so drop this one.
-    catch_up();
     return false;
 }
 
@@ -533,6 +537,30 @@ void Client::ping() {
     session_->send_content(w.bytes());
 }
 
+void Client::reconnect_after_drop() {
+    for (;;) {
+        if (!reconnect_budget_.record_failure()) {
+            throw mtproto::ConnectionError("gave up reconnecting after " + std::to_string(options_.max_reconnects) +
+                                           " failed attempts");
+        }
+        session_.reset();
+        if (connection_) {
+            connection_->close();
+            connection_.reset();
+        }
+        std::this_thread::sleep_for(
+            mtproto::backoff_delay(options_.retry, reconnect_budget_.failures, client_jitter01()));
+        try {
+            connect();
+            connection_->set_receive_timeout(options_.keepalive_ms);
+            catch_up();  // recover updates missed while disconnected
+            return;
+        } catch (const mtproto::ConnectionError&) {
+            // Still down: loop, which spends one more unit of the budget.
+        }
+    }
+}
+
 void Client::run() {
     require_session();
     running_ = true;
@@ -540,12 +568,17 @@ void Client::run() {
     if (storage_ && state_.valid) catch_up();
     connection_->set_receive_timeout(options_.keepalive_ms);
     try {
+        reconnect_budget_ = mtproto::ReconnectBudget{options_.max_reconnects, 0};
         while (running_) {
             drain_updates();
             try {
                 session_->process_one();
+                reconnect_budget_.reset();
             } catch (const mtproto::ConnectionTimeout&) {
                 ping();
+            } catch (const mtproto::ConnectionError&) {
+                if (!options_.auto_reconnect) throw;
+                reconnect_after_drop();
             }
         }
         drain_updates();

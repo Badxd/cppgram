@@ -38,6 +38,11 @@ struct ClientOptions {
     std::string lang_code = "en";
     // Idle time before run() sends a keepalive ping.
     int keepalive_ms = 15000;
+    // When run() loses the connection, reconnect with backoff (ClientOptions::retry) and catch up on missed
+    // updates. Gives up after max_reconnects consecutive failed attempts. Calls in flight at the drop
+    // fail with ConnectionError and are NOT resent.
+    bool auto_reconnect = true;
+    int max_reconnects = 5;
     // Socket receive timeout used while connecting (TCP + handshake + initConnection).
     // Expiry throws mtproto::ConnectionTimeout instead of blocking forever.
     int connect_timeout_ms = 10000;
@@ -670,6 +675,9 @@ private:
     void handle_membership_update(const mtproto::tl::Update& update);
     std::shared_ptr<mtproto::tl::InputUser> input_user_ptr(PeerRef user) const;
     bool accept_pts(std::int32_t pts, std::int32_t pts_count);
+    // Tears down the dead connection and reconnects with backoff, then catches up. Throws when the budget is spent.
+    void reconnect_after_drop();
+    mtproto::ReconnectBudget reconnect_budget_{};
     void apply_update_state(const mtproto::tl::updates_State& state);
     void dispatch_message(const Message& message);
     void cache_users_chats(const std::vector<std::shared_ptr<mtproto::tl::User>>& users,

@@ -13,6 +13,8 @@
 - FLOOD_WAIT sleeps and resends within `RetryPolicy::max_flood_wait`; longer waits are returned.
 - TCP connect retries with bounded exponential backoff and jitter (`ClientOptions::retry`).
 - Session files are written atomically (temp, fsync, rename).
+- `run()` reconnects after a dropped connection (bounded by `ClientOptions::max_reconnects`) and catches up on missed updates.
+- Update gating is a pure function (`cppgram/update_gate.h`): apply, duplicate or gap.
 
 ### Security
 - DH parameters from the server are validated (2048-bit safe prime, generator residue, `1 < g_a < p-1`).

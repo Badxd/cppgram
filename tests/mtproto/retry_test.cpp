@@ -93,3 +93,20 @@ TEST(Retry, ServerErrorsAreTransientAndAuthErrorsPermanent) {
     EXPECT_EQ(classify_rpc_error(401, "AUTH_KEY_UNREGISTERED").kind, ErrorClass::Permanent);
     EXPECT_EQ(classify_rpc_error(400, "PHONE_NUMBER_INVALID").kind, ErrorClass::Permanent);
 }
+
+TEST(ReconnectBudget, SpendsAfterMaxFailuresAndResets) {
+    ReconnectBudget b{3, 0};
+    EXPECT_TRUE(b.record_failure());
+    EXPECT_TRUE(b.record_failure());
+    EXPECT_TRUE(b.record_failure());
+    EXPECT_FALSE(b.record_failure());  // fourth failure: give up
+    EXPECT_EQ(b.failures, 4);
+    b.reset();
+    EXPECT_TRUE(b.record_failure());
+    EXPECT_EQ(b.failures, 1);
+}
+
+TEST(ReconnectBudget, ZeroBudgetGivesUpImmediately) {
+    ReconnectBudget b{0, 0};
+    EXPECT_FALSE(b.record_failure());
+}

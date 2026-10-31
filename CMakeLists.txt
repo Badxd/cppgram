@@ -38,6 +38,7 @@ add_library(cppgram
     src/mtproto/crypto.cpp
     src/mtproto/transport.cpp
     src/mtproto/retry.cpp
+    src/update_gate.cpp
     src/mtproto/schema/api_impl_0.cpp
     src/mtproto/schema/api_impl_1.cpp
     src/mtproto/schema/api_impl_2.cpp

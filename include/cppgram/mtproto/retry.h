@@ -44,4 +44,17 @@ ErrorDecision classify_rpc_error(int code, const std::string& message);
 // Returns true when a FloodWait decision is within the policy's limit, so the caller may wait and retry.
 bool flood_wait_allowed(const RetryPolicy& policy, const ErrorDecision& decision) noexcept;
 
+// Counts consecutive failed reconnect attempts for one outage. Reset after a successful packet.
+struct ReconnectBudget {
+    int max_failures = 5;
+    int failures = 0;
+
+    // Records one failed attempt. Returns false once the budget is spent (the caller must give up).
+    bool record_failure() noexcept {
+        ++failures;
+        return failures <= max_failures;
+    }
+    void reset() noexcept { failures = 0; }
+};
+
 }  // namespace cppgram::mtproto

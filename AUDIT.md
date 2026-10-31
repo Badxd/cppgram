@@ -12,8 +12,8 @@ are recorded in the commit messages and the baseline section below.
 | 3. Critical protocol and security | Done for listed items | Findings F1-F4 |
 | 4. Transport, encryption, RPC | Done for listed items | Transport framing tested (11 cases); RPC deadline (F3); time sync (F6) fixed |
 | 5. Auth and session persistence | Partly done | Atomic save, 0600 perms; schema versioning and corruption detection open |
-| 6. Networking, retries, backoff | Partly done | Retry policy with equal-jitter backoff (9 tests); TCP connect retries bounded; FLOOD_WAIT sleep-and-resend bounded by policy. Not yet: cancellation during sleep, reconnect after mid-session drop |
-| 7. Update synchronization | Not started | |
+| 6. Networking, retries, backoff | Partly done | Retry policy with equal-jitter backoff; TCP connect retries bounded; FLOOD_WAIT sleep-and-resend bounded; mid-session reconnect in `run()` with a bounded budget (not live-tested). Not yet: cancellation during sleep |
+| 7. Update synchronization | Partly done | pts gate (`classify_pts`, 4 tests; two expectations were wrong in the first draft and were corrected to the rule local + count == pts), gap -> `updates.getDifference` catch-up, persisted pts/qts/date/seq, catch-up after reconnect. Not yet: per-channel pts, bounded update queue with backpressure, live verification |
 | 8. Message, chat, media APIs | Partly done | 18 new API methods (batches 5-7); live calls not tested |
 | 9. Storage and schema generation | Partly done | Prepared statements reviewed; generator reproducibility not checked |
 | 10. Tests, fuzzing, sanitizers | Partly done | 81 mtproto tests; 3 fuzz targets; ASan/UBSan CI job written, never run in CI |
@@ -47,6 +47,7 @@ Warnings at 2bdbd22:
 | F5 | Low | Fixed | Randomness | `random_id` used `std::mt19937_64` seeded from `random_device` | `src/secure_random.h`, 7 client files |
 | F6 | Medium | Fixed | MTProto | `bad_msg_notification` codes 16/17 were thrown as errors; now the time offset is corrected from the server message id and the request is resent | `session.cpp` dispatch; `Session.BadMsgCode16CorrectsTimeOffsetAndResends` |
 | F11 | Medium | Fixed | RPC | FLOOD_WAIT was surfaced immediately even for short waits; now sleeps and resends within `max_flood_wait` and the attempt budget, and refuses longer waits | `MtSession::invoke`; `Session.FloodWait*` tests |
+| F14 | Medium | Fixed | Networking | A dropped connection in `run()` ended the loop with an exception; now reconnects with backoff, bounded by `max_reconnects`, then catches up on updates. Calls in flight are not resent | `Client::reconnect_after_drop`; `ReconnectBudget` tests (not live-tested) |
 | F13 | High | Fixed | RPC | Found by the new flood-wait test: an rpc_error set `found` before unpacking, so invoke() could return an empty result when the error was caught | `session.cpp` dispatch order; `Session.FloodWaitWithinLimitSleepsAndResends` |
 | F12 | Medium | Fixed | Networking | TCP connect had a single attempt with no backoff | `Client::connect` bounded retry; `ClientRetry.ConnectRetriesBoundedThenFailsFast` |
 | F7 | Low | Open | Codegen | Generated `api_impl_3.cpp`/`api_impl_4.cpp` declare unused `fl_flags`; fix belongs in the generator | Baseline warnings |
@@ -70,11 +71,13 @@ Warnings at 2bdbd22:
 
 ## Not implemented (explicit)
 
-- Reconnect after a mid-session connection drop (checkpoint 6).
+- Live verification of the reconnect path (needs the VPS and a test account).
+- Per-channel pts sequences (channel updates are not gated yet).
+- Bounded update queue with backpressure (checkpoint 7).
 - Cancellation while sleeping in a flood wait or backoff (checkpoint 6).
 - Update difference and gap recovery (checkpoint 7).
 - Encrypted session storage, session export/import.
 - Benchmarks.
 - Debug build baseline.
-- Working tree after this batch: ctest 173/173 pass in build/Release (GCC, -O0, -j1). Debug and sanitizer runs not done.
+- Working tree after this batch: ctest 179/179 pass in build/Release (GCC, -O0, -j1). Debug and sanitizer runs not done.
 - Live Telegram testing of this batch (must run on the VPS with a dedicated test account).
