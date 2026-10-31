@@ -18,7 +18,7 @@ are recorded in the commit messages and the baseline section below.
 | 9. Storage and schema generation | Done for listed items | Session format v2 and sqlite versioning (earlier batch); `tools/check_schema.sh` reproducibility check, byte-identical output |
 | 10. Tests, fuzzing, sanitizers | Partly done. Fuzzing: 150 s per target, see Fuzzing below; no crashes found | ctest 217/217 pass in the Release tree; sanitizer runs not repeated in this batch | mtproto 101 + bot 79 tests pass under ASan/UBSan/LSan; 3 fuzz targets (short runs); CI sanitizer job written, not yet run on GitHub |
 | 11. Benchmarks | Done for local work | `bench/bench_main.cpp`, results and environment in `guides/BENCHMARKS.md`. Network, RPC dispatch, update dispatch and connection startup are not measured |
-| 12. Docs, CI, release | Partly done | guides/: AUTHENTICATION, THREAT_MODEL, API_SUPPORT, BENCHMARKS, LINUX_INSTALL, SESSIONS, ARCHITECTURE, TROUBLESHOOTING. SECURITY.md, CHANGELOG.md, `.env.example`. New example `examples/mtproto-login` (syntax-checked). CI workflow never executed on GitHub. Migration guide and release process not reviewed |
+| 12. Docs, CI, release | Partly done. Batch 10: CI dependency and sanitizer configure fixes (configure verified locally), standalone header check (39/39 OK), 3 more examples, VPS, versioning and migration guides | guides/: AUTHENTICATION, THREAT_MODEL, API_SUPPORT, BENCHMARKS, LINUX_INSTALL, SESSIONS, ARCHITECTURE, TROUBLESHOOTING. SECURITY.md, CHANGELOG.md, `.env.example`. New example `examples/mtproto-login` (syntax-checked). CI workflow never executed on GitHub. Migration guide and release process not reviewed |
 
 ## Baseline (checkpoint 2)
 
