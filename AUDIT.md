@@ -28,6 +28,7 @@ Commit 2bdbd22, clean `git archive` copy, `cmake -DCMAKE_BUILD_TYPE=Release -DEN
 - Build: exit 0, 0 errors, 9 warnings (listed below).
 - `ctest`: 100% passed, 147 of 147 tests.
 - Debug build: not run yet.
+- Working tree at e5405b9 (same config): build exit 0, 4 warnings (3 generated `fl_flags`, deprecated RSA in the handshake test), ctest 160/160 pass (includes 13 new tests).
 
 Warnings at 2bdbd22:
 - `client_more.cpp`: unused `next_random_id_more` (fixed in working tree).
