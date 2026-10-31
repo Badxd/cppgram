@@ -1,7 +1,9 @@
 // cppgram - high-level client: connection, updates dispatcher, filters, messages, chats, media.
 #pragma once
 
+#include <atomic>
 #include <cstdint>
+#include <stop_token>
 #include <fstream>
 #include <functional>
 #include <memory>
@@ -10,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "cppgram/auth_state.h"
 #include "cppgram/convert.h"
 #include "cppgram/filters.h"
 #include "cppgram/mtproto/retry.h"
@@ -65,6 +68,13 @@ struct UploadedFile {
     std::string name;
     std::int64_t size = 0;
     std::shared_ptr<mtproto::tl::InputFile> handle;
+};
+
+// Result of auth.sendCode. delivery names where the code went (for example "app", "sms", "call").
+struct LoginCodeInfo {
+    std::string phone_code_hash;
+    std::string delivery;
+    int timeout_seconds = 0;  // 0 when Telegram did not send a timeout
 };
 
 class Client {
@@ -124,7 +134,12 @@ public:
     void on_raw_update(RawUpdateHandler handler);
     // Blocks, dispatching updates to handlers, until stop() is called from a handler or another thread.
     void run();
-    void stop() noexcept { running_ = false; }
+    // Stops run() after the current receive returns (at most keepalive_ms later) and interrupts any
+    // retry or reconnect backoff in progress. Safe to call from another thread or a handler.
+    void stop() noexcept {
+        running_ = false;
+        stop_source_.request_stop();
+    }
 
     // ---- raw access: any generated request
     template <class Request>
@@ -593,6 +608,21 @@ public:
     // Sets the bot menu button to open a URL with the given label.
     bool set_menu_button_url(const std::string& text, const std::string& url);
 
+    // ---- user login state machine (see cppgram/auth_state.h)
+    // Current authorization state. Updated by the login methods below and by connect()/disconnect().
+    AuthState auth_state() const noexcept { return auth_state_; }
+    // Checks whether the loaded session is authorized (users.getUsers on self). Returns true when it is.
+    // Unauthorized keys move the state to AuthRevoked; other failures are rethrown after classification.
+    bool probe_session();
+    // Requests a login code (auth.sendCode). Keep phone_code_hash for sign_in_code(). Phone numbers are
+    // never logged. Throws RpcError with the Telegram name (rpc_message()) on failure.
+    LoginCodeInfo send_login_code(const std::string& phone_number);
+    // Submits the login code (auth.signIn). Returns true when Authorized. Returns false when the account
+    // has 2FA: the state is then PasswordRequired and sign_in_password() must be called.
+    bool sign_in_code(const std::string& phone_number, const std::string& code, const std::string& phone_code_hash);
+    // Submits the 2FA password (SRP). Returns true when Authorized.
+    bool sign_in_password(const std::string& password);
+
     // ---- two-step verification (2FA)
     PasswordInfo get_password_info();
     // Checks the 2FA password with SRP (auth.checkPassword). Wrong password throws RpcError PASSWORD_HASH_INVALID.
@@ -723,7 +753,14 @@ private:
         bool valid = false;
     };
     UpdateState state_;
-    bool running_ = false;
+    std::atomic<bool> running_{false};
+    std::stop_source stop_source_;
+    AuthState auth_state_ = AuthState::Unauthenticated;
+    // Applies one event; throws std::logic_error when the event is not legal in the current state.
+    void apply_auth_event(AuthEvent event);
+    // Maps a Telegram RPC error to an auth event and applies it when the transition is legal.
+    // Returns the event so callers can decide what to do with it. Never throws.
+    AuthEvent note_rpc_error(std::int32_t code, const std::string& message) noexcept;
 };
 
 }  // namespace cppgram

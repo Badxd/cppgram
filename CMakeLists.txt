@@ -7,6 +7,7 @@ option(ENABLE_COVERAGE "Instrument the library and tests for code coverage" OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(BUILD_DOCUMENTATION "Build API documentation" OFF)
 option(BUILD_LIVE_CHECK "Build the live Telegram connectivity check (examples/live_check.cpp)" OFF)
+option(ENABLE_BENCHMARKS "Build the micro-benchmark program (bench/bench_main.cpp). Measures local work only" OFF)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -39,6 +40,7 @@ add_library(cppgram
     src/mtproto/transport.cpp
     src/mtproto/retry.cpp
     src/update_gate.cpp
+    src/auth_state.cpp
     src/mtproto/schema/api_impl_0.cpp
     src/mtproto/schema/api_impl_1.cpp
     src/mtproto/schema/api_impl_2.cpp
@@ -55,6 +57,9 @@ add_library(cppgram
     src/mtproto/session.cpp
     src/mtproto/srp.cpp
     src/client.cpp
+    src/client_login.cpp
+    src/transfer.cpp
+    src/mtproto/cancel.cpp
     src/client_extra.cpp
     src/client_more.cpp
     src/client_media.cpp
@@ -218,6 +223,11 @@ add_custom_target(tl-check
     COMMENT "Checking TL schema reproducibility"
     VERBATIM
 )
+
+if(ENABLE_BENCHMARKS)
+    add_executable(cppgram_bench bench/bench_main.cpp)
+    target_link_libraries(cppgram_bench PRIVATE cppgram)
+endif()
 
 if(BUILD_LIVE_CHECK)
     add_executable(cppgram_live_check examples/live_check.cpp)

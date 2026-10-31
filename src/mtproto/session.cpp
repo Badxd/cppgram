@@ -252,7 +252,7 @@ Bytes MtSession::invoke(const Bytes& request_body) {
                 // Wait the server-given time, but only within the policy limit and attempt budget.
                 const bool within_limit = e.seconds() >= 0 && std::chrono::seconds(e.seconds()) <= retry_policy_.max_flood_wait;
                 if (!within_limit || !may_retry(retry_policy_, attempts)) throw;
-                std::this_thread::sleep_for(std::chrono::seconds(e.seconds()));
+                sleep_cancellable(std::chrono::seconds(e.seconds()), stop_);
                 flood_waited = true;
                 break;
             }

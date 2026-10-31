@@ -307,6 +307,7 @@ void Client::log_out() {
     require_session();
     fn::auth_logOut req;
     session_->call(req);
+    if (next_auth_state(auth_state_, AuthEvent::LoggedOut)) auth_state_ = *next_auth_state(auth_state_, AuthEvent::LoggedOut);
     disconnect();
 }
 

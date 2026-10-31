@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Login and authorization
+- New: explicit authorization state machine (`cppgram/auth_state.h`, `Client::auth_state()`). Transition table and RPC error mapping are pure functions with tests.
+- New: `Client::send_login_code`, `sign_in_code`, `sign_in_password`, `probe_session`; `LoginCodeInfo` result type.
+- `RpcError::rpc_message()` returns the bare Telegram error name.
+- `connect()` resets the state to `Unauthenticated`; `disconnect()` sets `Disconnected`; `run()` re-probes an authorized session after a reconnect.
+- `login_bot` and `log_out` update the state. See `guides/AUTHENTICATION.md` (user login not live-tested).
+
+### Networking and shutdown
+- New: cancellable waits (`cppgram/mtproto/cancel.h`). Retry backoff, reconnect backoff and flood-wait sleeps stop when `Client::stop()` is called; `run()` returns cleanly.
+- `Client::stop()` is safe to call from another thread. A new `run()` starts unstopped.
+
+### Files and transfers
+- New: upload planning (`cppgram/transfer.h`): part size, part count and offsets follow Telegram's rules; empty and oversized files are rejected before they are read.
+- New: `sanitize_remote_filename` keeps only a safe local name (no paths, no dot names, no control characters).
+- Fixed: `download_media` writes to `<path>.part`, checks the received size against the message, and renames on success. A failed download no longer leaves a partial file at the destination (finding F17).
+- Changed: `read_file` reads in one call instead of byte by byte.
+
+### Tooling and measurements
+- New: `bench/bench_main.cpp` and `tools/run_benchmarks.sh` (option `ENABLE_BENCHMARKS`). Results and the environment are in `guides/BENCHMARKS.md`.
+- Documented: `guides/THREAT_MODEL.md`, `guides/API_SUPPORT.md`.
+
 ### API
 - New: `archive_chats`, `add_recent_sticker`, `remove_recent_sticker`, `apply_gift_code`, `apply_boost`.
 - New: `unpin_all_messages`, `set_contact_note`, `accept_terms_of_service`.

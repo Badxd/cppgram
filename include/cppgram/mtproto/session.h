@@ -12,6 +12,9 @@
 #include "cppgram/mtproto/auth.h"
 #include "cppgram/mtproto/connection.h"
 #include "cppgram/mtproto/crypto.h"
+#include <stop_token>
+
+#include "cppgram/mtproto/cancel.h"
 #include "cppgram/mtproto/retry.h"
 #include "cppgram/mtproto/tl.h"
 
@@ -20,11 +23,16 @@ namespace cppgram::mtproto {
 class RpcError : public std::runtime_error {
 public:
     RpcError(std::int32_t code, const std::string& message)
-        : std::runtime_error("RPC error " + std::to_string(code) + ": " + message), code_(code) {}
+        : std::runtime_error("RPC error " + std::to_string(code) + ": " + message),
+          code_(code),
+          message_(message) {}
     std::int32_t code() const noexcept { return code_; }
+    // Bare Telegram error name, for example "PHONE_CODE_INVALID" or "FLOOD_WAIT_30".
+    const std::string& rpc_message() const noexcept { return message_; }
 
 private:
     std::int32_t code_;
+    std::string message_;
 };
 
 // FLOOD_WAIT_<n>: the server asks us to wait n seconds before retrying.
@@ -84,6 +92,8 @@ public:
 
     // Overall deadline for one invoke() call (default 30 s).
     void set_request_timeout(std::chrono::milliseconds timeout) noexcept { request_timeout_ = timeout; }
+    // Flood-wait sleeps stop early when this token is requested (throws OperationCancelled).
+    void set_stop_token(std::stop_token token) noexcept { stop_ = std::move(token); }
     std::chrono::milliseconds request_timeout() const noexcept { return request_timeout_; }
 
     // Typed call: serializes the request and parses its result with the generated read_result().
@@ -116,6 +126,7 @@ public:
 
 private:
     std::chrono::milliseconds request_timeout_{std::chrono::seconds(30)};
+    std::stop_token stop_;
     RetryPolicy retry_policy_{};
 
     struct Waiting {
