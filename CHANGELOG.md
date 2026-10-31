@@ -17,6 +17,13 @@
 - Update queue is bounded by `ClientOptions::max_pending_updates`; `run()` drains it before reading more packets. Updates are never dropped.
 - Update gating is a pure function (`cppgram/update_gate.h`): apply, duplicate or gap.
 
+### Storage
+- Session file format v2 (`CGS2`) with CRC-32; v1 files still load. Damaged files raise `SessionCorruptError`.
+- SQLite session store: schema version stamp (`user_version = 2`), refuses newer schemas, `quick_check` on open, busy timeout, WAL journal.
+
+### Tooling
+- `tools/check_schema.sh` and `make tl-check`: regenerates the TL code and checks it matches the repository.
+
 ### Security
 - DH parameters from the server are validated (2048-bit safe prime, generator residue, `1 < g_a < p-1`).
 - `random_id` values come from OpenSSL `RAND_bytes` instead of `std::mt19937_64`.

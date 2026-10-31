@@ -57,6 +57,15 @@ struct SessionData {
 };
 
 // Binary session file: magic, dc_id, time_offset, server_salt, auth_key(256).
+// Thrown when a stored session fails its checksum, has an unknown format, or holds invalid values.
+// A corrupt session is reported, never silently replaced.
+class SessionCorruptError : public std::runtime_error {
+public:
+    using std::runtime_error::runtime_error;
+};
+
+// Returns false if the file does not exist. Throws SessionCorruptError if it exists but is damaged.
+// Format v2 ("CGS2") ends with a CRC-32 over everything before it; v1 ("CGS1") is still read.
 bool load_session_file(const std::string& path, SessionData& out);
 void save_session_file(const std::string& path, const SessionData& data);
 

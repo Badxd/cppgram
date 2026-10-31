@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <fstream>
+#include <iterator>
+#include <string>
 
 #include "cppgram/mtproto/schema/api.h"
 #include "../secure_file.h"
@@ -23,7 +25,9 @@ namespace ty = tl::types;
 constexpr std::uint32_t kGzipPackedId = 0x3072cfa1u;
 constexpr std::uint32_t kMsgContainerId = 0x73f1f8dcu;
 constexpr std::uint32_t kPingId = 0x7abe77ecu;
-constexpr char kSessionMagic[4] = {'C', 'G', 'S', '1'};
+constexpr char kSessionMagic[4] = {'C', 'G', 'S', '2'};
+constexpr char kLegacySessionMagic[4] = {'C', 'G', 'S', '1'};
+constexpr std::size_t kSessionBodySize = 4 + 8 + 8 + 8 + 256;  // magic, dc, offset, salt, key
 
 bool is_updates_id(std::uint32_t id) {
     switch (id) {
@@ -40,21 +44,24 @@ bool is_updates_id(std::uint32_t id) {
     }
 }
 
-void put_u64(std::ostream& out, std::uint64_t v) {
-    for (int i = 0; i < 8; ++i) {
-        out.put(static_cast<char>((v >> (8 * i)) & 0xff));
-    }
+void put_le32(Bytes& out, std::uint32_t v) {
+    for (int i = 0; i < 4; ++i) out.push_back(static_cast<std::uint8_t>(v >> (8 * i)));
 }
 
-bool get_u64(std::istream& in, std::uint64_t& v) {
-    v = 0;
-    for (int i = 0; i < 8; ++i) {
-        const int c = in.get();
-        if (c == std::char_traits<char>::eof()) return false;
-        v |= static_cast<std::uint64_t>(static_cast<unsigned char>(c)) << (8 * i);
-    }
-    return true;
+void put_le64(Bytes& out, std::uint64_t v) {
+    for (int i = 0; i < 8; ++i) out.push_back(static_cast<std::uint8_t>(v >> (8 * i)));
 }
+
+std::uint32_t get_le32(const Bytes& b, std::size_t pos) {
+    return static_cast<std::uint32_t>(b[pos]) | (static_cast<std::uint32_t>(b[pos + 1]) << 8) |
+           (static_cast<std::uint32_t>(b[pos + 2]) << 16) | (static_cast<std::uint32_t>(b[pos + 3]) << 24);
+}
+
+std::uint64_t get_le64(const Bytes& b, std::size_t pos) {
+    return static_cast<std::uint64_t>(get_le32(b, pos)) | (static_cast<std::uint64_t>(get_le32(b, pos + 4)) << 32);
+}
+
+
 
 // Unpacks the body of rpc_result: gzip_packed is inflated, rpc_error becomes an exception.
 Bytes unpack_rpc_payload(const Bytes& payload) {
@@ -93,26 +100,31 @@ bool load_session_file(const std::string& path, SessionData& out) {
     if (!in) {
         return false;
     }
-    char magic[4];
-    in.read(magic, 4);
-    if (!in || std::memcmp(magic, kSessionMagic, 4) != 0) {
-        return false;
+    const Bytes file((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+
+    const bool v2 = file.size() == kSessionBodySize + 4 && std::memcmp(file.data(), kSessionMagic, 4) == 0;
+    const bool v1 = file.size() == kSessionBodySize && std::memcmp(file.data(), kLegacySessionMagic, 4) == 0;
+    if (!v2 && !v1) {
+        throw SessionCorruptError("session file has an unknown format or wrong size: " + path);
     }
-    std::uint64_t dc = 0;
-    std::uint64_t offset = 0;
-    std::uint64_t salt = 0;
-    if (!get_u64(in, dc) || !get_u64(in, offset) || !get_u64(in, salt)) {
-        return false;
+    if (v2) {
+        const std::uint32_t stored = get_le32(file, kSessionBodySize);
+        const std::uint32_t actual = crc32(Bytes(file.begin(), file.begin() + static_cast<std::ptrdiff_t>(kSessionBodySize)));
+        if (stored != actual) {
+            throw SessionCorruptError("session file checksum mismatch (file is damaged): " + path);
+        }
     }
-    Bytes key(256);
-    in.read(reinterpret_cast<char*>(key.data()), static_cast<std::streamsize>(key.size()));
-    if (!in) {
-        return false;
+
+    const std::int64_t dc = static_cast<std::int64_t>(get_le64(file, 4));
+    const std::int64_t offset = static_cast<std::int64_t>(get_le64(file, 12));
+    const std::uint64_t salt = get_le64(file, 20);
+    if (dc < 1 || dc > 5) {
+        throw SessionCorruptError("session file holds an invalid data-center id: " + std::to_string(dc));
     }
     out.dc_id = static_cast<std::int32_t>(dc);
-    out.time_offset = static_cast<std::int64_t>(offset);
+    out.time_offset = offset;
     out.server_salt = salt;
-    out.auth_key = std::move(key);
+    out.auth_key.assign(file.begin() + 28, file.begin() + 28 + 256);
     return true;
 }
 
@@ -120,6 +132,14 @@ void save_session_file(const std::string& path, const SessionData& data) {
     if (data.auth_key.size() != 256) {
         throw std::runtime_error("cannot save session without a 256-byte auth key");
     }
+    Bytes image;
+    image.reserve(kSessionBodySize + 4);
+    image.insert(image.end(), kSessionMagic, kSessionMagic + 4);
+    put_le64(image, static_cast<std::uint64_t>(static_cast<std::int64_t>(data.dc_id)));
+    put_le64(image, static_cast<std::uint64_t>(data.time_offset));
+    put_le64(image, data.server_salt);
+    image.insert(image.end(), data.auth_key.begin(), data.auth_key.end());
+    put_le32(image, crc32(image));
     // Crash-safe replace: write a private temp file, fsync it, then rename over the old session.
     // A crash at any point leaves either the old session or the new one, never a half-written file.
     const std::string tmp = path + ".tmp";
@@ -129,11 +149,7 @@ void save_session_file(const std::string& path, const SessionData& data) {
         if (!out) {
             throw std::runtime_error("cannot open session temp file for writing: " + tmp);
         }
-        out.write(kSessionMagic, 4);
-        put_u64(out, static_cast<std::uint64_t>(static_cast<std::int64_t>(data.dc_id)));
-        put_u64(out, static_cast<std::uint64_t>(data.time_offset));
-        put_u64(out, data.server_salt);
-        out.write(reinterpret_cast<const char*>(data.auth_key.data()), static_cast<std::streamsize>(data.auth_key.size()));
+        out.write(reinterpret_cast<const char*>(image.data()), static_cast<std::streamsize>(image.size()));
         out.flush();
         if (!out) {
             std::remove(tmp.c_str());

@@ -11,7 +11,7 @@ are recorded in the commit messages and the baseline section below.
 | 2. Baseline build and tests | Done for commit 2bdbd22 | See Baseline below |
 | 3. Critical protocol and security | Done for listed items | Findings F1-F4 |
 | 4. Transport, encryption, RPC | Done for listed items | Transport framing tested (11 cases); RPC deadline (F3); time sync (F6) fixed |
-| 5. Auth and session persistence | Partly done | Atomic save, 0600 perms; schema versioning and corruption detection open |
+| 5. Auth and session persistence | Partly done | Atomic save, 0600 perms; session format v2 with CRC-32 and corruption errors (v1 still read); sqlite store: schema version stamp, refuses newer versions, quick_check on open, busy timeout, WAL. Not yet: encrypted storage, backup/restore guidance, live verification |
 | 6. Networking, retries, backoff | Partly done | Retry policy with equal-jitter backoff; TCP connect retries bounded; FLOOD_WAIT sleep-and-resend bounded; mid-session reconnect in `run()` with a bounded budget (not live-tested). Not yet: cancellation during sleep |
 | 7. Update synchronization | Partly done | pts gate (`classify_pts`, 4 tests; two expectations were wrong in the first draft and were corrected to the rule local + count == pts), gap -> `updates.getDifference` catch-up, persisted pts/qts/date/seq, catch-up after reconnect, bounded update queue with backpressure (`max_pending_updates`, never drops, 1 test). Not yet: per-channel pts, backpressure during invoke() (updates can still queue while a request waits), live verification |
 | 8. Message, chat, media APIs | Partly done | 18 new API methods (batches 5-7); live calls not tested |
@@ -48,6 +48,7 @@ Warnings at 2bdbd22:
 | F6 | Medium | Fixed | MTProto | `bad_msg_notification` codes 16/17 were thrown as errors; now the time offset is corrected from the server message id and the request is resent | `session.cpp` dispatch; `Session.BadMsgCode16CorrectsTimeOffsetAndResends` |
 | F11 | Medium | Fixed | RPC | FLOOD_WAIT was surfaced immediately even for short waits; now sleeps and resends within `max_flood_wait` and the attempt budget, and refuses longer waits | `MtSession::invoke`; `Session.FloodWait*` tests |
 | F14 | Medium | Fixed | Networking | A dropped connection in `run()` ended the loop with an exception; now reconnects with backoff, bounded by `max_reconnects`, then catches up on updates. Calls in flight are not resent | `Client::reconnect_after_drop`; `ReconnectBudget` tests (not live-tested) |
+| F15 | Medium | Fixed | Session storage | A damaged session file was read as "no session" or accepted as is; a newer-version sqlite store could be opened and overwritten | `load_session_file` throws `SessionCorruptError`; `SqliteStorage` refuses schema > 2 and runs quick_check; `SessionFormat.*`, `SessionStore.*` tests |
 | F13 | High | Fixed | RPC | Found by the new flood-wait test: an rpc_error set `found` before unpacking, so invoke() could return an empty result when the error was caught | `session.cpp` dispatch order; `Session.FloodWaitWithinLimitSleepsAndResends` |
 | F12 | Medium | Fixed | Networking | TCP connect had a single attempt with no backoff | `Client::connect` bounded retry; `ClientRetry.ConnectRetriesBoundedThenFailsFast` |
 | F7 | Low | Open | Codegen | Generated `api_impl_3.cpp`/`api_impl_4.cpp` declare unused `fl_flags`; fix belongs in the generator | Baseline warnings |
@@ -78,7 +79,8 @@ Warnings at 2bdbd22:
 - Cancellation while sleeping in a flood wait or backoff (checkpoint 6).
 - Update difference and gap recovery (checkpoint 7).
 - Encrypted session storage, session export/import.
+- Session backup and restore guidance (checkpoint 5).
 - Benchmarks.
 - Debug build baseline.
-- Working tree after this batch: ctest 180/180 pass in build/Release (GCC, -O0, -j1). Debug and sanitizer runs not done.
+- Working tree after this batch: ctest 187/187 pass in build/Release (GCC, -O0, -j1), 0 warnings in the rebuild; `tools/check_schema.sh` OK. in build/Release (GCC, -O0, -j1). Debug and sanitizer runs not done.
 - Live Telegram testing of this batch (must run on the VPS with a dedicated test account).

@@ -211,6 +211,14 @@ add_custom_target(tl-generate
     VERBATIM
 )
 
+# Verifies that regenerating the schema code reproduces the checked-in files and that the layer matches.
+add_custom_target(tl-check
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/check_schema.sh $<TARGET_FILE:cppgram_tl_codegen>
+    DEPENDS cppgram_tl_codegen
+    COMMENT "Checking TL schema reproducibility"
+    VERBATIM
+)
+
 if(BUILD_LIVE_CHECK)
     add_executable(cppgram_live_check examples/live_check.cpp)
     target_link_libraries(cppgram_live_check PRIVATE cppgram)

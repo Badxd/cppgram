@@ -15,6 +15,9 @@
 #include "cppgram/mtproto/crypto.h"
 #include "cppgram/mtproto/schema/api.h"
 #include "cppgram/mtproto/session.h"
+#include "cppgram/storage.h"
+#include <sqlite3.h>
+#include <fstream>
 
 using namespace cppgram::mtproto;
 namespace ty = cppgram::mtproto::tl::types;
@@ -541,4 +544,111 @@ TEST(UpdateQueue, BackpressureSignalsFullAndNothingIsDropped) {
         EXPECT_EQ(r.read_uint32(), ty::updateShort::kId);
         EXPECT_EQ(r.read_uint32(), static_cast<std::uint32_t>(i));
     }
+}
+
+namespace {
+
+// Builds a session image by hand so tests can damage it on purpose.
+Bytes session_image(const char magic[4], std::uint64_t dc, const Bytes& key, bool with_crc) {
+    Bytes out(magic, magic + 4);
+    for (int i = 0; i < 8; ++i) out.push_back(static_cast<std::uint8_t>(dc >> (8 * i)));
+    for (int i = 0; i < 8; ++i) out.push_back(0);  // time offset
+    for (int i = 0; i < 8; ++i) out.push_back(0);  // salt
+    out.insert(out.end(), key.begin(), key.end());
+    if (with_crc) {
+        const std::uint32_t crc = crc32(out);
+        for (int i = 0; i < 4; ++i) out.push_back(static_cast<std::uint8_t>(crc >> (8 * i)));
+    }
+    return out;
+}
+
+void write_bytes(const std::string& path, const Bytes& data) {
+    std::ofstream f(path, std::ios::binary | std::ios::trunc);
+    f.write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size()));
+}
+
+std::string temp_path(const char* tag) {
+    return "/tmp/cppgram_fmt_" + std::string(tag) + "_" + std::to_string(::getpid());
+}
+
+}  // namespace
+
+TEST(SessionFormat, ChecksumDetectsDamage) {
+    const std::string path = temp_path("crc");
+    const Bytes key = random_bytes(256);
+    Bytes image = session_image("CGS2", 2, key, true);
+    image[40] ^= 0x01;  // flip one bit inside the key
+    write_bytes(path, image);
+    SessionData out;
+    EXPECT_THROW(load_session_file(path, out), SessionCorruptError);
+    ::unlink(path.c_str());
+}
+
+TEST(SessionFormat, TruncatedAndUnknownFilesAreCorrupt) {
+    const std::string path = temp_path("trunc");
+    const Bytes key = random_bytes(256);
+    Bytes image = session_image("CGS2", 2, key, true);
+    image.pop_back();
+    write_bytes(path, image);
+    SessionData out;
+    EXPECT_THROW(load_session_file(path, out), SessionCorruptError);
+    write_bytes(path, Bytes{'X', 'Y', 'Z', 'W', 1, 2, 3});
+    EXPECT_THROW(load_session_file(path, out), SessionCorruptError);
+    ::unlink(path.c_str());
+}
+
+TEST(SessionFormat, MissingFileIsNotAnError) {
+    SessionData out;
+    EXPECT_FALSE(load_session_file(temp_path("missing"), out));
+}
+
+TEST(SessionFormat, LegacyV1FileStillLoads) {
+    const std::string path = temp_path("v1");
+    const Bytes key = random_bytes(256);
+    write_bytes(path, session_image("CGS1", 4, key, false));
+    SessionData out;
+    ASSERT_TRUE(load_session_file(path, out));
+    EXPECT_EQ(out.dc_id, 4);
+    EXPECT_EQ(out.auth_key, key);
+    ::unlink(path.c_str());
+}
+
+TEST(SessionFormat, InvalidDataCenterIsRejectedEvenWithValidChecksum) {
+    const std::string path = temp_path("dc");
+    write_bytes(path, session_image("CGS2", 9, random_bytes(256), true));  // dc 9 does not exist
+    SessionData out;
+    EXPECT_THROW(load_session_file(path, out), SessionCorruptError);
+    ::unlink(path.c_str());
+}
+
+TEST(SessionStore, FreshStoreIsStampedAndCheckedOnOpen) {
+    const std::string path = temp_path("store") + ".sqlite";
+    ::unlink(path.c_str());
+    {
+        cppgram::SqliteStorage store(path);
+    }
+    sqlite3* db = nullptr;
+    ASSERT_EQ(sqlite3_open(path.c_str(), &db), SQLITE_OK);
+    sqlite3_stmt* st = nullptr;
+    ASSERT_EQ(sqlite3_prepare_v2(db, "PRAGMA user_version", -1, &st, nullptr), SQLITE_OK);
+    ASSERT_EQ(sqlite3_step(st), SQLITE_ROW);
+    EXPECT_EQ(sqlite3_column_int(st, 0), 2);
+    sqlite3_finalize(st);
+    sqlite3_close(db);
+    ::unlink(path.c_str());
+    ::unlink((path + "-wal").c_str());
+    ::unlink((path + "-shm").c_str());
+}
+
+TEST(SessionStore, NewerSchemaIsRefusedNotOverwritten) {
+    const std::string path = temp_path("newer") + ".sqlite";
+    ::unlink(path.c_str());
+    sqlite3* db = nullptr;
+    ASSERT_EQ(sqlite3_open(path.c_str(), &db), SQLITE_OK);
+    ASSERT_EQ(sqlite3_exec(db, "PRAGMA user_version = 99;", nullptr, nullptr, nullptr), SQLITE_OK);
+    sqlite3_close(db);
+    EXPECT_THROW({ cppgram::SqliteStorage store(path); }, SessionCorruptError);
+    ::unlink(path.c_str());
+    ::unlink((path + "-wal").c_str());
+    ::unlink((path + "-shm").c_str());
 }
