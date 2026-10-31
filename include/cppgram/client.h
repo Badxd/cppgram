@@ -12,6 +12,7 @@
 
 #include "cppgram/convert.h"
 #include "cppgram/filters.h"
+#include "cppgram/mtproto/retry.h"
 #include "cppgram/mtproto/connection.h"
 #include "cppgram/mtproto/schema/api.h"
 #include "cppgram/mtproto/session.h"
@@ -40,6 +41,9 @@ struct ClientOptions {
     // Socket receive timeout used while connecting (TCP + handshake + initConnection).
     // Expiry throws mtproto::ConnectionTimeout instead of blocking forever.
     int connect_timeout_ms = 10000;
+    // Retry policy: TCP connect retries with backoff and jitter, and bounded FLOOD_WAIT sleep-and-resend.
+    // Defaults: 3 attempts, 500 ms base, 10 s cap, flood waits up to 60 s.
+    mtproto::RetryPolicy retry{};
     // Checks each CDN download part against the SHA-256 Telegram sends with it, before writing it to disk.
     bool verify_cdn_hashes = true;
     // Prints each connection stage (TCP, each handshake packet, session setup) to stderr.

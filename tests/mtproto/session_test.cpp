@@ -306,3 +306,179 @@ TEST(SessionStorage, AtomicSaveLeavesNoTempFileAndRoundTrips) {
     EXPECT_NE(::stat(tmp.c_str(), &st), 0) << "temp file must not survive a successful save";
     ::unlink(path.c_str());
 }
+
+namespace {
+
+// Server whose clock is one hour ahead. The first request gets a bad_msg_notification (code 16, msg_id too low)
+// carrying the server's time; the client must correct its offset and resend with a msg_id near server time.
+class TimeSkewServer : public PacketChannel {
+public:
+    TimeSkewServer(Bytes key, std::int64_t skew_seconds) : key_(std::move(key)), skew_(skew_seconds) {}
+
+    void send_packet(const Bytes& packet) override {
+        const InnerMessage inner = parse_inner(decrypt_packet(key_, packet, true));
+        if ((inner.seq_no & 1u) == 0) return;  // acks get no reply
+        ++requests_;
+        const std::int64_t server_now = unix_now() + skew_;
+        InnerMessage reply;
+        reply.salt = 1;
+        reply.session_id = inner.session_id;
+        reply.seq_no = 1;
+        reply.message_id = (static_cast<std::uint64_t>(server_now) << 32) | 4u;
+        if (requests_ == 1) {
+            first_msg_id_ = inner.message_id;
+            ty::bad_msg_notification bad;
+            bad.bad_msg_id = static_cast<std::int64_t>(inner.message_id);
+            bad.bad_msg_seqno = 1;
+            bad.error_code = 16;
+            TlWriter w;
+            bad.serialize(w);
+            reply.body = w.take();
+        } else {
+            corrected_msg_id_ = inner.message_id;
+            TlWriter w;
+            w.write_uint32(ty::rpc_result::kId);
+            w.write_uint64(inner.message_id);
+            w.write_raw(inner.body);
+            reply.body = w.take();
+        }
+        replies_.push_back(encrypt_packet(key_, serialize_inner(reply), false));
+    }
+
+    Bytes receive_packet() override {
+        Bytes out = std::move(replies_.front());
+        replies_.pop_front();
+        return out;
+    }
+
+    int requests() const { return requests_; }
+    std::uint64_t first_msg_id() const { return first_msg_id_; }
+    std::uint64_t corrected_msg_id() const { return corrected_msg_id_; }
+
+private:
+    static std::int64_t unix_now() {
+        return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())
+            .count();
+    }
+
+    Bytes key_;
+    std::int64_t skew_;
+    int requests_ = 0;
+    std::uint64_t first_msg_id_ = 0;
+    std::uint64_t corrected_msg_id_ = 0;
+    std::deque<Bytes> replies_;
+};
+
+}  // namespace
+
+TEST(Session, BadMsgCode16CorrectsTimeOffsetAndResends) {
+    const Bytes key = random_bytes(256);
+    const std::int64_t skew = 3600;
+    TimeSkewServer server(key, skew);
+    MtSession session(server, SessionData{2, key, 0x1111222233334444ull, 0});
+    const Bytes body{0x10, 0x20, 0x30, 0x40};
+    EXPECT_EQ(session.invoke(body), body);
+    EXPECT_EQ(server.requests(), 2);
+    // Offset learned from the server, within a few seconds of the real skew.
+    EXPECT_NEAR(static_cast<double>(session.data().time_offset), static_cast<double>(skew), 5.0);
+    // The resent message id must be near server time (high 32 bits), not the old local time.
+    const auto corrected_secs = static_cast<std::int64_t>(server.corrected_msg_id() >> 32);
+    const auto now_secs = std::chrono::duration_cast<std::chrono::seconds>(
+                              std::chrono::system_clock::now().time_since_epoch()).count();
+    EXPECT_NEAR(static_cast<double>(corrected_secs), static_cast<double>(now_secs + skew), 5.0);
+}
+
+namespace {
+
+// Answers the first request with an rpc_error carrying `flood_message` and the rest with an echo.
+class FloodServer : public PacketChannel {
+public:
+    FloodServer(Bytes key, std::string flood_message) : key_(std::move(key)), flood_(std::move(flood_message)) {}
+
+    void send_packet(const Bytes& packet) override {
+        const InnerMessage inner = parse_inner(decrypt_packet(key_, packet, true));
+        if ((inner.seq_no & 1u) == 0) return;
+        ++requests_;
+        InnerMessage reply;
+        reply.salt = 1;
+        reply.session_id = inner.session_id;
+        reply.seq_no = 1;
+        reply.message_id = make_message_id() + 4;
+        TlWriter result;
+        if (requests_ == 1) {
+            ty::rpc_error err;
+            err.error_code = 420;
+            err.error_message = flood_;
+            TlWriter e;
+            err.serialize(e);
+            result.write_uint32(ty::rpc_result::kId);
+            result.write_uint64(inner.message_id);
+            result.write_raw(e.bytes());
+        } else {
+            result.write_uint32(ty::rpc_result::kId);
+            result.write_uint64(inner.message_id);
+            result.write_raw(inner.body);
+        }
+        reply.body = result.take();
+        replies_.push_back(encrypt_packet(key_, serialize_inner(reply), false));
+    }
+
+    Bytes receive_packet() override {
+        Bytes out = std::move(replies_.front());
+        replies_.pop_front();
+        return out;
+    }
+
+    int requests() const { return requests_; }
+
+private:
+    Bytes key_;
+    std::string flood_;
+    int requests_ = 0;
+    std::deque<Bytes> replies_;
+};
+
+}  // namespace
+
+TEST(Session, FloodWaitWithinLimitSleepsAndResends) {
+    const Bytes key = random_bytes(256);
+    FloodServer server(key, "FLOOD_WAIT_1");
+    MtSession session(server, SessionData{2, key, 0x1111222233334444ull, 0});
+    RetryPolicy policy;
+    policy.max_flood_wait = std::chrono::seconds(5);
+    session.set_retry_policy(policy);
+    const Bytes body{0x01, 0x02, 0x03, 0x04};
+    const auto start = std::chrono::steady_clock::now();
+    EXPECT_EQ(session.invoke(body), body);
+    EXPECT_EQ(server.requests(), 2);
+    EXPECT_GE(std::chrono::steady_clock::now() - start, std::chrono::seconds(1));
+}
+
+TEST(Session, FloodWaitBeyondLimitIsReturnedWithoutSleeping) {
+    const Bytes key = random_bytes(256);
+    FloodServer server(key, "FLOOD_WAIT_100");
+    MtSession session(server, SessionData{2, key, 0x1111222233334444ull, 0});
+    RetryPolicy policy;
+    policy.max_flood_wait = std::chrono::seconds(5);
+    session.set_retry_policy(policy);
+    EXPECT_THROW(session.invoke(Bytes{0x01, 0x02, 0x03, 0x04}), FloodWaitError);
+    EXPECT_EQ(server.requests(), 1);
+}
+
+TEST(ClientRetry, ConnectRetriesBoundedThenFailsFast) {
+    using cppgram::ClientOptions;
+    using cppgram::Client;
+    ClientOptions opts;
+    opts.api_id = 1;
+    opts.api_hash = "x";
+    opts.dc_ip = "127.0.0.1";
+    opts.dc_port = 1;  // nothing listens here: connect is refused
+    opts.session_path = "";
+    opts.retry.max_attempts = 3;
+    opts.retry.base = std::chrono::milliseconds(10);
+    opts.retry.cap = std::chrono::milliseconds(20);
+    Client client(opts);
+    const auto start = std::chrono::steady_clock::now();
+    EXPECT_THROW(client.connect(), ConnectionError);
+    EXPECT_LT(std::chrono::steady_clock::now() - start, std::chrono::seconds(5));
+}

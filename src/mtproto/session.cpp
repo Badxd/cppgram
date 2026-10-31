@@ -4,6 +4,7 @@
 #include <zlib.h>
 
 #include <chrono>
+#include <thread>
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
@@ -217,21 +218,36 @@ void MtSession::send_content(const Bytes& body) {
 
 Bytes MtSession::invoke(const Bytes& request_body) {
     const auto deadline = std::chrono::steady_clock::now() + request_timeout_;
-    for (int attempt = 0; attempt < 3; ++attempt) {
+    int attempts = 0;
+    for (;;) {
+        ++attempts;
         const std::uint64_t msg_id = send_encrypted(request_body, true);
         Waiting waiting;
         waiting.msg_id = msg_id;
+        bool flood_waited = false;
         while (!waiting.found && !waiting.salt_changed) {
             if (std::chrono::steady_clock::now() >= deadline) {
                 throw ConnectionTimeout("request timed out waiting for rpc_result");
             }
-            process_one_into(&waiting);
+            try {
+                process_one_into(&waiting);
+            } catch (const FloodWaitError& e) {
+                // The server rejected the request before running it, so resending is safe.
+                // Wait the server-given time, but only within the policy limit and attempt budget.
+                const bool within_limit = e.seconds() >= 0 && std::chrono::seconds(e.seconds()) <= retry_policy_.max_flood_wait;
+                if (!within_limit || !may_retry(retry_policy_, attempts)) throw;
+                std::this_thread::sleep_for(std::chrono::seconds(e.seconds()));
+                flood_waited = true;
+                break;
+            }
         }
         if (waiting.found) {
             return waiting.result;
         }
+        if (!flood_waited && !may_retry(retry_policy_, attempts)) {
+            throw std::runtime_error("server kept rejecting the request after salt/time updates");
+        }
     }
-    throw std::runtime_error("server kept rejecting the request after salt updates");
 }
 
 void MtSession::process_one() {
@@ -265,8 +281,9 @@ void MtSession::dispatch(const InnerMessage& inner, Waiting* waiting) {
             const std::uint64_t req_msg_id = r.read_uint64();
             Bytes payload = r.read_raw(r.remaining());
             if (waiting != nullptr && req_msg_id == waiting->msg_id) {
-                waiting->found = true;
+                // Unpack first: an rpc_error throws here, and `found` must stay false in that case.
                 waiting->result = unpack_rpc_payload(payload);
+                waiting->found = true;
             }
             return;
         }
@@ -280,7 +297,24 @@ void MtSession::dispatch(const InnerMessage& inner, Waiting* waiting) {
         }
         case ty::bad_msg_notification::kId: {
             const ty::bad_msg_notification bad = ty::bad_msg_notification::read_body(r);
-            if (waiting != nullptr && bad.bad_msg_id == static_cast<std::int64_t>(waiting->msg_id)) {
+            const bool for_us = waiting != nullptr && bad.bad_msg_id == static_cast<std::int64_t>(waiting->msg_id);
+            if (bad.error_code == 16 || bad.error_code == 17) {
+                // 16: msg_id too low, 17: msg_id too high. Our clock is off. The server's own message id
+                // carries its unix time in the high 32 bits, so take the offset from it and resend.
+                const auto server_time = static_cast<std::int64_t>(inner.message_id >> 32);
+                const auto local_time = std::chrono::duration_cast<std::chrono::seconds>(
+                                            std::chrono::system_clock::now().time_since_epoch())
+                                            .count();
+                if (server_time <= 0) {
+                    throw RpcError(bad.error_code, "bad_msg_notification without server time");
+                }
+                data_.time_offset = server_time - static_cast<std::int64_t>(local_time);
+                if (for_us) {
+                    waiting->salt_changed = true;  // invoke() resends with the corrected msg_id
+                }
+                return;
+            }
+            if (for_us) {
                 throw RpcError(bad.error_code, "bad_msg_notification");
             }
             return;

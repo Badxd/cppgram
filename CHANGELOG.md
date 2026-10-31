@@ -7,6 +7,13 @@
 - New: `unpin_all_messages`, `set_contact_note`, `accept_terms_of_service`.
 - New: `get_account_ttl`, `set_account_ttl`, `set_chat_ttl`, `set_chat_username`, `set_chat_discussion_group`, `toggle_join_to_send`, `toggle_forum_topics`, `set_chat_accent_color`, `set_chat_profile_accent_color`, `toggle_folder_tags`.
 
+### Protocol and networking
+- Server time-sync errors (bad_msg 16/17) correct the time offset and resend.
+- Overall per-request deadline in `MtSession::invoke`.
+- FLOOD_WAIT sleeps and resends within `RetryPolicy::max_flood_wait`; longer waits are returned.
+- TCP connect retries with bounded exponential backoff and jitter (`ClientOptions::retry`).
+- Session files are written atomically (temp, fsync, rename).
+
 ### Security
 - DH parameters from the server are validated (2048-bit safe prime, generator residue, `1 < g_a < p-1`).
 - `random_id` values come from OpenSSL `RAND_bytes` instead of `std::mt19937_64`.

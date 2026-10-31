@@ -1,5 +1,6 @@
 #include "cppgram/client.h"
 
+#include <thread>
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
@@ -104,6 +105,11 @@ tl::InputPeer self_input_peer() {
 
 }  // namespace
 
+static double client_jitter01() {
+    const mtproto::Bytes rnd = mtproto::random_bytes(8);
+    return static_cast<double>(mtproto::le_u64_from(rnd)) / 18446744073709551615.0;
+}
+
 Client::Client(ClientOptions options) : options_(std::move(options)) {}
 
 Client::~Client() {
@@ -122,7 +128,21 @@ void Client::connect() {
     connection_ = std::make_unique<mtproto::Connection>(mtproto::TransportKind::Intermediate);
     debug_log(debug, "tcp: connecting to " + options_.dc_ip + ":" + std::to_string(options_.dc_port) +
                          " (dc " + std::to_string(options_.dc_id) + ")");
-    connection_->connect(options_.dc_ip, options_.dc_port);
+    // Connect with bounded retries. A refused or timed-out TCP connect is transient; the same connection
+    // object cannot be reused after a failed connect, so each attempt gets a fresh Connection.
+    mtproto::validate_retry_policy(options_.retry);
+    for (int attempt = 1;; ++attempt) {
+        try {
+            connection_->connect(options_.dc_ip, options_.dc_port);
+            break;
+        } catch (const mtproto::ConnectionError& e) {
+            if (!mtproto::may_retry(options_.retry, attempt)) throw;
+            const auto delay = mtproto::backoff_delay(options_.retry, attempt, client_jitter01());
+            debug_log(debug, std::string("tcp: connect failed (") + e.what() + "), retrying");
+            std::this_thread::sleep_for(delay);
+            connection_ = std::make_unique<mtproto::Connection>(mtproto::TransportKind::Intermediate);
+        }
+    }
     debug_log(debug, "tcp: connected");
     connection_->set_receive_timeout(options_.connect_timeout_ms);
 
@@ -165,6 +185,7 @@ void Client::connect() {
         debug_log(debug, "session: reusing saved auth key from " + path);
     }
     session_ = std::make_unique<mtproto::MtSession>(*connection_, data);
+    session_->set_retry_policy(options_.retry);
     if (storage_) {
         if (const auto saved = storage_->load_state()) {
             state_.pts = saved->pts;

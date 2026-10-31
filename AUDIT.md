@@ -10,9 +10,9 @@ are recorded in the commit messages and the baseline section below.
 | 1. Inventory | Done (informal) | Source survey of src/, include/, tests/, examples/, CI |
 | 2. Baseline build and tests | Done for commit 2bdbd22 | See Baseline below |
 | 3. Critical protocol and security | Done for listed items | Findings F1-F4 |
-| 4. Transport, encryption, RPC | Partly done | Transport framing tested (11 cases); RPC deadline fixed; time-sync errors open (F6) |
+| 4. Transport, encryption, RPC | Done for listed items | Transport framing tested (11 cases); RPC deadline (F3); time sync (F6) fixed |
 | 5. Auth and session persistence | Partly done | Atomic save, 0600 perms; schema versioning and corruption detection open |
-| 6. Networking, retries, backoff | Not started | Flood-wait parsing exists; backoff/jitter not implemented |
+| 6. Networking, retries, backoff | Partly done | Retry policy with equal-jitter backoff (9 tests); TCP connect retries bounded; FLOOD_WAIT sleep-and-resend bounded by policy. Not yet: cancellation during sleep, reconnect after mid-session drop |
 | 7. Update synchronization | Not started | |
 | 8. Message, chat, media APIs | Partly done | 18 new API methods (batches 5-7); live calls not tested |
 | 9. Storage and schema generation | Partly done | Prepared statements reviewed; generator reproducibility not checked |
@@ -45,7 +45,10 @@ Warnings at 2bdbd22:
 | F3 | Medium | Fixed | RPC | `invoke()` had no overall deadline; a server that kept sending unrelated packets blocked it forever | `MtSession::invoke` deadline, `Session.InvokeHonoursRequestTimeoutWhenServerKeepsTalking` (written after the fix, not run against the old code) |
 | F4 | Medium | Fixed | Session storage | Session save truncated the live file in place; a crash mid-write could destroy the session | `save_session_file` temp + fsync + rename; `SessionStorage.AtomicSaveLeavesNoTempFileAndRoundTrips` |
 | F5 | Low | Fixed | Randomness | `random_id` used `std::mt19937_64` seeded from `random_device` | `src/secure_random.h`, 7 client files |
-| F6 | Medium | Open | MTProto | `bad_msg_notification` codes 16 and 17 (time not synchronized) are thrown as errors instead of adjusting the time offset and resending | `session.cpp` dispatch, `bad_msg_notification` case |
+| F6 | Medium | Fixed | MTProto | `bad_msg_notification` codes 16/17 were thrown as errors; now the time offset is corrected from the server message id and the request is resent | `session.cpp` dispatch; `Session.BadMsgCode16CorrectsTimeOffsetAndResends` |
+| F11 | Medium | Fixed | RPC | FLOOD_WAIT was surfaced immediately even for short waits; now sleeps and resends within `max_flood_wait` and the attempt budget, and refuses longer waits | `MtSession::invoke`; `Session.FloodWait*` tests |
+| F13 | High | Fixed | RPC | Found by the new flood-wait test: an rpc_error set `found` before unpacking, so invoke() could return an empty result when the error was caught | `session.cpp` dispatch order; `Session.FloodWaitWithinLimitSleepsAndResends` |
+| F12 | Medium | Fixed | Networking | TCP connect had a single attempt with no backoff | `Client::connect` bounded retry; `ClientRetry.ConnectRetriesBoundedThenFailsFast` |
 | F7 | Low | Open | Codegen | Generated `api_impl_3.cpp`/`api_impl_4.cpp` declare unused `fl_flags`; fix belongs in the generator | Baseline warnings |
 | F8 | Low | Open | Tests | Handshake test uses deprecated RSA API (OpenSSL 3) | Baseline warnings |
 | F9 | Low | Open | Transport | After a transport error (e.g. negative length word), the decoder stays in the error state; the caller must reconnect. Not documented in the header yet | `transport.cpp` `next()` |
@@ -67,9 +70,11 @@ Warnings at 2bdbd22:
 
 ## Not implemented (explicit)
 
-- Exponential backoff with jitter for reconnects (checkpoint 6).
+- Reconnect after a mid-session connection drop (checkpoint 6).
+- Cancellation while sleeping in a flood wait or backoff (checkpoint 6).
 - Update difference and gap recovery (checkpoint 7).
 - Encrypted session storage, session export/import.
 - Benchmarks.
 - Debug build baseline.
+- Working tree after this batch: ctest 173/173 pass in build/Release (GCC, -O0, -j1). Debug and sanitizer runs not done.
 - Live Telegram testing of this batch (must run on the VPS with a dedicated test account).

@@ -12,6 +12,7 @@
 #include "cppgram/mtproto/auth.h"
 #include "cppgram/mtproto/connection.h"
 #include "cppgram/mtproto/crypto.h"
+#include "cppgram/mtproto/retry.h"
 #include "cppgram/mtproto/tl.h"
 
 namespace cppgram::mtproto {
@@ -68,6 +69,10 @@ public:
     // unrelated packets keep arriving. Requests are never resent after a timeout.
     Bytes invoke(const Bytes& request_body);
 
+    // Retry policy for FLOOD_WAIT (sleep and resend, bounded) and bad-salt/time resends (bounded by max_attempts).
+    void set_retry_policy(RetryPolicy policy) { validate_retry_policy(policy); retry_policy_ = policy; }
+    const RetryPolicy& retry_policy() const noexcept { return retry_policy_; }
+
     // Overall deadline for one invoke() call (default 30 s).
     void set_request_timeout(std::chrono::milliseconds timeout) noexcept { request_timeout_ = timeout; }
     std::chrono::milliseconds request_timeout() const noexcept { return request_timeout_; }
@@ -95,11 +100,12 @@ public:
 
 private:
     std::chrono::milliseconds request_timeout_{std::chrono::seconds(30)};
+    RetryPolicy retry_policy_{};
 
     struct Waiting {
         std::uint64_t msg_id = 0;
         bool found = false;
-        bool salt_changed = false;
+        bool salt_changed = false;  // server asked us to resend with a new salt or time
         Bytes result;
     };
 
