@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "cppgram/auth_state.h"
+#include "cppgram/channel_pts.h"
 #include "cppgram/convert.h"
 #include "cppgram/filters.h"
 #include "cppgram/mtproto/retry.h"
@@ -708,6 +709,11 @@ private:
     void handle_membership_update(const mtproto::tl::Update& update);
     std::shared_ptr<mtproto::tl::InputUser> input_user_ptr(PeerRef user) const;
     bool accept_pts(std::int32_t pts, std::int32_t pts_count);
+    // Per-channel gate. The first update seen for a channel sets its baseline (pts - pts_count) and is trusted.
+    bool accept_channel_pts(std::int64_t channel_id, std::int32_t pts, std::int32_t pts_count);
+    // Fetches updates.getChannelDifference for one channel until it is current. Baselines are in-memory only.
+    void catch_up_channel(std::int64_t channel_id);
+    ChannelPtsTracker channel_pts_;
     // Tears down the dead connection and reconnects with backoff, then catches up. Throws when the budget is spent.
     void reconnect_after_drop();
     mtproto::ReconnectBudget reconnect_budget_{};
