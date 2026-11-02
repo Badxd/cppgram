@@ -18,6 +18,8 @@
 #include "cppgram/storage.h"
 #include "cppgram/transfer.h"
 
+#include <openssl/evp.h>
+
 namespace cppgram {
 
 namespace fn = mtproto::tl::functions;
@@ -77,20 +79,29 @@ std::string to_hex(const Bytes& data) {
     return out;
 }
 
-Bytes read_file(const std::string& path) {
-    std::ifstream in(path, std::ios::binary);
-    if (!in) {
-        throw std::runtime_error("cannot open file: " + path);
+// MD5 of a file, read in 64 KiB blocks so the whole file never sits in memory.
+Bytes md5_of_stream(std::ifstream& in) {
+    EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+    if (ctx == nullptr || EVP_DigestInit_ex(ctx, EVP_md5(), nullptr) != 1) {
+        EVP_MD_CTX_free(ctx);
+        throw std::runtime_error("cannot initialise MD5");
     }
-    in.seekg(0, std::ios::end);
-    const std::streamoff size = in.tellg();
-    if (size < 0) throw std::runtime_error("cannot determine size of file: " + path);
-    in.seekg(0, std::ios::beg);
-    Bytes data(static_cast<std::size_t>(size));
-    if (size > 0 && !in.read(reinterpret_cast<char*>(data.data()), size)) {
-        throw std::runtime_error("cannot read file: " + path);
+    std::vector<char> block(64 * 1024);
+    while (in) {
+        in.read(block.data(), static_cast<std::streamsize>(block.size()));
+        const std::streamsize got = in.gcount();
+        if (got > 0 && EVP_DigestUpdate(ctx, block.data(), static_cast<std::size_t>(got)) != 1) {
+            EVP_MD_CTX_free(ctx);
+            throw std::runtime_error("MD5 update failed");
+        }
     }
-    return data;
+    Bytes digest(EVP_MAX_MD_SIZE);
+    unsigned int len = 0;
+    const int ok = EVP_DigestFinal_ex(ctx, digest.data(), &len);
+    EVP_MD_CTX_free(ctx);
+    if (ok != 1) throw std::runtime_error("MD5 finalisation failed");
+    digest.resize(len);
+    return digest;
 }
 
 std::string mime_for(const std::string& name) {
@@ -1007,17 +1018,30 @@ std::shared_ptr<tl::InputFile> Client::upload(const std::string& path, std::stri
     } catch (const std::exception& e) {
         throw std::runtime_error(std::string("upload rejected for ") + path + ": " + e.what());
     }
-    const Bytes data = read_file(path);
-    if (data.size() != file_size) throw std::runtime_error("file changed while reading: " + path);
+    std::ifstream in(path, std::ios::binary);
+    if (!in) throw std::runtime_error("cannot open file: " + path);
     out_name = std::filesystem::path(path).filename().string();
-    out_size = static_cast<std::int64_t>(data.size());
-    const std::int64_t file_id = random_i64();
+    out_size = static_cast<std::int64_t>(file_size);
     const bool big = plan.big_file;
+    // The MD5 for inputFile needs a full pass over the file; inputFileBig does not carry one.
+    std::string md5_hex;
+    if (!big) {
+        md5_hex = to_hex(md5_of_stream(in));
+        in.clear();
+        in.seekg(0, std::ios::beg);
+    }
+    const std::int64_t file_id = random_i64();
     const std::size_t parts = plan.part_count;
     for (std::size_t i = 0; i < parts; ++i) {
-        const std::size_t off = upload_part_offset(plan, static_cast<std::uint32_t>(i));
-        const std::size_t len = std::min<std::size_t>(plan.part_size, data.size() - off);
-        Bytes chunk(data.begin() + static_cast<std::ptrdiff_t>(off), data.begin() + static_cast<std::ptrdiff_t>(off + len));
+        const std::uint64_t off = upload_part_offset(plan, static_cast<std::uint32_t>(i));
+        const std::size_t len = static_cast<std::size_t>(std::min<std::uint64_t>(plan.part_size, file_size - off));
+        Bytes chunk(len);
+        in.clear();
+        in.seekg(static_cast<std::streamoff>(off), std::ios::beg);
+        in.read(reinterpret_cast<char*>(chunk.data()), static_cast<std::streamsize>(len));
+        if (static_cast<std::size_t>(in.gcount()) != len) {
+            throw std::runtime_error("file changed while uploading: " + path);
+        }
         if (big) {
             fn::upload_saveBigFilePart req;
             req.file_id = file_id;
@@ -1037,7 +1061,7 @@ std::shared_ptr<tl::InputFile> Client::upload(const std::string& path, std::stri
     if (big) {
         *file = tl::InputFile{ty::inputFileBig{file_id, static_cast<std::int32_t>(parts), out_name}};
     } else {
-        *file = tl::InputFile{ty::inputFile{file_id, static_cast<std::int32_t>(parts), out_name, to_hex(mtproto::md5(data))}};
+        *file = tl::InputFile{ty::inputFile{file_id, static_cast<std::int32_t>(parts), out_name, md5_hex}};
     }
     return file;
 }
@@ -1095,25 +1119,30 @@ std::int64_t Client::download_media(const Message& message, const std::string& p
     }
     // Data goes to "<path>.part" and is renamed to path only after the size checks pass. A failed or
     // interrupted download leaves no partial file at the destination; the .part file is removed.
+    // The .part file is kept after a failure so the next call resumes from its last aligned chunk. It is
+    // trusted by size only: Telegram gives no hash for these files, so delete it if the file on the server changed.
     const std::string temp_path = path + ".part";
-    struct TempFileGuard {
-        std::string file;
-        bool keep = false;
-        ~TempFileGuard() {
-            if (!keep) {
-                std::error_code ignored;
-                std::filesystem::remove(file, ignored);
+    std::int64_t offset = 0;
+    {
+        std::error_code size_ec;
+        const auto partial = std::filesystem::file_size(temp_path, size_ec);
+        if (!size_ec) {
+            const std::uint64_t resume = resume_offset(partial, static_cast<std::uint64_t>(std::max<std::int64_t>(0, message.media.size)),
+                                                       static_cast<std::uint32_t>(kDownloadChunk));
+            if (resume > 0) {
+                std::filesystem::resize_file(temp_path, resume, size_ec);
+                if (size_ec) throw std::runtime_error("cannot prepare resume of " + temp_path + ": " + size_ec.message());
+                offset = static_cast<std::int64_t>(resume);
             }
         }
-    } guard{temp_path};
+    }
 
     std::int64_t total = 0;
     {
-        std::ofstream out(temp_path, std::ios::binary | std::ios::trunc);
+        std::ofstream out(temp_path, std::ios::binary | (offset > 0 ? std::ios::app : std::ios::trunc));
         if (!out) {
             throw std::runtime_error("cannot open for writing: " + temp_path);
         }
-        std::int64_t offset = 0;
         for (;;) {
             fn::upload_getFile req;
             req.location = location;
@@ -1139,13 +1168,15 @@ std::int64_t Client::download_media(const Message& message, const std::string& p
         total = offset;
     }
     if (message.media.size > 0 && total != message.media.size) {
+        // Wrong size cannot be resumed from safely, so the partial file is discarded.
+        std::error_code ignored;
+        std::filesystem::remove(temp_path, ignored);
         throw std::runtime_error("download size mismatch: received " + std::to_string(total) + " bytes, expected " +
                                  std::to_string(message.media.size));
     }
     std::error_code ec;
     std::filesystem::rename(temp_path, path, ec);
     if (ec) throw std::runtime_error("cannot move download into place: " + ec.message());
-    guard.keep = true;
     if (progress) progress(total, message.media.size);
     return total;
 }

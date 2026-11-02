@@ -32,6 +32,11 @@ UploadPlan plan_upload(std::uint64_t file_size, std::uint32_t part_size = 0);
 // Byte offset of part `index` (0-based) in a plan.
 std::uint64_t upload_part_offset(const UploadPlan& plan, std::uint32_t index);
 
+// Offset to resume a download from, given the size of an existing partial file. upload.getFile needs aligned
+// offsets, so the result is the partial size rounded down to a multiple of chunk. Returns 0 (restart) when the
+// size is unknown (expected_size 0) or the partial file is larger than the expected file.
+std::uint64_t resume_offset(std::uint64_t partial_size, std::uint64_t expected_size, std::uint32_t chunk);
+
 // Download chunks: upload.getFile limit is a power of two, a multiple of 4 KiB, at most 1 MiB.
 // Returns the number of chunks needed to read file_size bytes. Throws std::invalid_argument on a bad limit.
 std::uint64_t download_chunk_count(std::uint64_t file_size, std::uint32_t limit);
