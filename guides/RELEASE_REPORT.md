@@ -23,6 +23,20 @@ tested component set, not a proven client.
 
 Fuzzing used ASan only, not UBSan, and ran for minutes rather than hours.
 
+## Long-duration fuzzing (ASan, libFuzzer, 600 s per target)
+
+Measured wall time per target: 602 s. The three targets ran at the same time on 2 vCPU (not one after another).
+
+| Target | Duration | Runs | Crashes | Sanitizer findings |
+|---|---|---|---|---|
+| fuzz_tl_reader | 601 s | 9,188,031 | 0 | 0 |
+| fuzz_html_parser | 601 s | 6,378,889 | 0 | 0 |
+| fuzz_session_string | 601 s | 264,549,266 | 0 | 0 |
+
+Earlier 500 s / 500 s / 100 s runs are smoke-level and are not counted as long runs.
+Coverage numbers are in the logs (`lf/*.log` in the session workspace). No crash artifacts were produced.
+Not run: fuzz_session_string was not run under UBSan; the transport-frame fuzz target does not exist yet.
+
 ## Implemented (with tests)
 
 - MTProto handshake with DH validation, message keys, AES-256-IGE, replay defence for server messages (F16)
@@ -31,6 +45,7 @@ Fuzzing used ASan only, not UBSan, and ran for minutes rather than hours.
 - Retry policy, bounded reconnect budget, cancellable sleep (3 + 2 stress tests)
 - Session storage: CGS2 file with CRC, SQLite store with integrity check and schema version
 - Encrypted sessions: file, SQLite key column, session string. scrypt + AES-256-GCM, passphrase from env (`CPPGRAM_SESSION_PASSPHRASE`). Documented in `guides/SESSION_ENCRYPTION.md`
+- MTProto proxy secret parser (plain, dd, ee formats), 9 offline tests. Format only, see limitations
 - SOCKS5 CONNECT with username/password auth, IPv4, IPv6, domain targets, timeouts (13 tests, loopback proxy)
 - SOCKS5 wired into the main DC connection (`ClientOptions::socks5`), tested against a loopback proxy only
 - Update gate: account pts, per-channel pts (in memory), gap recovery via getDifference / getChannelDifference
@@ -41,7 +56,8 @@ Fuzzing used ASan only, not UBSan, and ran for minutes rather than hours.
 ## Explicitly incomplete
 
 - Live verification: login, reconnect, flood waits, SOCKS5 through a real proxy, encrypted session against a real account
-- MTProto obfuscated proxy: design only (`guides/OBFUSCATED_PROXY_PLAN.md`). No code
+- MTProto obfuscated proxy transport (obfuscated2 handshake): NOT implemented. The official transport spec could not be fetched here, so byte layout and key derivation are unverified. Design in `guides/OBFUSCATED_PROXY_PLAN.md`
+- Proxy secret layouts (32/34/36+ hex) come from third-party docs; check against the official proxy documentation
 - Per-channel pts is in memory only. After restart the first update per channel is trusted again
 - Download resume trusts the `.part` file by size. Telegram gives no hash for these files
 - `export_session_string()` and SQLite store are encrypted only when the passphrase env var is set
