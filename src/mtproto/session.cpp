@@ -15,6 +15,10 @@
 
 #include "cppgram/mtproto/schema/api.h"
 #include "../secure_file.h"
+#include "cppgram/session_crypto.h"
+
+#include <cstdlib>
+#include <optional>
 
 namespace cppgram::mtproto {
 
@@ -95,13 +99,17 @@ void throw_rpc_error(std::int32_t code, const std::string& message) {
 }
 
 
-bool load_session_file(const std::string& path, SessionData& out) {
-    std::ifstream in(path, std::ios::binary);
-    if (!in) {
-        return false;
-    }
-    const Bytes file((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+namespace {
 
+// Passphrase for encrypted session files. Read from the environment only; empty counts as unset.
+std::optional<std::string> session_passphrase() {
+    const char* value = std::getenv(std::string(session_crypto::kSessionPassphraseEnv).c_str());
+    if (value == nullptr || *value == '\0') return std::nullopt;
+    return std::string(value);
+}
+
+// Parses a plain CGS2 or CGS1 image into out.
+void parse_session_image(const Bytes& file, const std::string& path, SessionData& out) {
     const bool v2 = file.size() == kSessionBodySize + 4 && std::memcmp(file.data(), kSessionMagic, 4) == 0;
     const bool v1 = file.size() == kSessionBodySize && std::memcmp(file.data(), kLegacySessionMagic, 4) == 0;
     if (!v2 && !v1) {
@@ -125,6 +133,33 @@ bool load_session_file(const std::string& path, SessionData& out) {
     out.time_offset = offset;
     out.server_salt = salt;
     out.auth_key.assign(file.begin() + 28, file.begin() + 28 + 256);
+}
+
+}  // namespace
+
+bool load_session_file(const std::string& path, SessionData& out) {
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+        return false;
+    }
+    const Bytes file((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    if (session_crypto::is_encrypted(file)) {
+        // Encrypted file: the passphrase must come from the environment. Plain files are still accepted, and
+        // they are encrypted the next time they are saved while a passphrase is set.
+        const auto passphrase = session_passphrase();
+        if (!passphrase) {
+            throw SessionCorruptError("session file is encrypted; set CPPGRAM_SESSION_PASSPHRASE to open it: " + path);
+        }
+        Bytes image;
+        try {
+            image = session_crypto::decrypt(*passphrase, file);
+        } catch (const std::runtime_error& e) {
+            throw SessionCorruptError(std::string(e.what()) + ": " + path);
+        }
+        parse_session_image(image, path, out);
+        return true;
+    }
+    parse_session_image(file, path, out);
     return true;
 }
 
@@ -140,6 +175,11 @@ void save_session_file(const std::string& path, const SessionData& data) {
     put_le64(image, data.server_salt);
     image.insert(image.end(), data.auth_key.begin(), data.auth_key.end());
     put_le32(image, crc32(image));
+    // With a passphrase set, the whole CGS2 image is wrapped in an authenticated CGE1 envelope.
+    Bytes payload = image;
+    if (const auto passphrase = session_passphrase()) {
+        payload = session_crypto::encrypt(*passphrase, image);
+    }
     // Crash-safe replace: write a private temp file, fsync it, then rename over the old session.
     // A crash at any point leaves either the old session or the new one, never a half-written file.
     const std::string tmp = path + ".tmp";
@@ -149,7 +189,7 @@ void save_session_file(const std::string& path, const SessionData& data) {
         if (!out) {
             throw std::runtime_error("cannot open session temp file for writing: " + tmp);
         }
-        out.write(reinterpret_cast<const char*>(image.data()), static_cast<std::streamsize>(image.size()));
+        out.write(reinterpret_cast<const char*>(payload.data()), static_cast<std::streamsize>(payload.size()));
         out.flush();
         if (!out) {
             std::remove(tmp.c_str());
