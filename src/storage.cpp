@@ -3,10 +3,12 @@
 #include <sqlite3.h>
 
 #include "cppgram/mtproto/session.h"
+#include "cppgram/session_crypto.h"
 
 #include "secure_file.h"
 
 #include <stdexcept>
+#include <vector>
 
 namespace cppgram {
 
@@ -107,9 +109,25 @@ bool SqliteStorage::load_session(mtproto::SessionData& out) const {
         out.dc_id = sqlite3_column_int(stmt, 0);
         const auto* blob = static_cast<const std::uint8_t*>(sqlite3_column_blob(stmt, 1));
         const int size = sqlite3_column_bytes(stmt, 1);
-        out.auth_key.assign(blob, blob + size);
+        std::vector<std::uint8_t> stored(blob, blob + size);
         out.server_salt = static_cast<std::uint64_t>(sqlite3_column_int64(stmt, 2));
         out.time_offset = sqlite3_column_int64(stmt, 3);
+        if (session_crypto::is_encrypted(stored)) {
+            // The key is stored as a CGE1 envelope. The passphrase must come from the environment.
+            const auto passphrase = session_crypto::passphrase_from_env();
+            if (!passphrase) {
+                sqlite3_finalize(stmt);
+                throw mtproto::SessionCorruptError("session store holds an encrypted key; set CPPGRAM_SESSION_PASSPHRASE");
+            }
+            try {
+                out.auth_key = session_crypto::decrypt(*passphrase, stored);
+            } catch (const std::runtime_error& e) {
+                sqlite3_finalize(stmt);
+                throw mtproto::SessionCorruptError(e.what());
+            }
+        } else {
+            out.auth_key = std::move(stored);
+        }
         found = out.auth_key.size() == 256;
     }
     sqlite3_finalize(stmt);
@@ -124,7 +142,12 @@ void SqliteStorage::save_session(const mtproto::SessionData& data) {
                              -1, &stmt, nullptr),
           db_, "prepare save_session");
     sqlite3_bind_int(stmt, 1, data.dc_id);
-    sqlite3_bind_blob(stmt, 2, data.auth_key.data(), static_cast<int>(data.auth_key.size()), SQLITE_TRANSIENT);
+    // With a passphrase set, the key is stored as a CGE1 envelope; otherwise as the raw 256 bytes.
+    std::vector<std::uint8_t> stored = data.auth_key;
+    if (const auto passphrase = session_crypto::passphrase_from_env()) {
+        stored = session_crypto::encrypt(*passphrase, data.auth_key);
+    }
+    sqlite3_bind_blob(stmt, 2, stored.data(), static_cast<int>(stored.size()), SQLITE_TRANSIENT);
     sqlite3_bind_int64(stmt, 3, static_cast<sqlite3_int64>(data.server_salt));
     sqlite3_bind_int64(stmt, 4, data.time_offset);
     const int rc = sqlite3_step(stmt);

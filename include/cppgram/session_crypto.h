@@ -6,7 +6,9 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <span>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -21,6 +23,9 @@ std::vector<std::uint8_t> encrypt(std::string_view passphrase, std::span<const s
 // Decrypts a blob. Throws std::runtime_error for a wrong passphrase, any tampering, truncation, or scrypt
 // parameters outside the accepted range. All authentication failures give the same message.
 std::vector<std::uint8_t> decrypt(std::string_view passphrase, std::span<const std::uint8_t> blob);
+
+// Passphrase from kSessionPassphraseEnv, or nullopt when unset or empty.
+std::optional<std::string> passphrase_from_env();
 
 // True when the blob starts with the encrypted-session magic. Used to tell encrypted from plain session files.
 bool is_encrypted(std::span<const std::uint8_t> blob) noexcept;

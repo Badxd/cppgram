@@ -4,6 +4,7 @@
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 
+#include <cstdlib>
 #include <cstring>
 #include <stdexcept>
 
@@ -124,6 +125,12 @@ std::vector<std::uint8_t> decrypt(std::string_view passphrase, std::span<const s
         fail_auth();
     }
     return out;
+}
+
+std::optional<std::string> passphrase_from_env() {
+    const char* value = std::getenv(std::string(kSessionPassphraseEnv).c_str());
+    if (value == nullptr || *value == '\0') return std::nullopt;
+    return std::string(value);
 }
 
 bool is_encrypted(std::span<const std::uint8_t> blob) noexcept {
