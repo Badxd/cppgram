@@ -318,16 +318,97 @@ void Client::dispatch_message(const Message& message) {
     }
 }
 
+namespace {
+
+std::int64_t channel_id_of_message(const mtproto::tl::Message& message) {
+    const auto* m = std::get_if<ty::message>(&message.value);
+    if (!m || !m->peer_id) return 0;
+    if (const auto* ch = std::get_if<ty::peerChannel>(&m->peer_id->value)) return ch->channel_id;
+    return 0;
+}
+
+}  // namespace
+
 void Client::handle_update(const tl::Update& update) {
-    // Channel updates carry their own per-channel pts, so only the account-wide pts is gated here.
+    // Account-wide updates are gated by the common pts. Channel updates use their own per-channel pts.
     if (const auto* nm = std::get_if<ty::updateNewMessage>(&update.value)) {
         if (!accept_pts(nm->pts, nm->pts_count)) return;
     } else if (const auto* em = std::get_if<ty::updateEditMessage>(&update.value)) {
         if (!accept_pts(em->pts, em->pts_count)) return;
     } else if (const auto* dm = std::get_if<ty::updateDeleteMessages>(&update.value)) {
         if (!accept_pts(dm->pts, dm->pts_count)) return;
+    } else if (const auto* ncm = std::get_if<ty::updateNewChannelMessage>(&update.value)) {
+        const std::int64_t channel = ncm->message ? channel_id_of_message(*ncm->message) : 0;
+        if (!accept_channel_pts(channel, ncm->pts, ncm->pts_count)) return;
+    } else if (const auto* ecm = std::get_if<ty::updateEditChannelMessage>(&update.value)) {
+        const std::int64_t channel = ecm->message ? channel_id_of_message(*ecm->message) : 0;
+        if (!accept_channel_pts(channel, ecm->pts, ecm->pts_count)) return;
+    } else if (const auto* dcm = std::get_if<ty::updateDeleteChannelMessages>(&update.value)) {
+        if (!accept_channel_pts(dcm->channel_id, dcm->pts, dcm->pts_count)) return;
     }
     dispatch_update_unchecked(update);
+}
+
+bool Client::accept_channel_pts(std::int64_t channel_id, std::int32_t pts, std::int32_t pts_count) {
+    if (channel_id == 0) return true;  // no channel attached: nothing to gate
+    if (!channel_pts_.pts(channel_id)) {
+        // No baseline yet: trust this update and start tracking from the state it implies.
+        channel_pts_.set_baseline(channel_id, pts - pts_count);
+    }
+    switch (channel_pts_.classify(channel_id, pts, pts_count)) {
+        case PtsDecision::Apply:
+            channel_pts_.mark_applied(channel_id, pts);
+            return true;
+        case PtsDecision::Duplicate:
+            return false;
+        case PtsDecision::Gap:
+            // getChannelDifference re-delivers the missing updates, so this one is dropped.
+            catch_up_channel(channel_id);
+            return false;
+    }
+    return false;
+}
+
+void Client::catch_up_channel(std::int64_t channel_id) {
+    require_session();
+    const auto base = channel_pts_.pts(channel_id);
+    const auto peer = cache_.find(PeerKind::Channel, channel_id);
+    if (!base || !peer || !peer->has_access_hash) {
+        // Without an access hash the channel cannot be queried. Forget it so the next update re-baselines.
+        channel_pts_.forget(channel_id);
+        return;
+    }
+    for (;;) {
+        fn::updates_getChannelDifference req;
+        req.force = false;
+        req.channel = std::make_shared<tl::InputChannel>(tl::InputChannel{ty::inputChannel{peer->id, peer->access_hash}});
+        req.filter = std::make_shared<tl::ChannelMessagesFilter>(tl::ChannelMessagesFilter{ty::channelMessagesFilterEmpty{}});
+        req.pts = channel_pts_.pts(channel_id).value_or(0);
+        req.limit = 100;
+        const tl::updates_ChannelDifference diff = invoke(req);
+
+        if (const auto* empty = std::get_if<ty::updates_channelDifferenceEmpty>(&diff.value)) {
+            channel_pts_.set_baseline(channel_id, empty->pts);
+            return;
+        }
+        if (std::get_if<ty::updates_channelDifferenceTooLong>(&diff.value)) {
+            // Server dropped history for this channel. The next update re-baselines from its own pts.
+            channel_pts_.forget(channel_id);
+            return;
+        }
+        const auto& d = std::get<ty::updates_channelDifference>(diff.value);
+        cache_users_chats(d.users, d.chats);
+        for (const auto& m : d.new_messages) {
+            if (!m) continue;
+            if (auto msg = detail::message_from_tl(*m, cache_)) dispatch_message(*msg);
+        }
+        for (const auto& up : d.other_updates) if (up) dispatch_update_unchecked(*up);
+
+        const auto previous = channel_pts_.pts(channel_id).value_or(0);
+        channel_pts_.set_baseline(channel_id, d.pts);
+        // Stop when final, or when the server did not move the channel forward (avoids a loop).
+        if (d.final_ || d.pts <= previous) return;
+    }
 }
 
 bool Client::accept_pts(std::int32_t pts, std::int32_t pts_count) {
