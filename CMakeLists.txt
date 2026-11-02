@@ -61,6 +61,7 @@ add_library(cppgram
     src/transfer.cpp
     src/mtproto/cancel.cpp
     src/mtproto/socks5.cpp
+    src/mtproto/proxy_secret.cpp
     src/channel_pts.cpp
     src/client_extra.cpp
     src/client_more.cpp
