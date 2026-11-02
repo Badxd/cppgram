@@ -45,6 +45,12 @@ std::uint64_t download_chunk_count(std::uint64_t file_size, std::uint32_t limit)
     return (file_size + limit - 1) / limit;
 }
 
+std::uint64_t resume_offset(std::uint64_t partial_size, std::uint64_t expected_size, std::uint32_t chunk) {
+    if (chunk == 0) throw std::invalid_argument("resume chunk must be positive");
+    if (expected_size == 0 || partial_size > expected_size) return 0;
+    return partial_size / chunk * chunk;
+}
+
 std::string sanitize_remote_filename(std::string_view name, std::size_t max_len) {
     // Keep only the last component, treating both separators as separators.
     const std::size_t slash = name.find_last_of("/\\");

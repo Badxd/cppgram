@@ -105,3 +105,15 @@ TEST(FileNameSafety, CapsLengthAndKeepsExtension) {
     const std::string no_ext(300, 'b');
     EXPECT_EQ(sanitize_remote_filename(no_ext, 100).size(), 100u);
 }
+
+TEST(TransferResume, OffsetIsAlignedAndBounded) {
+    const std::uint32_t chunk = 1024u * 1024u;
+    EXPECT_EQ(resume_offset(0, 5 * 1024 * 1024, chunk), 0u);
+    EXPECT_EQ(resume_offset(chunk - 1, 5 * 1024 * 1024, chunk), 0u);
+    EXPECT_EQ(resume_offset(chunk + 4096, 5 * 1024 * 1024, chunk), static_cast<std::uint64_t>(chunk));
+    EXPECT_EQ(resume_offset(3 * chunk, 5 * 1024 * 1024, chunk), 3u * chunk);
+    // Unknown expected size restarts, and a partial file larger than the target cannot be a prefix of it.
+    EXPECT_EQ(resume_offset(2 * chunk, 0, chunk), 0u);
+    EXPECT_EQ(resume_offset(6 * chunk, 5 * chunk, chunk), 0u);
+    EXPECT_THROW(resume_offset(1, 1, 0), std::invalid_argument);
+}
