@@ -58,7 +58,7 @@ Message Client::send_quote(const PeerRef& target, const std::string& text, std::
     reply.reply_to_msg_id = reply_to_id;
     reply.quote_text = quote_text;
     req.reply_to = std::make_shared<tl::InputReplyTo>(tl::InputReplyTo{reply});
-    const tl::Updates updates = session_->call(req);
+    const tl::Updates updates = call_rpc(req);
     if (auto msg = find_sent_message(updates, target, text, 0)) return *msg;
     throw std::runtime_error("quoted message was sent but no message was returned by the server");
 }
@@ -71,7 +71,7 @@ void Client::send_scheduled(const PeerRef& target, const std::string& text, std:
     req.message = text;
     req.random_id = random_i64();
     req.schedule_date = static_cast<std::int32_t>(unix_time);
-    session_->call(req);
+    call_rpc(req);
 }
 
 std::vector<Message> Client::send_album(const PeerRef& target, const std::vector<std::string>& paths,
@@ -101,7 +101,7 @@ std::vector<Message> Client::send_album(const PeerRef& target, const std::vector
             doc.attributes.push_back(std::make_shared<tl::DocumentAttribute>(tl::DocumentAttribute{ty::documentAttributeFilename{name}}));
             up.media = std::make_shared<tl::InputMedia>(tl::InputMedia{doc});
         }
-        const tl::MessageMedia uploaded = session_->call(up);
+        const tl::MessageMedia uploaded = call_rpc(up);
 
         std::shared_ptr<tl::InputMedia> ref;
         if (const auto* mp = std::get_if<ty::messageMediaPhoto>(&uploaded.value)) {
@@ -127,7 +127,7 @@ std::vector<Message> Client::send_album(const PeerRef& target, const std::vector
         req.multi_media.push_back(std::make_shared<tl::InputSingleMedia>(tl::InputSingleMedia{single}));
     }
 
-    const tl::Updates updates = session_->call(req);
+    const tl::Updates updates = call_rpc(req);
     std::vector<Message> out;
     if (const auto* u = std::get_if<ty::updates>(&updates.value)) {
         for (const auto& up : u->updates) {
@@ -151,7 +151,7 @@ std::string Client::translate_text(const std::string& text, const std::string& t
     req.text = std::vector<std::shared_ptr<tl::TextWithEntities>>{
         std::make_shared<tl::TextWithEntities>(tl::TextWithEntities{src})};
     req.to_lang = to_lang;
-    const tl::messages_TranslatedText result = session_->call(req);
+    const tl::messages_TranslatedText result = call_rpc(req);
     const auto* list = std::get_if<ty::messages_translateResult>(&result.value);
     if (list == nullptr || list->result.empty() || !list->result.front()) {
         throw std::runtime_error("messages.translateText returned no text");
@@ -165,7 +165,7 @@ void Client::set_online(bool online) {
     require_session();
     fn::account_updateStatus req;
     req.offline = !online;
-    session_->call(req);
+    call_rpc(req);
 }
 
 }  // namespace cppgram

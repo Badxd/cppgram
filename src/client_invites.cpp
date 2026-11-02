@@ -40,7 +40,7 @@ InviteLinkInfo Client::get_invite_link(const PeerRef& chat, const std::string& l
     fn::messages_getExportedChatInvite req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.link = link;
-    const tl::messages_ExportedChatInvite res = session_->call(req);
+    const tl::messages_ExportedChatInvite res = call_rpc(req);
     const auto* inv = std::get_if<ty::messages_exportedChatInvite>(&res.value);
     if (inv == nullptr || !inv->invite) {
         throw std::runtime_error("get_invite_link: no invite returned");
@@ -56,7 +56,7 @@ std::vector<InviteLinkInfo> Client::get_admin_invite_links(const PeerRef& chat, 
     req.admin_id = input_user_ptr(admin);
     req.revoked = revoked;
     req.limit = limit;
-    const tl::messages_ExportedChatInvites res = session_->call(req);
+    const tl::messages_ExportedChatInvites res = call_rpc(req);
     const auto* list = std::get_if<ty::messages_exportedChatInvites>(&res.value);
     std::vector<InviteLinkInfo> out;
     if (list == nullptr) return out;
@@ -70,7 +70,7 @@ std::vector<AdminInviteCount> Client::get_admins_with_invites(const PeerRef& cha
     require_session();
     fn::messages_getAdminsWithInvites req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
-    const tl::messages_ChatAdminsWithInvites res = session_->call(req);
+    const tl::messages_ChatAdminsWithInvites res = call_rpc(req);
     const auto* list = std::get_if<ty::messages_chatAdminsWithInvites>(&res.value);
     std::vector<AdminInviteCount> out;
     if (list == nullptr) return out;
@@ -100,7 +100,7 @@ InviteLinkInfo Client::edit_invite_link(const PeerRef& chat, const std::string& 
     req.usage_limit = usage_limit;
     req.request_needed = request_needed;
     req.title = title;
-    const tl::messages_ExportedChatInvite res = session_->call(req);
+    const tl::messages_ExportedChatInvite res = call_rpc(req);
     if (const auto* inv = std::get_if<ty::messages_exportedChatInvite>(&res.value)) {
         if (!inv->invite) throw std::runtime_error("edit_invite_link: no invite returned");
         return to_invite_info(*inv->invite);
@@ -117,7 +117,7 @@ void Client::delete_revoked_invite_links(const PeerRef& chat, const PeerRef& adm
     fn::messages_deleteRevokedExportedChatInvites req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.admin_id = input_user_ptr(admin);
-    session_->call(req);
+    call_rpc(req);
 }
 
 }  // namespace cppgram

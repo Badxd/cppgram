@@ -41,7 +41,7 @@ FolderInviteInfo Client::create_folder_invite_link(std::int32_t filter_id, const
     req.chatlist = chatlist_of(filter_id);
     req.title = title;
     for (const auto& p : peers) req.peers.push_back(std::make_shared<tl::InputPeer>(input_peer(p)));
-    const tl::chatlists_ExportedChatlistInvite res = session_->call(req);
+    const tl::chatlists_ExportedChatlistInvite res = call_rpc(req);
     const auto* w = std::get_if<ty::chatlists_exportedChatlistInvite>(&res.value);
     if (w == nullptr || !w->invite) throw std::runtime_error("create_folder_invite_link: no invite returned");
     return to_folder_info(*w->invite);
@@ -51,7 +51,7 @@ std::vector<FolderInviteInfo> Client::get_folder_invite_links(std::int32_t filte
     require_session();
     fn::chatlists_getExportedInvites req;
     req.chatlist = chatlist_of(filter_id);
-    const tl::chatlists_ExportedInvites res = session_->call(req);
+    const tl::chatlists_ExportedInvites res = call_rpc(req);
     std::vector<FolderInviteInfo> out;
     const auto* list = std::get_if<ty::chatlists_exportedInvites>(&res.value);
     if (list == nullptr) return out;
@@ -74,7 +74,7 @@ FolderInviteInfo Client::edit_folder_invite_link(std::int32_t filter_id, const s
         for (const auto& p : *peers) list.push_back(std::make_shared<tl::InputPeer>(input_peer(p)));
         req.peers = std::move(list);
     }
-    const tl::ExportedChatlistInvite res = session_->call(req);
+    const tl::ExportedChatlistInvite res = call_rpc(req);
     return to_folder_info(res);
 }
 
@@ -83,14 +83,14 @@ void Client::delete_folder_invite_link(std::int32_t filter_id, const std::string
     fn::chatlists_deleteExportedInvite req;
     req.chatlist = chatlist_of(filter_id);
     req.slug = slug_of(link);
-    session_->call(req);
+    call_rpc(req);
 }
 
 FolderInviteCheck Client::check_folder_invite_link(const std::string& link) {
     require_session();
     fn::chatlists_checkChatlistInvite req;
     req.slug = slug_of(link);
-    const tl::chatlists_ChatlistInvite res = session_->call(req);
+    const tl::chatlists_ChatlistInvite res = call_rpc(req);
     FolderInviteCheck out;
     if (std::get_if<ty::chatlists_chatlistInviteAlready>(&res.value)) {
         out.already_joined = true;
@@ -110,14 +110,14 @@ void Client::join_folder_invite_link(const std::string& link, const std::vector<
     fn::chatlists_joinChatlistInvite req;
     req.slug = slug_of(link);
     for (const auto& p : peers) req.peers.push_back(std::make_shared<tl::InputPeer>(input_peer(p)));
-    session_->call(req);
+    call_rpc(req);
 }
 
 BoostsStatusInfo Client::get_boosts_status(const PeerRef& chat) {
     require_session();
     fn::premium_getBoostsStatus req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
-    const tl::premium_BoostsStatus res = session_->call(req);
+    const tl::premium_BoostsStatus res = call_rpc(req);
     const auto* s = std::get_if<ty::premium_boostsStatus>(&res.value);
     if (s == nullptr) throw std::runtime_error("get_boosts_status: unexpected response");
     BoostsStatusInfo out;
@@ -138,7 +138,7 @@ std::int32_t Client::get_boosters_count(const PeerRef& chat) {
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.offset = "";
     req.limit = 1;
-    const tl::premium_BoostsList res = session_->call(req);
+    const tl::premium_BoostsList res = call_rpc(req);
     const auto* l = std::get_if<ty::premium_boostsList>(&res.value);
     if (l == nullptr) return 0;
     return l->count;
@@ -148,7 +148,7 @@ std::int64_t Client::get_stars_balance() {
     require_session();
     fn::payments_getStarsStatus req;
     req.peer = std::make_shared<tl::InputPeer>(tl::InputPeer{ty::inputPeerSelf{}});
-    const tl::payments_StarsStatus res = session_->call(req);
+    const tl::payments_StarsStatus res = call_rpc(req);
     const auto* s = std::get_if<ty::payments_starsStatus>(&res.value);
     if (s == nullptr || !s->balance) return 0;
     const auto* amount = std::get_if<ty::starsAmount>(&s->balance->value);

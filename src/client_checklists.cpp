@@ -51,7 +51,7 @@ void Client::send_todo_list(const PeerRef& chat, const std::string& title, const
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.media = std::make_shared<tl::InputMedia>(tl::InputMedia{media});
     req.random_id = new_random_id();
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::toggle_todo_items(const PeerRef& chat, std::int32_t msg_id, const std::vector<std::int32_t>& completed,
@@ -62,7 +62,7 @@ void Client::toggle_todo_items(const PeerRef& chat, std::int32_t msg_id, const s
     req.msg_id = msg_id;
     req.completed = completed;
     req.incompleted = incompleted;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::append_todo_items(const PeerRef& chat, std::int32_t msg_id, const std::vector<TodoItemInput>& items) {
@@ -71,7 +71,7 @@ void Client::append_todo_items(const PeerRef& chat, std::int32_t msg_id, const s
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.msg_id = msg_id;
     req.list = checklist_items(items);
-    session_->call(req);
+    call_rpc(req);
 }
 
 }  // namespace cppgram

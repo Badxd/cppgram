@@ -53,7 +53,7 @@ ChatMember Client::get_chat_member(const PeerRef& chat, const PeerRef& user) {
     fn::channels_getParticipant req;
     req.channel = channel_ref(chat);
     req.participant = std::make_shared<tl::InputPeer>(input_peer(user));
-    const tl::channels_ChannelParticipant result = session_->call(req);
+    const tl::channels_ChannelParticipant result = call_rpc(req);
     const auto* part = std::get_if<ty::channels_channelParticipant>(&result.value);
     if (part == nullptr) throw std::runtime_error("channels.getParticipant returned an unexpected type");
     cache_users_chats(part->users, part->chats);
@@ -68,7 +68,7 @@ std::vector<ChatMember> Client::get_chat_members(const PeerRef& chat, MemberFilt
         // Basic groups keep their members in messages.getFullChat, not in channels.getParticipants.
         fn::messages_getFullChat full_req;
         full_req.chat_id = chat.id;
-        const tl::messages_ChatFull full = session_->call(full_req);
+        const tl::messages_ChatFull full = call_rpc(full_req);
         std::vector<ChatMember> group_out;
         const auto* mcf = std::get_if<ty::messages_chatFull>(&full.value);
         if (mcf == nullptr || !mcf->full_chat) return group_out;
@@ -97,7 +97,7 @@ std::vector<ChatMember> Client::get_chat_members(const PeerRef& chat, MemberFilt
     req.offset = 0;
     req.limit = limit;
     req.hash = 0;
-    const tl::channels_ChannelParticipants result = session_->call(req);
+    const tl::channels_ChannelParticipants result = call_rpc(req);
     std::vector<ChatMember> out;
     if (const auto* cp = std::get_if<ty::channels_channelParticipants>(&result.value)) {
         cache_users_chats(cp->users, cp->chats);
@@ -213,7 +213,7 @@ Message Client::edit_message_caption(const PeerRef& target, std::int32_t message
     req.peer = std::make_shared<tl::InputPeer>(input_peer(target));
     req.id = message_id;
     req.message = caption;
-    const tl::Updates updates = session_->call(req);
+    const tl::Updates updates = call_rpc(req);
     if (auto msg = find_sent_message(updates, target, caption, message_id)) return *msg;
     throw std::runtime_error("caption edited but the server returned no message");
 }
@@ -233,7 +233,7 @@ Message Client::edit_message_media(const PeerRef& target, std::int32_t message_i
     req.id = message_id;
     req.media = std::make_shared<tl::InputMedia>(tl::InputMedia{doc});
     if (!caption.empty()) req.message = caption;
-    const tl::Updates updates = session_->call(req);
+    const tl::Updates updates = call_rpc(req);
     if (auto msg = find_sent_message(updates, target, caption, message_id)) return *msg;
     throw std::runtime_error("media edited but the server returned no message");
 }

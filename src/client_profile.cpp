@@ -43,7 +43,7 @@ std::vector<ProfilePhoto> Client::get_profile_photos(const PeerRef& user, int li
         req.offset = 0;
         req.max_id = max_id;
         req.limit = std::min(100, limit - static_cast<int>(out.size()));
-        const tl::photos_Photos result = session_->call(req);
+        const tl::photos_Photos result = call_rpc(req);
 
         const std::vector<std::shared_ptr<tl::Photo>>* photos = nullptr;
         if (const auto* a = std::get_if<ty::photos_photos>(&result.value)) {
@@ -74,7 +74,7 @@ ProfilePhoto Client::set_profile_photo(const std::string& path) {
     std::int64_t size = 0;
     fn::photos_uploadProfilePhoto req;
     req.file = upload(path, name, size);
-    const tl::photos_Photo result = session_->call(req);
+    const tl::photos_Photo result = call_rpc(req);
     const auto* wrap = std::get_if<ty::photos_photo>(&result.value);
     if (wrap == nullptr || !wrap->photo) {
         throw std::runtime_error("photos.uploadProfilePhoto returned no photo");
@@ -86,7 +86,7 @@ ProfilePhoto Client::set_profile_photo_from(const ProfilePhoto& photo) {
     require_session();
     fn::photos_updateProfilePhoto req;
     req.id = std::make_shared<tl::InputPhoto>(input_photo_of(photo));
-    const tl::photos_Photo result = session_->call(req);
+    const tl::photos_Photo result = call_rpc(req);
     const auto* wrap = std::get_if<ty::photos_photo>(&result.value);
     if (wrap == nullptr || !wrap->photo) {
         throw std::runtime_error("photos.updateProfilePhoto returned no photo");
@@ -101,7 +101,7 @@ std::size_t Client::delete_profile_photos(const std::vector<ProfilePhoto>& photo
     for (const auto& p : photos) {
         req.id.push_back(std::make_shared<tl::InputPhoto>(input_photo_of(p)));
     }
-    const std::vector<std::int64_t> removed = session_->call(req);
+    const std::vector<std::int64_t> removed = call_rpc(req);
     return removed.size();
 }
 
@@ -115,7 +115,7 @@ std::vector<Chat> Client::get_common_chats(const PeerRef& user, int limit) {
         req.user_id = input_user_ptr(user);
         req.max_id = max_id;
         req.limit = std::min(100, limit - static_cast<int>(out.size()));
-        const tl::messages_Chats result = session_->call(req);
+        const tl::messages_Chats result = call_rpc(req);
 
         const std::vector<std::shared_ptr<tl::Chat>>* chats = nullptr;
         if (const auto* a = std::get_if<ty::messages_chats>(&result.value)) {
@@ -143,7 +143,7 @@ std::vector<Chat> Client::get_common_chats(const PeerRef& user, int limit) {
 std::vector<SessionInfo> Client::get_sessions() {
     require_session();
     fn::account_getAuthorizations req;
-    const tl::account_Authorizations result = session_->call(req);
+    const tl::account_Authorizations result = call_rpc(req);
     std::vector<SessionInfo> out;
     const auto* list = std::get_if<ty::account_authorizations>(&result.value);
     if (list == nullptr) return out;
@@ -177,7 +177,7 @@ bool Client::terminate_session(std::int64_t hash) {
     require_session();
     fn::account_resetAuthorization req;
     req.hash = hash;
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 }  // namespace cppgram

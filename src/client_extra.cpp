@@ -38,7 +38,7 @@ std::optional<Message> Client::copy_message(const PeerRef& from, const PeerRef& 
     req.to_peer = std::make_shared<tl::InputPeer>(input_peer(to));
     req.id = {message_id};
     req.random_id = {next_random_id()};
-    const tl::Updates updates = session_->call(req);
+    const tl::Updates updates = call_rpc(req);
 
     const std::vector<std::shared_ptr<tl::Update>>* list = nullptr;
     if (const auto* u = std::get_if<ty::updates>(&updates.value)) {
@@ -67,7 +67,7 @@ std::vector<Message> Client::search_messages(const PeerRef& chat, const std::str
     req.q = query;
     req.filter = std::make_shared<tl::MessagesFilter>(tl::MessagesFilter{ty::inputMessagesFilterEmpty{}});
     req.limit = limit;
-    const tl::messages_Messages result = session_->call(req);
+    const tl::messages_Messages result = call_rpc(req);
     std::vector<Message> out;
     std::visit(
         [&](const auto& v) {
@@ -92,7 +92,7 @@ void Client::send_reaction(const PeerRef& target, std::int32_t message_id, const
         req.reaction = std::vector<std::shared_ptr<tl::Reaction>>{
             std::make_shared<tl::Reaction>(tl::Reaction{ty::reactionEmoji{emoji}})};
     }
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::mark_read(const PeerRef& target, std::int32_t max_id) {
@@ -101,13 +101,13 @@ void Client::mark_read(const PeerRef& target, std::int32_t max_id) {
         fn::channels_readHistory req;
         req.channel = input_channel_of(target);
         req.max_id = max_id;
-        session_->call(req);
+        call_rpc(req);
         return;
     }
     fn::messages_readHistory req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(target));
     req.max_id = max_id;
-    session_->call(req);
+    call_rpc(req);
 }
 
 std::vector<Message> Client::get_dialogs_last_messages(std::int32_t limit) {
@@ -115,7 +115,7 @@ std::vector<Message> Client::get_dialogs_last_messages(std::int32_t limit) {
     fn::messages_getDialogs req;
     req.offset_peer = std::make_shared<tl::InputPeer>(tl::InputPeer{ty::inputPeerEmpty{}});
     req.limit = limit;
-    const tl::messages_Dialogs result = session_->call(req);
+    const tl::messages_Dialogs result = call_rpc(req);
     std::vector<Message> out;
     std::visit(
         [&](const auto& v) {
@@ -146,7 +146,7 @@ std::vector<User> Client::get_users(const std::vector<PeerRef>& users) {
         if (!p.has_access_hash) throw std::runtime_error("user access hash unknown; resolve the user first");
         req.id.push_back(std::make_shared<tl::InputUser>(tl::InputUser{ty::inputUser{p.id, p.access_hash}}));
     }
-    const auto raw = session_->call(req);
+    const auto raw = call_rpc(req);
     cache_users_chats(raw, {});
     std::vector<User> out;
     for (const auto& u : raw) {
@@ -166,7 +166,7 @@ void Client::create_group(const std::string& title, const std::vector<PeerRef>& 
         }
         req.users.push_back(std::make_shared<tl::InputUser>(tl::InputUser{ty::inputUser{p.id, p.access_hash}}));
     }
-    session_->call(req);
+    call_rpc(req);
 }
 
 PeerRef Client::create_channel(const std::string& title, const std::string& about, bool megagroup) {
@@ -176,7 +176,7 @@ PeerRef Client::create_channel(const std::string& title, const std::string& abou
     req.megagroup = megagroup;
     req.title = title;
     req.about = about;
-    const tl::Updates updates = session_->call(req);
+    const tl::Updates updates = call_rpc(req);
 
     const std::vector<std::shared_ptr<tl::Chat>>* chats = nullptr;
     if (const auto* u = std::get_if<ty::updates>(&updates.value)) {
@@ -208,7 +208,7 @@ void Client::ban_chat_member(const PeerRef& chat, const PeerRef& user, std::int3
         req.channel = input_channel_of(chat);
         req.participant = std::make_shared<tl::InputPeer>(input_peer(user));
         req.banned_rights = std::make_shared<tl::ChatBannedRights>(tl::ChatBannedRights{rights});
-        session_->call(req);
+        call_rpc(req);
         return;
     }
     if (chat.kind != PeerKind::Chat) throw std::invalid_argument("ban_chat_member expects a group or channel");
@@ -219,7 +219,7 @@ void Client::ban_chat_member(const PeerRef& chat, const PeerRef& user, std::int3
     req.chat_id = chat.id;
     req.revoke_history = true;
     req.user_id = std::make_shared<tl::InputUser>(tl::InputUser{ty::inputUser{user.id, user.access_hash}});
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::unban_chat_member(const PeerRef& chat, const PeerRef& user) {
@@ -228,7 +228,7 @@ void Client::unban_chat_member(const PeerRef& chat, const PeerRef& user) {
     req.channel = input_channel_of(chat);
     req.participant = std::make_shared<tl::InputPeer>(input_peer(user));
     req.banned_rights = std::make_shared<tl::ChatBannedRights>(tl::ChatBannedRights{ty::chatBannedRights{}});
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::leave_group(const PeerRef& chat) {
@@ -238,7 +238,7 @@ void Client::leave_group(const PeerRef& chat) {
     req.chat_id = chat.id;
     req.revoke_history = false;
     req.user_id = std::make_shared<tl::InputUser>(tl::InputUser{ty::inputUserSelf{}});
-    session_->call(req);
+    call_rpc(req);
 }
 
 }  // namespace cppgram

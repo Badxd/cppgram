@@ -13,7 +13,7 @@ PaymentReceiptInfo Client::get_payment_receipt(const PeerRef& chat, std::int32_t
     fn::payments_getPaymentReceipt req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.msg_id = msg_id;
-    const tl::payments_PaymentReceipt result = session_->call(req);
+    const tl::payments_PaymentReceipt result = call_rpc(req);
     const auto* receipt = std::get_if<ty::payments_paymentReceipt>(&result.value);
     if (receipt == nullptr) throw std::runtime_error("get_payment_receipt: unexpected result");
 

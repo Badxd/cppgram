@@ -40,7 +40,7 @@ PeerRef peer_for_invite_user(std::int64_t id, std::int64_t access_hash, bool has
 std::vector<FolderInfo> Client::get_folders() {
     require_session();
     fn::messages_getDialogFilters req;
-    const tl::messages_DialogFilters result = session_->call(req);
+    const tl::messages_DialogFilters result = call_rpc(req);
     std::vector<FolderInfo> out;
     const auto* list = std::get_if<ty::messages_dialogFilters>(&result.value);
     if (list == nullptr) return out;
@@ -110,7 +110,7 @@ void Client::edit_folder(const FolderInfo& folder) {
     fn::messages_updateDialogFilter req;
     req.id = folder.id;
     req.filter = std::make_shared<tl::DialogFilter>(tl::DialogFilter{d});
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::delete_folder(std::int32_t folder_id) {
@@ -118,14 +118,14 @@ void Client::delete_folder(std::int32_t folder_id) {
     fn::messages_updateDialogFilter req;
     req.id = folder_id;
     req.filter = std::nullopt;  // no filter means delete
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::reorder_folders(const std::vector<std::int32_t>& folder_ids) {
     require_session();
     fn::messages_updateDialogFiltersOrder req;
     req.order = folder_ids;
-    session_->call(req);
+    call_rpc(req);
 }
 
 std::vector<std::string> Client::get_invite_links(const PeerRef& chat, std::int32_t limit) {
@@ -135,7 +135,7 @@ std::vector<std::string> Client::get_invite_links(const PeerRef& chat, std::int3
     req.admin_id = self_user();
     req.revoked = false;
     req.limit = limit;
-    const tl::messages_ExportedChatInvites result = session_->call(req);
+    const tl::messages_ExportedChatInvites result = call_rpc(req);
     std::vector<std::string> out;
     if (const auto* list = std::get_if<ty::messages_exportedChatInvites>(&result.value)) {
         for (const auto& inv : list->invites) {
@@ -151,7 +151,7 @@ void Client::delete_invite_link(const PeerRef& chat, const std::string& link) {
     fn::messages_deleteExportedChatInvite req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.link = link;
-    session_->call(req);
+    call_rpc(req);
 }
 
 std::vector<ChatInviteJoiner> Client::get_invite_joiners(const PeerRef& chat, const std::string& link, bool requested,
@@ -169,7 +169,7 @@ std::vector<ChatInviteJoiner> Client::get_invite_joiners(const PeerRef& chat, co
         req.offset_date = offset_date;
         req.offset_user = offset_user;
         req.limit = std::min<std::int32_t>(100, limit - static_cast<std::int32_t>(out.size()));
-        const tl::messages_ChatInviteImporters result = session_->call(req);
+        const tl::messages_ChatInviteImporters result = call_rpc(req);
         const auto* importers = std::get_if<ty::messages_chatInviteImporters>(&result.value);
         if (importers == nullptr || importers->importers.empty()) break;
         cache_users_chats(importers->users, {});
@@ -212,7 +212,7 @@ void Client::approve_join_request(const PeerRef& chat, const PeerRef& user, bool
         if (!u.has_access_hash) throw std::runtime_error("user access hash unknown; resolve the user first");
         req.user_id = std::make_shared<tl::InputUser>(tl::InputUser{ty::inputUser{u.id, u.access_hash}});
     }
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::approve_all_join_requests(const PeerRef& chat, bool approved, const std::string& link) {
@@ -221,7 +221,7 @@ void Client::approve_all_join_requests(const PeerRef& chat, bool approved, const
     req.approved = approved;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     if (!link.empty()) req.link = link;
-    session_->call(req);
+    call_rpc(req);
 }
 
 }  // namespace cppgram

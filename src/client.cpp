@@ -146,7 +146,7 @@ void Client::require_session() const {
 
 void Client::connect() {
     disconnect();
-    auth_state_ = AuthState::Connecting;
+    set_auth_state(AuthState::Connecting);
     const bool debug = options_.debug;
     connection_ = std::make_unique<mtproto::Connection>(mtproto::TransportKind::Intermediate);
     debug_log(debug, "tcp: connecting to " + options_.dc_ip + ":" + std::to_string(options_.dc_port) +
@@ -231,7 +231,7 @@ void Client::connect() {
     init.query.app_version = options_.app_version;
     init.query.system_lang_code = options_.lang_code;
     init.query.lang_code = options_.lang_code;
-    const tl::Config cfg = session_->call(init);
+    const tl::Config cfg = call_rpc(init);
     dc_endpoints_.clear();
     if (const auto* c = std::get_if<ty::config>(&cfg.value)) {
         for (const auto& opt : c->dc_options) {
@@ -242,13 +242,16 @@ void Client::connect() {
         }
     }
     connection_->set_receive_timeout(0);
-    auth_state_ = AuthState::Unauthenticated;  // authorization is unknown until probe_session()
+    set_auth_state(AuthState::Unauthenticated);  // authorization is unknown until probe_session()
+    notify_connection(ConnectionEvent::Connected);
     debug_log(debug, "session: initConnection done");
 }
 
 void Client::disconnect() {
-    auth_state_ = AuthState::Disconnected;
+    const bool was_connected = session_ != nullptr;
+    set_auth_state(AuthState::Disconnected);
     session_.reset();
+    if (was_connected) notify_connection(ConnectionEvent::Disconnected);
     if (connection_) {
         connection_->close();
         connection_.reset();
@@ -262,7 +265,7 @@ void Client::login_bot(const std::string& bot_token) {
     req.api_id = options_.api_id;
     req.api_hash = options_.api_hash;
     req.bot_auth_token = bot_token;
-    session_->call(req);
+    call_rpc(req);
     if (auth_state_ == AuthState::Unauthenticated) apply_auth_event(AuthEvent::SessionRestored);
     sync_updates_state();
 }
@@ -277,7 +280,7 @@ User Client::get_me() {
     require_session();
     fn::users_getUsers req;
     req.id = {std::make_shared<tl::InputUser>(tl::InputUser{ty::inputUserSelf{}})};
-    const auto users = session_->call(req);
+    const auto users = call_rpc(req);
     cache_users_chats(users, {});
     for (const auto& u : users) {
         if (u) {
@@ -297,6 +300,54 @@ void Client::on_message(Filter filter, MessageHandler handler, int group) {
 
 void Client::on_error(ErrorHandler handler) {
     error_handlers_.push_back(std::move(handler));
+}
+
+void Client::on_connection_state(ConnectionHandler handler) {
+    connection_handlers_.push_back(std::move(handler));
+}
+
+void Client::on_auth_state(AuthStateHandler handler) {
+    auth_handlers_.push_back(std::move(handler));
+}
+
+void Client::on_rpc_error(RpcErrorHandler handler) {
+    rpc_error_handlers_.push_back(std::move(handler));
+}
+
+void Client::notify_rpc_error(std::int32_t code, const std::string& name) {
+    // Copy the list: a handler may register another handler while we iterate.
+    const auto handlers = rpc_error_handlers_;
+    for (const auto& h : handlers) {
+        try {
+            h(*this, code, name);
+        } catch (const std::exception& e) {
+            report_handler_error("rpc error handler", e);
+        }
+    }
+}
+
+void Client::notify_connection(ConnectionEvent event) {
+    const auto handlers = connection_handlers_;
+    for (const auto& h : handlers) {
+        try {
+            h(*this, event);
+        } catch (const std::exception& e) {
+            report_handler_error("connection handler", e);
+        }
+    }
+}
+
+void Client::set_auth_state(AuthState next) {
+    if (next == auth_state_) return;
+    auth_state_ = next;
+    const auto handlers = auth_handlers_;
+    for (const auto& h : handlers) {
+        try {
+            h(*this, next);
+        } catch (const std::exception& e) {
+            report_handler_error("auth state handler", e);
+        }
+    }
 }
 
 void Client::report_handler_error(const std::string& stage, const std::exception& e) {
@@ -649,6 +700,7 @@ void Client::ping() {
 void Client::reconnect_after_drop() {
     // connect() resets the authorization state, so remember it and check the key again afterwards.
     const bool was_authorized = auth_state_ == AuthState::Authorized;
+    notify_connection(ConnectionEvent::Reconnecting);
     for (;;) {
         if (!reconnect_budget_.record_failure()) {
             throw mtproto::ConnectionError("gave up reconnecting after " + std::to_string(options_.max_reconnects) +
@@ -785,7 +837,7 @@ PeerRef Client::resolve(const std::string& reference) {
 
     fn::contacts_resolveUsername req;
     req.username = name;
-    const tl::contacts_ResolvedPeer resolved = session_->call(req);
+    const tl::contacts_ResolvedPeer resolved = call_rpc(req);
     const auto* rp = std::get_if<ty::contacts_resolvedPeer>(&resolved.value);
     if (rp == nullptr || !rp->peer) {
         throw std::runtime_error("username not found: " + name);
@@ -876,7 +928,7 @@ Message Client::send_message(const PeerRef& target, const std::string& text,
         req.reply_to = std::make_shared<tl::InputReplyTo>(tl::InputReplyTo{ty::inputReplyToMessage{*reply_to_id}});
     }
     req.effect = effect_id;
-    const tl::Updates updates = session_->call(req);
+    const tl::Updates updates = call_rpc(req);
     if (auto msg = find_sent_message(updates, target, text, 0)) {
         return *msg;
     }
@@ -889,7 +941,7 @@ Message Client::edit_message(const PeerRef& target, std::int32_t message_id, con
     req.peer = std::make_shared<tl::InputPeer>(input_peer(target));
     req.id = message_id;
     req.message = text;
-    const tl::Updates updates = session_->call(req);
+    const tl::Updates updates = call_rpc(req);
     if (auto msg = find_sent_message(updates, target, text, message_id)) {
         return *msg;
     }
@@ -902,13 +954,13 @@ void Client::delete_messages(const PeerRef& target, const std::vector<std::int32
         fn::channels_deleteMessages req;
         req.channel = std::make_shared<tl::InputChannel>(tl::InputChannel{ty::inputChannel{target.id, target.access_hash}});
         req.id = message_ids;
-        session_->call(req);
+        call_rpc(req);
         return;
     }
     fn::messages_deleteMessages req;
     req.revoke = revoke;
     req.id = message_ids;
-    session_->call(req);
+    call_rpc(req);
 }
 
 std::vector<Message> Client::get_messages(const PeerRef& target, const std::vector<std::int32_t>& message_ids) {
@@ -919,13 +971,13 @@ std::vector<Message> Client::get_messages(const PeerRef& target, const std::vect
         for (const auto id : message_ids) {
             req.id.push_back(std::make_shared<tl::InputMessage>(tl::InputMessage{ty::inputMessageID{id}}));
         }
-        return collect_messages(session_->call(req));
+        return collect_messages(call_rpc(req));
     }
     fn::messages_getMessages req;
     for (const auto id : message_ids) {
         req.id.push_back(std::make_shared<tl::InputMessage>(tl::InputMessage{ty::inputMessageID{id}}));
     }
-    return collect_messages(session_->call(req));
+    return collect_messages(call_rpc(req));
 }
 
 std::vector<Message> Client::get_history(const PeerRef& target, std::int32_t limit, std::int32_t offset_id) {
@@ -934,7 +986,7 @@ std::vector<Message> Client::get_history(const PeerRef& target, std::int32_t lim
     req.peer = std::make_shared<tl::InputPeer>(input_peer(target));
     req.offset_id = offset_id;
     req.limit = limit;
-    return collect_messages(session_->call(req));
+    return collect_messages(call_rpc(req));
 }
 
 void Client::send_chat_action(const PeerRef& target, ChatAction action) {
@@ -950,7 +1002,7 @@ void Client::send_chat_action(const PeerRef& target, ChatAction action) {
         case ChatAction::RecordVoice: req.action = std::make_shared<tl::SendMessageAction>(tl::SendMessageAction{ty::sendMessageRecordAudioAction{}}); break;
         case ChatAction::RecordVideo: req.action = std::make_shared<tl::SendMessageAction>(tl::SendMessageAction{ty::sendMessageRecordRoundAction{}}); break;
     }
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::pin_message(const PeerRef& target, std::int32_t message_id, bool silent) {
@@ -960,7 +1012,7 @@ void Client::pin_message(const PeerRef& target, std::int32_t message_id, bool si
     req.id = message_id;
     req.silent = silent;
     req.unpin = false;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::unpin_message(const PeerRef& target, std::int32_t message_id) {
@@ -969,7 +1021,7 @@ void Client::unpin_message(const PeerRef& target, std::int32_t message_id) {
     req.peer = std::make_shared<tl::InputPeer>(input_peer(target));
     req.id = message_id;
     req.unpin = true;
-    session_->call(req);
+    call_rpc(req);
 }
 
 std::vector<Message> Client::forward_messages(const PeerRef& from, const PeerRef& to,
@@ -982,7 +1034,7 @@ std::vector<Message> Client::forward_messages(const PeerRef& from, const PeerRef
     for (std::size_t i = 0; i < message_ids.size(); ++i) {
         req.random_id.push_back(random_i64());
     }
-    const tl::Updates updates = session_->call(req);
+    const tl::Updates updates = call_rpc(req);
     std::vector<Message> out;
     if (const auto* u = std::get_if<ty::updates>(&updates.value)) {
         for (const auto& up : u->updates) {
@@ -1004,7 +1056,7 @@ void Client::answer_callback_query(std::int64_t query_id, const std::string& tex
     req.alert = alert;
     if (!text.empty()) req.message = text;
     if (!url.empty()) req.url = url;
-    session_->call(req);
+    call_rpc(req);
 }
 
 std::shared_ptr<tl::InputFile> Client::upload(const std::string& path, std::string& out_name, std::int64_t& out_size) {
@@ -1048,13 +1100,13 @@ std::shared_ptr<tl::InputFile> Client::upload(const std::string& path, std::stri
             req.file_part = static_cast<std::int32_t>(i);
             req.file_total_parts = static_cast<std::int32_t>(parts);
             req.bytes = std::move(chunk);
-            session_->call(req);
+            call_rpc(req);
         } else {
             fn::upload_saveFilePart req;
             req.file_id = file_id;
             req.file_part = static_cast<std::int32_t>(i);
             req.bytes = std::move(chunk);
-            session_->call(req);
+            call_rpc(req);
         }
     }
     auto file = std::make_shared<tl::InputFile>();
@@ -1073,7 +1125,7 @@ Message Client::send_media(const PeerRef& target, std::shared_ptr<tl::InputMedia
     req.media = std::move(media);
     req.message = caption;
     req.random_id = random_i64();
-    const tl::Updates updates = session_->call(req);
+    const tl::Updates updates = call_rpc(req);
     if (auto msg = find_sent_message(updates, target, caption, 0)) {
         return *msg;
     }
@@ -1149,7 +1201,7 @@ std::int64_t Client::download_media(const Message& message, const std::string& p
             req.offset = offset;
             req.limit = kDownloadChunk;
             req.cdn_supported = true;
-            const tl::upload_File file = session_->call(req);
+            const tl::upload_File file = call_rpc(req);
             const auto* f = std::get_if<ty::upload_file>(&file.value);
             if (f == nullptr) {
                 const auto* redirect = std::get_if<ty::upload_fileCdnRedirect>(&file.value);
@@ -1224,7 +1276,7 @@ std::int64_t Client::download_via_cdn(const ty::upload_fileCdnRedirect& redirect
                 fn::upload_getCdnFileHashes hreq;
                 hreq.file_token = redirect.file_token;
                 hreq.offset = p;
-                const std::vector<std::shared_ptr<tl::FileHash>> fetched = session_->call(hreq);
+                const std::vector<std::shared_ptr<tl::FileHash>> fetched = call_rpc(hreq);
                 for (const auto& h : fetched) {
                     if (h) if (const auto* fh = std::get_if<ty::fileHash>(&h->value)) hashes[fh->offset] = {fh->limit, fh->hash};
                 }
@@ -1271,21 +1323,21 @@ void Client::join_chat_by_invite(const std::string& invite_hash) {
     require_session();
     fn::messages_importChatInvite req;
     req.hash = invite_hash;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::join_channel(const PeerRef& channel) {
     require_session();
     fn::channels_joinChannel req;
     req.channel = std::make_shared<tl::InputChannel>(tl::InputChannel{ty::inputChannel{channel.id, channel.access_hash}});
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::leave_channel(const PeerRef& channel) {
     require_session();
     fn::channels_leaveChannel req;
     req.channel = std::make_shared<tl::InputChannel>(tl::InputChannel{ty::inputChannel{channel.id, channel.access_hash}});
-    session_->call(req);
+    call_rpc(req);
 }
 
 }  // namespace cppgram

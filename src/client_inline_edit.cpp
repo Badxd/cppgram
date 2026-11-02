@@ -18,7 +18,7 @@ bool Client::edit_inline_message(std::int32_t dc_id, std::int64_t inline_id, std
     fn::messages_editInlineBotMessage req;
     req.id = std::make_shared<tl::InputBotInlineMessageID>(tl::InputBotInlineMessageID{id});
     req.message = text;
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 }  // namespace cppgram

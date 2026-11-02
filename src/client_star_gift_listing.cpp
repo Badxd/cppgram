@@ -48,7 +48,7 @@ SavedStarGiftPage Client::get_saved_star_gifts(const PeerRef& peer, const std::s
     req.offset = offset;
     req.limit = limit;
     req.collection_id = collection_id;
-    const tl::payments_SavedStarGifts result = session_->call(req);
+    const tl::payments_SavedStarGifts result = call_rpc(req);
     const auto* page = std::get_if<ty::payments_savedStarGifts>(&result.value);
     if (page == nullptr) throw std::runtime_error("get_saved_star_gifts: unexpected result");
 
@@ -67,7 +67,7 @@ std::vector<StarGiftCollectionInfo> Client::get_star_gift_collections(const Peer
     fn::payments_getStarGiftCollections req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(peer));
     req.hash = 0;
-    const tl::payments_StarGiftCollections result = session_->call(req);
+    const tl::payments_StarGiftCollections result = call_rpc(req);
     const auto* list = std::get_if<ty::payments_starGiftCollections>(&result.value);
     if (list == nullptr) throw std::runtime_error("get_star_gift_collections: unexpected result");
 
@@ -89,7 +89,7 @@ UniqueStarGiftInfo Client::get_unique_star_gift(const std::string& slug) {
     require_session();
     fn::payments_getUniqueStarGift req;
     req.slug = slug;
-    const tl::payments_UniqueStarGift result = session_->call(req);
+    const tl::payments_UniqueStarGift result = call_rpc(req);
     const auto* wrapped = std::get_if<ty::payments_uniqueStarGift>(&result.value);
     if (wrapped == nullptr || !wrapped->gift) throw std::runtime_error("get_unique_star_gift: unexpected result");
     const auto* unique = std::get_if<ty::starGiftUnique>(&wrapped->gift->value);
@@ -108,7 +108,7 @@ std::vector<std::int64_t> Client::get_star_gift_upgrade_prices(std::int64_t gift
     require_session();
     fn::payments_getStarGiftUpgradePreview req;
     req.gift_id = gift_id;
-    const tl::payments_StarGiftUpgradePreview result = session_->call(req);
+    const tl::payments_StarGiftUpgradePreview result = call_rpc(req);
     const auto* preview = std::get_if<ty::payments_starGiftUpgradePreview>(&result.value);
     if (preview == nullptr) throw std::runtime_error("get_star_gift_upgrade_prices: unexpected result");
 

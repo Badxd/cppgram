@@ -88,6 +88,12 @@ public:
     using JoinRequestHandler = std::function<void(Client&, const JoinRequest&)>;
     using DeletedMessagesHandler = std::function<void(Client&, const DeletedMessages&)>;
     using DownloadProgress = std::function<void(std::int64_t done, std::int64_t total)>;
+    // Connection lifecycle, fired by connect(), disconnect() and the reconnect path.
+    enum class ConnectionEvent { Connected, Disconnected, Reconnecting };
+    using ConnectionHandler = std::function<void(Client&, ConnectionEvent)>;
+    using AuthStateHandler = std::function<void(Client&, AuthState)>;
+    // Telegram RPC errors seen by any request, with the bare error name (for example FLOOD_WAIT_30).
+    using RpcErrorHandler = std::function<void(Client&, std::int32_t code, const std::string& name)>;
     // stage is the handler kind that threw (for example "message handler"), message is the exception text.
     using ErrorHandler = std::function<void(Client&, const std::string& stage, const std::string& message)>;
 
@@ -119,6 +125,11 @@ public:
     void on_message(Filter filter, MessageHandler handler, int group = 0);
     // Called whenever a handler throws. Without one, the error is printed to stderr.
     void on_error(ErrorHandler handler);
+    // Typed event handlers. A handler that throws is reported through on_error and does not stop the others.
+    // Handlers run on the thread that caused the event (the update loop, or the caller of connect/login).
+    void on_connection_state(ConnectionHandler handler);
+    void on_auth_state(AuthStateHandler handler);
+    void on_rpc_error(RpcErrorHandler handler);
     void on_callback_query(CallbackHandler handler);
     // Filtered overloads: the handler runs only when the filter matches.
     void on_callback_query(CallbackFilter filter, CallbackHandler handler) {
@@ -146,7 +157,7 @@ public:
     template <class Request>
     typename Request::Result invoke(const Request& request) {
         require_session();
-        return session_->call(request);
+        return call_rpc(request);
     }
 
     // ---- peers
@@ -743,6 +754,23 @@ private:
     };
     std::vector<MessageRoute> message_handlers_;
     std::vector<ErrorHandler> error_handlers_;
+    std::vector<ConnectionHandler> connection_handlers_;
+    std::vector<AuthStateHandler> auth_handlers_;
+    std::vector<RpcErrorHandler> rpc_error_handlers_;
+    // Single entry point for every RPC: reports Telegram errors to on_rpc_error, then rethrows.
+    template <class Request>
+    typename Request::Result call_rpc(const Request& request) {
+        try {
+            return session_->call(request);
+        } catch (const mtproto::RpcError& e) {
+            notify_rpc_error(e.code(), e.rpc_message());
+            throw;
+        }
+    }
+    void notify_rpc_error(std::int32_t code, const std::string& name);
+    void notify_connection(ConnectionEvent event);
+    // Sets the authorization state and notifies on_auth_state when it changes.
+    void set_auth_state(AuthState next);
     void report_handler_error(const std::string& stage, const std::exception& e);
     std::vector<CallbackHandler> callback_handlers_;
     std::vector<RawUpdateHandler> raw_update_handlers_;

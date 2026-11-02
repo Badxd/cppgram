@@ -36,7 +36,7 @@ void Client::set_forum_topic_closed(const PeerRef& channel, std::int32_t topic_i
     req.peer = std::make_shared<tl::InputPeer>(input_peer(channel));
     req.topic_id = topic_id;
     req.closed = closed;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::set_general_topic_hidden(const PeerRef& channel, bool hidden) {
@@ -45,7 +45,7 @@ void Client::set_general_topic_hidden(const PeerRef& channel, bool hidden) {
     req.peer = std::make_shared<tl::InputPeer>(input_peer(channel));
     req.topic_id = 1;
     req.hidden = hidden;
-    session_->call(req);
+    call_rpc(req);
 }
 
 std::vector<ForumTopicInfo> Client::get_forum_topics_by_id(const PeerRef& channel,
@@ -54,7 +54,7 @@ std::vector<ForumTopicInfo> Client::get_forum_topics_by_id(const PeerRef& channe
     fn::messages_getForumTopicsByID req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(channel));
     req.topics = topic_ids;
-    const tl::messages_ForumTopics res = session_->call(req);
+    const tl::messages_ForumTopics res = call_rpc(req);
     std::vector<ForumTopicInfo> out;
     const auto* list = std::get_if<ty::messages_forumTopics>(&res.value);
     if (list == nullptr) return out;
@@ -71,7 +71,7 @@ std::vector<StarGiftInfo> Client::get_star_gifts() {
     require_session();
     fn::payments_getStarGifts req;
     req.hash = 0;
-    const tl::payments_StarGifts res = session_->call(req);
+    const tl::payments_StarGifts res = call_rpc(req);
     std::vector<StarGiftInfo> out;
     const auto* list = std::get_if<ty::payments_starGifts>(&res.value);
     if (list == nullptr) return out;
@@ -101,7 +101,7 @@ std::vector<StarsTransactionInfo> Client::get_stars_transactions(std::int32_t li
     req.peer = std::make_shared<tl::InputPeer>(tl::InputPeer{ty::inputPeerSelf{}});
     req.offset = "";
     req.limit = limit;
-    const tl::payments_StarsStatus res = session_->call(req);
+    const tl::payments_StarsStatus res = call_rpc(req);
     std::vector<StarsTransactionInfo> out;
     const auto* status = std::get_if<ty::payments_starsStatus>(&res.value);
     if (status == nullptr || !status->history) return out;

@@ -95,7 +95,7 @@ Message Client::send_with_markup(const PeerRef& target, const std::string& text,
     } else if (reply_keyboard && !reply_keyboard->rows.empty()) {
         req.reply_markup = to_tl_reply_markup(*reply_keyboard);
     }
-    const tl::Updates updates = session_->call(req);
+    const tl::Updates updates = call_rpc(req);
     if (auto msg = find_sent_message(updates, target, text, 0)) return *msg;
     throw std::runtime_error("message was sent but no id was returned by the server");
 }
@@ -106,7 +106,7 @@ void Client::edit_message_reply_markup(const PeerRef& target, std::int32_t messa
     req.peer = std::make_shared<tl::InputPeer>(input_peer(target));
     req.id = message_id;
     req.reply_markup = to_tl_inline_markup(keyboard);
-    session_->call(req);
+    call_rpc(req);
 }
 
 Message Client::send_poll(const PeerRef& target, const std::string& question, const std::vector<std::string>& options,
@@ -149,7 +149,7 @@ std::vector<Message> Client::copy_messages(const PeerRef& from, const PeerRef& t
     req.drop_author = true;
     req.drop_media_captions = drop_captions;
     for (std::size_t i = 0; i < message_ids.size(); ++i) req.random_id.push_back(random_id_markup());
-    const tl::Updates updates = session_->call(req);
+    const tl::Updates updates = call_rpc(req);
     std::vector<Message> out;
     const std::vector<std::shared_ptr<tl::Update>>* list = nullptr;
     if (const auto* u = std::get_if<ty::updates>(&updates.value)) {

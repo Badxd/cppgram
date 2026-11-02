@@ -11,7 +11,7 @@ namespace tl = mtproto::tl;
 CloudPasswordStatus Client::get_cloud_password_status() {
     require_session();
     fn::account_getPassword req;
-    const tl::account_Password result = session_->call(req);
+    const tl::account_Password result = call_rpc(req);
     const auto* pw = std::get_if<ty::account_password>(&result.value);
     if (pw == nullptr) throw std::runtime_error("get_cloud_password_status: unexpected result");
 

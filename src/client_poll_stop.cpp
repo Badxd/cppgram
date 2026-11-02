@@ -44,7 +44,7 @@ void Client::stop_poll(const Message& poll_message) {
     req.id = poll_message.id;
     req.media = std::make_shared<tl::InputMedia>(
         tl::InputMedia{ty::inputMediaPoll{std::make_shared<tl::Poll>(tl::Poll{std::move(p)})}});
-    session_->call(req);
+    call_rpc(req);
 }
 
 }  // namespace cppgram

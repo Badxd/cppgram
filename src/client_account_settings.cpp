@@ -15,7 +15,7 @@ namespace tl = mtproto::tl;
 std::int32_t Client::get_account_ttl_days() {
     require_session();
     fn::account_getAccountTTL req;
-    const tl::AccountDaysTTL res = session_->call(req);
+    const tl::AccountDaysTTL res = call_rpc(req);
     const auto* d = std::get_if<ty::accountDaysTTL>(&res.value);
     if (d == nullptr) throw std::runtime_error("get_account_ttl_days: unexpected response");
     return d->days;
@@ -25,20 +25,20 @@ void Client::set_account_ttl_days(std::int32_t days) {
     require_session();
     fn::account_setAccountTTL req;
     req.ttl = std::make_shared<tl::AccountDaysTTL>(tl::AccountDaysTTL{ty::accountDaysTTL{days}});
-    session_->call(req);
+    call_rpc(req);
 }
 
 bool Client::check_username(const std::string& username) {
     require_session();
     fn::account_checkUsername req;
     req.username = username;
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 GlobalPrivacyInfo Client::get_global_privacy_settings() {
     require_session();
     fn::account_getGlobalPrivacySettings req;
-    const tl::GlobalPrivacySettings res = session_->call(req);
+    const tl::GlobalPrivacySettings res = call_rpc(req);
     const auto* g = std::get_if<ty::globalPrivacySettings>(&res.value);
     if (g == nullptr) throw std::runtime_error("get_global_privacy_settings: unexpected response");
     GlobalPrivacyInfo out;
@@ -61,7 +61,7 @@ void Client::set_archive_and_mute_new_noncontact(bool enabled) {
     next.display_gifts_button = current.display_gifts_button;
     fn::account_setGlobalPrivacySettings req;
     req.settings = std::make_shared<tl::GlobalPrivacySettings>(tl::GlobalPrivacySettings{next});
-    session_->call(req);
+    call_rpc(req);
 }
 
 // ---- phase 10: emoji and recent stickers
@@ -70,14 +70,14 @@ void Client::clear_recent_stickers(bool attached) {
     require_session();
     fn::messages_clearRecentStickers req;
     req.attached = attached;
-    session_->call(req);
+    call_rpc(req);
 }
 
 std::vector<std::int64_t> Client::get_default_emoji_status_ids() {
     require_session();
     fn::account_getDefaultEmojiStatuses req;
     req.hash = 0;
-    const tl::account_EmojiStatuses res = session_->call(req);
+    const tl::account_EmojiStatuses res = call_rpc(req);
     std::vector<std::int64_t> out;
     const auto* list = std::get_if<ty::account_emojiStatuses>(&res.value);
     if (list == nullptr) return out;
@@ -92,7 +92,7 @@ std::vector<std::int64_t> Client::get_custom_emoji_document_ids(const std::vecto
     require_session();
     fn::messages_getCustomEmojiDocuments req;
     req.document_id = ids;
-    const auto docs = session_->call(req);
+    const auto docs = call_rpc(req);
     std::vector<std::int64_t> out;
     for (const auto& d : docs) {
         if (!d) continue;

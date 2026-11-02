@@ -25,7 +25,7 @@ std::shared_ptr<tl::InputChannel> channel_ptr(const PeerRef& p) {
 std::int32_t Client::get_account_ttl() {
     require_session();
     fn::account_getAccountTTL req;
-    const tl::AccountDaysTTL res = session_->call(req);
+    const tl::AccountDaysTTL res = call_rpc(req);
     const auto* d = std::get_if<ty::accountDaysTTL>(&res.value);
     if (d == nullptr) throw std::runtime_error("get_account_ttl: unexpected response");
     return d->days;
@@ -36,7 +36,7 @@ bool Client::set_account_ttl(std::int32_t days) {
     if (days < 1) throw std::invalid_argument("set_account_ttl: days must be at least 1");
     fn::account_setAccountTTL req;
     req.ttl = std::make_shared<tl::AccountDaysTTL>(tl::AccountDaysTTL{ty::accountDaysTTL{days}});
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 void Client::set_chat_ttl(const PeerRef& chat, std::int32_t period_seconds) {
@@ -45,7 +45,7 @@ void Client::set_chat_ttl(const PeerRef& chat, std::int32_t period_seconds) {
     fn::messages_setHistoryTTL req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.period = period_seconds;
-    session_->call(req);
+    call_rpc(req);
 }
 
 bool Client::set_chat_username(const PeerRef& channel, const std::string& username) {
@@ -53,7 +53,7 @@ bool Client::set_chat_username(const PeerRef& channel, const std::string& userna
     fn::channels_updateUsername req;
     req.channel = channel_ptr(channel);
     req.username = username;
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 bool Client::set_chat_discussion_group(const PeerRef& broadcast, const PeerRef& group) {
@@ -61,7 +61,7 @@ bool Client::set_chat_discussion_group(const PeerRef& broadcast, const PeerRef& 
     fn::channels_setDiscussionGroup req;
     req.broadcast = channel_ptr(broadcast);
     req.group = channel_ptr(group);
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 void Client::toggle_join_to_send(const PeerRef& channel, bool enabled) {
@@ -69,7 +69,7 @@ void Client::toggle_join_to_send(const PeerRef& channel, bool enabled) {
     fn::channels_toggleJoinToSend req;
     req.channel = channel_ptr(channel);
     req.enabled = enabled;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::toggle_forum_topics(const PeerRef& channel, bool enabled, bool tabs) {
@@ -78,7 +78,7 @@ void Client::toggle_forum_topics(const PeerRef& channel, bool enabled, bool tabs
     req.channel = channel_ptr(channel);
     req.enabled = enabled;
     req.tabs = tabs;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::set_chat_accent_color(const PeerRef& channel, std::int32_t color) {
@@ -88,7 +88,7 @@ void Client::set_chat_accent_color(const PeerRef& channel, std::int32_t color) {
     req.for_profile = false;
     req.channel = channel_ptr(channel);
     req.color = color;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::set_chat_profile_accent_color(const PeerRef& channel, std::int32_t color) {
@@ -98,14 +98,14 @@ void Client::set_chat_profile_accent_color(const PeerRef& channel, std::int32_t 
     req.for_profile = true;
     req.channel = channel_ptr(channel);
     req.color = color;
-    session_->call(req);
+    call_rpc(req);
 }
 
 bool Client::toggle_folder_tags(bool enabled) {
     require_session();
     fn::messages_toggleDialogFilterTags req;
     req.enabled = enabled;
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 }  // namespace cppgram

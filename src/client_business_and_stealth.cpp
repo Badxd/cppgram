@@ -36,14 +36,14 @@ void Client::set_business_away_message(std::int32_t shortcut_id, bool offline_on
     m.recipients = all_recipients();
     fn::account_updateBusinessAwayMessage req;
     req.message = std::make_shared<tl::InputBusinessAwayMessage>(tl::InputBusinessAwayMessage{m});
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::clear_business_away_message() {
     require_session();
     fn::account_updateBusinessAwayMessage req;
     req.message = std::nullopt;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::set_business_greeting_message(std::int32_t shortcut_id, std::int32_t no_activity_days) {
@@ -54,14 +54,14 @@ void Client::set_business_greeting_message(std::int32_t shortcut_id, std::int32_
     m.no_activity_days = no_activity_days;
     fn::account_updateBusinessGreetingMessage req;
     req.message = std::make_shared<tl::InputBusinessGreetingMessage>(tl::InputBusinessGreetingMessage{m});
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::clear_business_greeting_message() {
     require_session();
     fn::account_updateBusinessGreetingMessage req;
     req.message = std::nullopt;
-    session_->call(req);
+    call_rpc(req);
 }
 
 // ---- phase 14: stealth mode and sticker set edits
@@ -71,7 +71,7 @@ void Client::enable_stealth_mode(bool past, bool future) {
     fn::stories_activateStealthMode req;
     req.past = past;
     req.future = future;
-    session_->call(req);
+    call_rpc(req);
 }
 
 namespace {
@@ -96,7 +96,7 @@ void Client::change_sticker_position(const std::string& short_name, std::int64_t
     fn::stickers_changeStickerPosition req;
     req.sticker = input_doc_of(set.stickers, document_id);
     req.position = position;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::remove_sticker_from_set(const std::string& short_name, std::int64_t document_id) {
@@ -104,7 +104,7 @@ void Client::remove_sticker_from_set(const std::string& short_name, std::int64_t
     const StickerSetContent set = get_sticker_set(short_name);
     fn::stickers_removeStickerFromSet req;
     req.sticker = input_doc_of(set.stickers, document_id);
-    session_->call(req);
+    call_rpc(req);
 }
 
 }  // namespace cppgram

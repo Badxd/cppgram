@@ -11,7 +11,7 @@ bool Client::reset_bot_commands(const std::string& lang_code) {
     fn::bots_resetBotCommands req;
     req.scope = std::make_shared<tl::BotCommandScope>(tl::BotCommandScope{ty::botCommandScopeDefault{}});
     req.lang_code = lang_code;
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 bool Client::set_bot_default_admin_rights(const AdminRights& rights, bool broadcast) {
@@ -30,11 +30,11 @@ bool Client::set_bot_default_admin_rights(const AdminRights& rights, bool broadc
     if (broadcast) {
         fn::bots_setBotBroadcastDefaultAdminRights req;
         req.admin_rights = admin_rights;
-        return session_->call(req);
+        return call_rpc(req);
     }
     fn::bots_setBotGroupDefaultAdminRights req;
     req.admin_rights = admin_rights;
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 }  // namespace cppgram

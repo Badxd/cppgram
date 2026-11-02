@@ -40,7 +40,7 @@ void Client::set_game_score(const PeerRef& chat, std::int32_t message_id, const 
     req.score = score;
     req.force = force;
     req.edit_message = edit_message;
-    session_->call(req);
+    call_rpc(req);
 }
 
 std::vector<GameScore> Client::get_game_high_scores(const PeerRef& chat, std::int32_t message_id, const PeerRef& user) {
@@ -49,7 +49,7 @@ std::vector<GameScore> Client::get_game_high_scores(const PeerRef& chat, std::in
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.id = message_id;
     req.user_id = input_user_ptr(user);
-    const tl::messages_HighScores result = session_->call(req);
+    const tl::messages_HighScores result = call_rpc(req);
     std::vector<GameScore> out;
     const auto* hs = std::get_if<ty::messages_highScores>(&result.value);
     if (hs == nullptr) return out;
@@ -112,7 +112,7 @@ void Client::answer_inline_results(std::int64_t query_id, const std::vector<Inli
         }
         if (out) req.results.push_back(out);
     }
-    session_->call(req);
+    call_rpc(req);
 }
 
 }  // namespace cppgram
