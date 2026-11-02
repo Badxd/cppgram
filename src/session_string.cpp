@@ -1,6 +1,10 @@
 #include "cppgram/session_string.h"
 
 #include <cstdint>
+#include <stdexcept>
+#include <string_view>
+
+#include "cppgram/session_crypto.h"
 
 namespace cppgram {
 
@@ -65,6 +69,7 @@ bool base64_decode(const std::string& text, mtproto::Bytes& out) {
 // Layout: version(1)=1 | dc_id(4 LE) | time_offset(8 LE) | server_salt(8 LE) | auth_key(256).
 constexpr std::uint8_t kVersion = 1;
 constexpr std::size_t kSize = 1 + 4 + 8 + 8 + 256;
+constexpr std::string_view kEncryptedPrefix = "cge1:";
 
 void put_le(mtproto::Bytes& out, std::uint64_t v, int n) {
     for (int i = 0; i < n; ++i) out.push_back(static_cast<std::uint8_t>((v >> (8 * i)) & 0xFF));
@@ -86,12 +91,33 @@ std::string encode_session_string(const mtproto::SessionData& data) {
     put_le(raw, static_cast<std::uint64_t>(data.time_offset), 8);
     put_le(raw, data.server_salt, 8);
     raw.insert(raw.end(), data.auth_key.begin(), data.auth_key.end());
+    // With CPPGRAM_SESSION_PASSPHRASE set, the string is an encrypted CGE1 envelope behind a "cge1:" prefix.
+    if (const auto passphrase = session_crypto::passphrase_from_env()) {
+        const mtproto::Bytes sealed = session_crypto::encrypt(*passphrase, raw);
+        return std::string(kEncryptedPrefix) + base64_encode(sealed);
+    }
     return base64_encode(raw);
 }
 
 bool decode_session_string(const std::string& text, mtproto::SessionData& out) {
     mtproto::Bytes raw;
-    if (!base64_decode(text, raw) || raw.size() != kSize || raw[0] != kVersion) return false;
+    if (text.rfind(kEncryptedPrefix, 0) == 0) {
+        // Encrypted strings cannot be read without the passphrase. That is an error, not "no session".
+        const auto passphrase = session_crypto::passphrase_from_env();
+        if (!passphrase) {
+            throw std::runtime_error("session string is encrypted; set CPPGRAM_SESSION_PASSPHRASE to use it");
+        }
+        mtproto::Bytes sealed;
+        if (!base64_decode(text.substr(kEncryptedPrefix.size()), sealed)) return false;
+        try {
+            raw = session_crypto::decrypt(*passphrase, sealed);
+        } catch (const std::runtime_error&) {
+            throw std::runtime_error("session string could not be decrypted: wrong passphrase or damaged text");
+        }
+    } else if (!base64_decode(text, raw)) {
+        return false;
+    }
+    if (raw.size() != kSize || raw[0] != kVersion) return false;
     out.dc_id = static_cast<std::int32_t>(static_cast<std::uint32_t>(get_le(raw, 1, 4)));
     out.time_offset = static_cast<std::int64_t>(get_le(raw, 5, 8));
     out.server_salt = get_le(raw, 13, 8);
