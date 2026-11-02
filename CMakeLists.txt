@@ -103,6 +103,7 @@ add_library(cppgram
     src/client_send.cpp
     src/client_session.cpp
     src/session_string.cpp
+    src/session_crypto.cpp
     src/convert.cpp
     src/filters.cpp
 )
