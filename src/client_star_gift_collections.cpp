@@ -40,7 +40,7 @@ StarGiftCollectionInfo Client::create_star_gift_collection(const PeerRef& peer, 
     req.peer = std::make_shared<tl::InputPeer>(input_peer(peer));
     req.title = title;
     req.stargift = own_gifts(msg_ids);
-    const tl::StarGiftCollection result = session_->call(req);
+    const tl::StarGiftCollection result = call_rpc(req);
     return to_collection(result);
 }
 
@@ -55,7 +55,7 @@ StarGiftCollectionInfo Client::update_star_gift_collection(const PeerRef& peer, 
     req.title = title;
     if (!add_msg_ids.empty()) req.add_stargift = own_gifts(add_msg_ids);
     if (!remove_msg_ids.empty()) req.delete_stargift = own_gifts(remove_msg_ids);
-    const tl::StarGiftCollection result = session_->call(req);
+    const tl::StarGiftCollection result = call_rpc(req);
     return to_collection(result);
 }
 

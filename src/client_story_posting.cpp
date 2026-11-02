@@ -54,7 +54,7 @@ std::int32_t Client::post_story(const std::string& path, bool as_photo, const st
     req.random_id = story_random_id();
     req.period = period;
 
-    const tl::Updates updates = session_->call(req);
+    const tl::Updates updates = call_rpc(req);
     for (const auto& update : std::get_if<ty::updates>(&updates.value) ? std::get<ty::updates>(updates.value).updates
                                                                         : std::vector<std::shared_ptr<tl::Update>>{}) {
         if (!update) continue;

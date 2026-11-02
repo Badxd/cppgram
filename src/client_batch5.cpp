@@ -31,7 +31,7 @@ bool Client::add_recent_sticker(const DocumentRef& sticker) {
     fn::messages_saveRecentSticker req;
     req.id = input_document_of(sticker);
     req.unsave = false;
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 bool Client::remove_recent_sticker(const DocumentRef& sticker) {
@@ -39,7 +39,7 @@ bool Client::remove_recent_sticker(const DocumentRef& sticker) {
     fn::messages_saveRecentSticker req;
     req.id = input_document_of(sticker);
     req.unsave = true;
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 void Client::apply_gift_code(const std::string& slug) {
@@ -49,7 +49,7 @@ void Client::apply_gift_code(const std::string& slug) {
     }
     fn::payments_applyGiftCode req;
     req.slug = slug;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::apply_boost(const PeerRef& chat, const std::vector<std::int32_t>& slots) {
@@ -60,7 +60,7 @@ void Client::apply_boost(const PeerRef& chat, const std::vector<std::int32_t>& s
     fn::premium_applyBoost req;
     req.slots = slots;
     req.peer = std::make_shared<mtproto::tl::InputPeer>(input_peer(chat));
-    session_->call(req);
+    call_rpc(req);
 }
 
 }  // namespace cppgram

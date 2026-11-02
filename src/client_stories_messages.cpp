@@ -50,7 +50,7 @@ std::vector<MessageReadParticipant> Client::get_message_read_participants(const 
     fn::messages_getMessageReadParticipants req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.msg_id = message_id;
-    const auto res = session_->call(req);
+    const auto res = call_rpc(req);
     std::vector<MessageReadParticipant> out;
     for (const auto& p : res) {
         if (!p) continue;
@@ -66,14 +66,14 @@ void Client::delete_scheduled_messages(const PeerRef& chat, const std::vector<st
     fn::messages_deleteScheduledMessages req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.id = message_ids;
-    session_->call(req);
+    call_rpc(req);
 }
 
 std::vector<AvailableEffectInfo> Client::get_available_effects() {
     require_session();
     fn::messages_getAvailableEffects req;
     req.hash = 0;
-    const tl::messages_AvailableEffects res = session_->call(req);
+    const tl::messages_AvailableEffects res = call_rpc(req);
     std::vector<AvailableEffectInfo> out;
     const auto* list = std::get_if<ty::messages_availableEffects>(&res.value);
     if (list == nullptr) return out;
@@ -101,7 +101,7 @@ void Client::send_reaction_with_options(const PeerRef& chat, std::int32_t messag
     std::vector<std::shared_ptr<tl::Reaction>> reactions;
     reactions.push_back(std::make_shared<tl::Reaction>(tl::Reaction{ty::reactionEmoji{emoji}}));
     req.reaction = std::move(reactions);
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::clear_reaction(const PeerRef& chat, std::int32_t message_id) {
@@ -110,7 +110,7 @@ void Client::clear_reaction(const PeerRef& chat, std::int32_t message_id) {
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.msg_id = message_id;
     req.reaction = std::vector<std::shared_ptr<tl::Reaction>>{};
-    session_->call(req);
+    call_rpc(req);
 }
 
 // ---- phase 4: stories
@@ -121,7 +121,7 @@ std::vector<StoryInfo> Client::get_pinned_stories(const PeerRef& chat, std::int3
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.offset_id = offset_id;
     req.limit = limit;
-    return to_story_list(session_->call(req));
+    return to_story_list(call_rpc(req));
 }
 
 std::vector<StoryInfo> Client::get_stories_archive(const PeerRef& chat, std::int32_t offset_id, std::int32_t limit) {
@@ -130,7 +130,7 @@ std::vector<StoryInfo> Client::get_stories_archive(const PeerRef& chat, std::int
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.offset_id = offset_id;
     req.limit = limit;
-    return to_story_list(session_->call(req));
+    return to_story_list(call_rpc(req));
 }
 
 std::vector<StoryInfo> Client::get_stories_by_id(const PeerRef& chat, const std::vector<std::int32_t>& story_ids) {
@@ -138,7 +138,7 @@ std::vector<StoryInfo> Client::get_stories_by_id(const PeerRef& chat, const std:
     fn::stories_getStoriesByID req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.id = story_ids;
-    return to_story_list(session_->call(req));
+    return to_story_list(call_rpc(req));
 }
 
 std::vector<std::int32_t> Client::delete_stories(const PeerRef& chat, const std::vector<std::int32_t>& story_ids) {
@@ -146,7 +146,7 @@ std::vector<std::int32_t> Client::delete_stories(const PeerRef& chat, const std:
     fn::stories_deleteStories req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.id = story_ids;
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 std::vector<std::int32_t> Client::toggle_pinned_stories(const PeerRef& chat, const std::vector<std::int32_t>& story_ids,
@@ -156,7 +156,7 @@ std::vector<std::int32_t> Client::toggle_pinned_stories(const PeerRef& chat, con
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.id = story_ids;
     req.pinned = pinned;
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 std::string Client::export_story_link(const PeerRef& chat, std::int32_t story_id) {
@@ -164,7 +164,7 @@ std::string Client::export_story_link(const PeerRef& chat, std::int32_t story_id
     fn::stories_exportStoryLink req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.id = story_id;
-    const tl::ExportedStoryLink res = session_->call(req);
+    const tl::ExportedStoryLink res = call_rpc(req);
     const auto* link = std::get_if<ty::exportedStoryLink>(&res.value);
     if (link == nullptr) throw std::runtime_error("export_story_link: no link returned");
     return link->link;

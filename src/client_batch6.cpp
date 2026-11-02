@@ -15,7 +15,7 @@ void Client::unpin_all_messages(const PeerRef& chat, std::optional<std::int32_t>
     fn::messages_unpinAllMessages req;
     req.peer = std::make_shared<mtproto::tl::InputPeer>(input_peer(chat));
     req.top_msg_id = top_msg_id;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::set_contact_note(const PeerRef& user, const std::string& note) {
@@ -33,7 +33,7 @@ void Client::set_contact_note(const PeerRef& user, const std::string& note) {
     req.id = std::make_shared<mtproto::tl::InputUser>(mtproto::tl::InputUser{ty::inputUser{p.id, p.access_hash}});
     req.note = std::make_shared<mtproto::tl::TextWithEntities>(
         mtproto::tl::TextWithEntities{ty::textWithEntities{note, {}}});
-    session_->call(req);
+    call_rpc(req);
 }
 
 bool Client::accept_terms_of_service(const std::string& terms_id) {
@@ -43,7 +43,7 @@ bool Client::accept_terms_of_service(const std::string& terms_id) {
     }
     fn::help_acceptTermsOfService req;
     req.id = std::make_shared<mtproto::tl::DataJSON>(mtproto::tl::DataJSON{ty::dataJSON{terms_id}});
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 }  // namespace cppgram

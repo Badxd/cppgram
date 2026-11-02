@@ -51,7 +51,7 @@ void Client::vote_poll(const Message& poll_message, const std::vector<std::size_
         const std::string& id = poll_message.poll->options[idx].option_id;
         req.options.emplace_back(id.begin(), id.end());
     }
-    session_->call(req);
+    call_rpc(req);
 }
 
 }  // namespace cppgram

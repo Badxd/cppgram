@@ -46,14 +46,14 @@ bool Client::set_bot_info(const std::string& lang_code, const std::string& name,
     if (!name.empty()) req.name = name;
     if (!about.empty()) req.about = about;
     if (!description.empty()) req.description = description;
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 BotInfoText Client::get_bot_info(const std::string& lang_code) {
     require_session();
     fn::bots_getBotInfo req;
     req.lang_code = lang_code;
-    const tl::bots_BotInfo result = session_->call(req);
+    const tl::bots_BotInfo result = call_rpc(req);
     BotInfoText out;
     if (const auto* info = std::get_if<ty::bots_botInfo>(&result.value)) {
         out.name = info->name;
@@ -68,7 +68,7 @@ bool Client::set_default_menu_button() {
     fn::bots_setBotMenuButton req;
     req.user_id = self_input_user();
     req.button = std::make_shared<tl::BotMenuButton>(tl::BotMenuButton{ty::botMenuButtonDefault{}});
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 }  // namespace cppgram
@@ -112,14 +112,14 @@ void Client::set_privacy(PrivacyKey key, PrivacyLevel level) {
             break;
     }
     req.rules.push_back(rule);
-    session_->call(req);
+    call_rpc(req);
 }
 
 PrivacyLevel Client::get_privacy(PrivacyKey key) {
     require_session();
     fn::account_getPrivacy req;
     req.key = privacy_key(key);
-    const tl::account_PrivacyRules result = session_->call(req);
+    const tl::account_PrivacyRules result = call_rpc(req);
     const auto* rules = std::get_if<ty::account_privacyRules>(&result.value);
     if (rules == nullptr) return PrivacyLevel::Nobody;
     bool contacts = false;
@@ -188,7 +188,7 @@ bool Client::check_password(const std::string& password) {
     if (pw == nullptr) throw std::runtime_error("unexpected account.getPassword response");
     fn::auth_checkPassword req;
     req.password = std::make_shared<tl::InputCheckPasswordSRP>(make_password_check(*pw, password));
-    session_->call(req);
+    call_rpc(req);
     return true;
 }
 
@@ -227,7 +227,7 @@ bool Client::set_password(const std::string& current_password, const std::string
         req.password = std::make_shared<tl::InputCheckPasswordSRP>(make_password_check(*pw, current_password));
     }
     req.new_settings = std::make_shared<tl::account_PasswordInputSettings>(tl::account_PasswordInputSettings{settings});
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 bool Client::remove_password(const std::string& current_password) {
@@ -244,7 +244,7 @@ bool Client::remove_password(const std::string& current_password) {
     fn::account_updatePasswordSettings req;
     req.password = std::make_shared<tl::InputCheckPasswordSRP>(make_password_check(*pw, current_password));
     req.new_settings = std::make_shared<tl::account_PasswordInputSettings>(tl::account_PasswordInputSettings{settings});
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 }  // namespace cppgram
@@ -271,7 +271,7 @@ bool Client::set_favorite_sticker(const DocumentRef& sticker, bool favorite) {
     req.id = std::make_shared<tl::InputDocument>(
         tl::InputDocument{ty::inputDocument{sticker.id, sticker.access_hash, sticker.file_reference}});
     req.unfave = !favorite;
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 bool Client::set_favorite_sticker(const Message& sticker, bool favorite) {
@@ -289,7 +289,7 @@ std::vector<DocumentRef> Client::get_favorite_stickers() {
     require_session();
     fn::messages_getFavedStickers req;
     req.hash = 0;
-    const tl::messages_FavedStickers result = session_->call(req);
+    const tl::messages_FavedStickers result = call_rpc(req);
     std::vector<DocumentRef> out;
     if (const auto* list = std::get_if<ty::messages_favedStickers>(&result.value)) {
         for (const auto& d : list->stickers) {
@@ -312,7 +312,7 @@ bool Client::set_menu_button_url(const std::string& text, const std::string& url
     fn::bots_setBotMenuButton req;
     req.user_id = self_input_user();
     req.button = std::make_shared<tl::BotMenuButton>(tl::BotMenuButton{ty::botMenuButton{text, url}});
-    return session_->call(req);
+    return call_rpc(req);
 }
 
 }  // namespace cppgram

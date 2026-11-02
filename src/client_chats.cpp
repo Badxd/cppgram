@@ -25,7 +25,7 @@ void Client::mark_unread(const PeerRef& chat, bool unread) {
     ty::inputDialogPeer dp;
     dp.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.peer = std::make_shared<tl::InputDialogPeer>(tl::InputDialogPeer{dp});
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::archive_chat(const PeerRef& chat, bool archived) {
@@ -35,7 +35,7 @@ void Client::archive_chat(const PeerRef& chat, bool archived) {
     fp.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     fp.folder_id = archived ? 1 : 0;
     req.folder_peers.push_back(std::make_shared<tl::InputFolderPeer>(tl::InputFolderPeer{fp}));
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::set_slow_mode(const PeerRef& channel, std::int32_t seconds) {
@@ -44,7 +44,7 @@ void Client::set_slow_mode(const PeerRef& channel, std::int32_t seconds) {
     fn::channels_toggleSlowMode req;
     req.channel = channel_of(channel);
     req.seconds = seconds;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::set_chat_permissions(const PeerRef& chat, const Restrictions& r) {
@@ -61,7 +61,7 @@ void Client::set_chat_permissions(const PeerRef& chat, const Restrictions& r) {
     fn::messages_editChatDefaultBannedRights req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.banned_rights = std::make_shared<tl::ChatBannedRights>(tl::ChatBannedRights{rights});
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::enable_forum(const PeerRef& channel, bool enabled) {
@@ -70,7 +70,7 @@ void Client::enable_forum(const PeerRef& channel, bool enabled) {
     req.channel = channel_of(channel);
     req.enabled = enabled;
     req.tabs = true;
-    session_->call(req);
+    call_rpc(req);
 }
 
 }  // namespace cppgram

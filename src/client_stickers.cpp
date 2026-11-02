@@ -74,7 +74,7 @@ Chat Client::get_chat(const PeerRef& peer) {
     if (peer.kind == PeerKind::Channel) {
         fn::channels_getFullChannel req;
         req.channel = std::make_shared<tl::InputChannel>(tl::InputChannel{ty::inputChannel{peer.id, peer.access_hash}});
-        const tl::messages_ChatFull full = session_->call(req);
+        const tl::messages_ChatFull full = call_rpc(req);
         const auto* mcf = std::get_if<ty::messages_chatFull>(&full.value);
         if (mcf == nullptr || !mcf->full_chat) throw std::runtime_error("channels.getFullChannel returned no data");
         cache_users_chats(mcf->users, mcf->chats);
@@ -93,7 +93,7 @@ Chat Client::get_chat(const PeerRef& peer) {
     if (peer.kind == PeerKind::Chat) {
         fn::messages_getFullChat req;
         req.chat_id = peer.id;
-        const tl::messages_ChatFull full = session_->call(req);
+        const tl::messages_ChatFull full = call_rpc(req);
         const auto* mcf = std::get_if<ty::messages_chatFull>(&full.value);
         if (mcf == nullptr || !mcf->full_chat) throw std::runtime_error("messages.getFullChat returned no data");
         cache_users_chats(mcf->users, mcf->chats);
@@ -116,7 +116,7 @@ Chat Client::get_chat(const PeerRef& peer) {
     if (peer.kind == PeerKind::User) {
         fn::users_getFullUser req;
         req.id = input_user_ptr(peer);
-        const tl::users_UserFull full = session_->call(req);
+        const tl::users_UserFull full = call_rpc(req);
         const auto* uf = std::get_if<ty::users_userFull>(&full.value);
         if (uf == nullptr) throw std::runtime_error("users.getFullUser returned no data");
         cache_users_chats(uf->users, uf->chats);
@@ -163,7 +163,7 @@ StickerSetInfo Client::create_sticker_set(const std::string& title, const std::s
         fn::messages_uploadMedia up;
         up.peer = std::make_shared<tl::InputPeer>(tl::InputPeer{ty::inputPeerSelf{}});
         up.media = std::make_shared<tl::InputMedia>(tl::InputMedia{doc});
-        const tl::MessageMedia uploaded = session_->call(up);
+        const tl::MessageMedia uploaded = call_rpc(up);
         const auto* md = std::get_if<ty::messageMediaDocument>(&uploaded.value);
         if (md == nullptr || !md->document || !*md->document) {
             throw std::runtime_error("messages.uploadMedia did not return a document for " + sf.path);
@@ -176,7 +176,7 @@ StickerSetInfo Client::create_sticker_set(const std::string& title, const std::s
         item.emoji = sf.emoji;
         req.stickers.push_back(std::make_shared<tl::InputStickerSetItem>(tl::InputStickerSetItem{item}));
     }
-    const tl::messages_StickerSet result = session_->call(req);
+    const tl::messages_StickerSet result = call_rpc(req);
     const auto* set = std::get_if<ty::messages_stickerSet>(&result.value);
     if (set == nullptr || !set->set) throw std::runtime_error("stickers.createStickerSet returned no set");
     const auto* meta = std::get_if<ty::stickerSet>(&set->set->value);
@@ -189,7 +189,7 @@ StickerSetContent Client::get_sticker_set(const std::string& short_name) {
     fn::messages_getStickerSet req;
     req.stickerset = short_name_set(short_name);
     req.hash = 0;
-    const tl::messages_StickerSet result = session_->call(req);
+    const tl::messages_StickerSet result = call_rpc(req);
     const auto* set = std::get_if<ty::messages_stickerSet>(&result.value);
     if (set == nullptr || !set->set) throw std::runtime_error("sticker set not found: " + short_name);
     const auto* meta = std::get_if<ty::stickerSet>(&set->set->value);
@@ -207,7 +207,7 @@ std::vector<StickerSetInfo> Client::get_installed_sticker_sets() {
     require_session();
     fn::messages_getAllStickers req;
     req.hash = 0;
-    const tl::messages_AllStickers result = session_->call(req);
+    const tl::messages_AllStickers result = call_rpc(req);
     std::vector<StickerSetInfo> out;
     if (const auto* all = std::get_if<ty::messages_allStickers>(&result.value)) {
         for (const auto& s : all->sets) {
@@ -223,7 +223,7 @@ std::vector<MediaInfo> Client::get_stickers_by_emoji(const std::string& emoji) {
     fn::messages_getStickers req;
     req.emoticon = emoji;
     req.hash = 0;
-    const tl::messages_Stickers result = session_->call(req);
+    const tl::messages_Stickers result = call_rpc(req);
     std::vector<MediaInfo> out;
     if (const auto* st = std::get_if<ty::messages_stickers>(&result.value)) {
         for (const auto& d : st->stickers) {
@@ -238,7 +238,7 @@ void Client::delete_sticker_set(const std::string& short_name) {
     require_session();
     fn::stickers_deleteStickerSet req;
     req.stickerset = short_name_set(short_name);
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::rename_sticker_set(const std::string& short_name, const std::string& title) {
@@ -246,14 +246,14 @@ void Client::rename_sticker_set(const std::string& short_name, const std::string
     fn::stickers_renameStickerSet req;
     req.stickerset = short_name_set(short_name);
     req.title = title;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::remove_sticker_from_set(const MediaInfo& sticker) {
     require_session();
     fn::stickers_removeStickerFromSet req;
     req.sticker = input_document_of(sticker);
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::add_existing_sticker_to_set(const std::string& short_name, const MediaInfo& sticker,
@@ -265,7 +265,7 @@ void Client::add_existing_sticker_to_set(const std::string& short_name, const Me
     item.document = input_document_of(sticker);
     item.emoji = emoji;
     req.sticker = std::make_shared<tl::InputStickerSetItem>(tl::InputStickerSetItem{item});
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::change_sticker_position(const MediaInfo& sticker, std::int32_t position) {
@@ -273,7 +273,7 @@ void Client::change_sticker_position(const MediaInfo& sticker, std::int32_t posi
     fn::stickers_changeStickerPosition req;
     req.sticker = input_document_of(sticker);
     req.position = position;
-    session_->call(req);
+    call_rpc(req);
 }
 
 }  // namespace cppgram

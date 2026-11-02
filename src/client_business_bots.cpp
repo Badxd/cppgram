@@ -9,7 +9,7 @@ namespace tl = mtproto::tl;
 std::vector<ConnectedBotInfo> Client::get_connected_bots() {
     require_session();
     fn::account_getConnectedBots req;
-    const tl::account_ConnectedBots result = session_->call(req);
+    const tl::account_ConnectedBots result = call_rpc(req);
     const auto* list = std::get_if<ty::account_connectedBots>(&result.value);
     std::vector<ConnectedBotInfo> out;
     if (list == nullptr) return out;
@@ -34,7 +34,7 @@ void Client::disconnect_connected_bot(const PeerRef& bot) {
     req.bot = input_user_ptr(bot);
     req.recipients = std::make_shared<tl::InputBusinessBotRecipients>(
         tl::InputBusinessBotRecipients{ty::inputBusinessBotRecipients{}});
-    session_->call(req);
+    call_rpc(req);
 }
 
 }  // namespace cppgram

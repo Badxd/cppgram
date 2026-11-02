@@ -14,7 +14,7 @@ ChatInvitePreview Client::check_chat_invite(const std::string& invite_hash) {
     require_session();
     fn::messages_checkChatInvite req;
     req.hash = invite_hash;
-    const tl::ChatInvite result = session_->call(req);
+    const tl::ChatInvite result = call_rpc(req);
 
     ChatInvitePreview out;
     if (const auto* already = std::get_if<ty::chatInviteAlready>(&result.value)) {

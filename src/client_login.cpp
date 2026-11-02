@@ -18,12 +18,12 @@ void Client::apply_auth_event(AuthEvent event) {
     if (!next) {
         throw std::logic_error(std::string("authorization event not allowed in state ") + to_string(auth_state_));
     }
-    auth_state_ = *next;
+    set_auth_state(*next);
 }
 
 AuthEvent Client::note_rpc_error(std::int32_t code, const std::string& message) noexcept {
     const AuthEvent event = classify_auth_error(code, message);
-    if (const auto next = next_auth_state(auth_state_, event)) auth_state_ = *next;
+    if (const auto next = next_auth_state(auth_state_, event)) set_auth_state(*next);
     return event;
 }
 
@@ -33,7 +33,7 @@ bool Client::probe_session() {
     fn::users_getUsers req;
     req.id = {std::make_shared<tl::InputUser>(tl::InputUser{ty::inputUserSelf{}})};
     try {
-        const auto users = session_->call(req);
+        const auto users = call_rpc(req);
         if (users.empty() || !users.front()) return false;
         apply_auth_event(AuthEvent::SessionRestored);
         return true;
@@ -59,7 +59,7 @@ LoginCodeInfo Client::send_login_code(const std::string& phone_number) {
 
     tl::auth_SentCode res;
     try {
-        res = session_->call(req);
+        res = call_rpc(req);
     } catch (const mtproto::RpcError& e) {
         note_rpc_error(e.code(), e.rpc_message());
         throw;
@@ -106,7 +106,7 @@ bool Client::sign_in_code(const std::string& phone_number, const std::string& co
     req.phone_code_hash = phone_code_hash;
     req.phone_code = code;
     try {
-        const tl::auth_Authorization res = session_->call(req);
+        const tl::auth_Authorization res = call_rpc(req);
         if (std::holds_alternative<ty::auth_authorizationSignUpRequired>(res.value)) {
             apply_auth_event(AuthEvent::PermanentFailure);
             throw std::runtime_error("this phone number has no Telegram account; sign-up is not supported");

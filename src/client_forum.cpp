@@ -47,7 +47,7 @@ ForumTopicInfo Client::create_forum_topic(const PeerRef& channel, const std::str
     req.title = title;
     req.icon_color = icon_color;
     req.random_id = random_id_forum();
-    const tl::Updates updates = session_->call(req);
+    const tl::Updates updates = call_rpc(req);
 
     // The topic id is the id of the service message that created it.
     const std::vector<std::shared_ptr<tl::Update>>* list = nullptr;
@@ -87,7 +87,7 @@ std::vector<ForumTopicInfo> Client::get_forum_topics(const PeerRef& channel, std
     req.offset_id = 0;
     req.offset_topic = 0;
     req.limit = limit;
-    const tl::messages_ForumTopics result = session_->call(req);
+    const tl::messages_ForumTopics result = call_rpc(req);
     std::vector<ForumTopicInfo> out;
     if (const auto* ft = std::get_if<ty::messages_forumTopics>(&result.value)) {
         cache_users_chats(ft->users, ft->chats);
@@ -108,7 +108,7 @@ void Client::edit_forum_topic(const PeerRef& channel, std::int32_t topic_id, std
     req.title = std::move(title);
     req.closed = closed;
     req.hidden = hidden;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::pin_forum_topic(const PeerRef& channel, std::int32_t topic_id, bool pinned) {
@@ -117,7 +117,7 @@ void Client::pin_forum_topic(const PeerRef& channel, std::int32_t topic_id, bool
     req.peer = channel_peer(channel);
     req.topic_id = topic_id;
     req.pinned = pinned;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::delete_forum_topic_history(const PeerRef& channel, std::int32_t topic_id) {
@@ -125,7 +125,7 @@ void Client::delete_forum_topic_history(const PeerRef& channel, std::int32_t top
     fn::messages_deleteTopicHistory req;
     req.peer = channel_peer(channel);
     req.top_msg_id = topic_id;
-    session_->call(req);
+    call_rpc(req);
 }
 
 std::vector<DialogInfo> Client::get_dialogs(std::int32_t limit, std::int32_t offset_date, std::int32_t offset_id,
@@ -138,7 +138,7 @@ std::vector<DialogInfo> Client::get_dialogs(std::int32_t limit, std::int32_t off
         offset_peer ? input_peer(*offset_peer) : tl::InputPeer{ty::inputPeerEmpty{}});
     req.limit = limit;
     req.hash = 0;
-    const tl::messages_Dialogs result = session_->call(req);
+    const tl::messages_Dialogs result = call_rpc(req);
 
     std::vector<DialogInfo> out;
     std::visit(

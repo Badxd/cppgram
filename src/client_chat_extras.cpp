@@ -25,7 +25,7 @@ std::int32_t Client::get_chat_online_count(const PeerRef& chat) {
     require_session();
     fn::messages_getOnlines req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
-    const tl::ChatOnlines res = session_->call(req);
+    const tl::ChatOnlines res = call_rpc(req);
     const auto* o = std::get_if<ty::chatOnlines>(&res.value);
     return o ? o->onlines : 0;
 }
@@ -41,7 +41,7 @@ std::int32_t Client::get_chat_history_count(const PeerRef& chat) {
     req.max_id = 0;
     req.min_id = 0;
     req.hash = 0;
-    const tl::messages_Messages res = session_->call(req);
+    const tl::messages_Messages res = call_rpc(req);
     if (const auto* slice = std::get_if<ty::messages_messagesSlice>(&res.value)) return slice->count;
     if (const auto* all = std::get_if<ty::messages_messages>(&res.value)) {
         return static_cast<std::int32_t>(all->messages.size());
@@ -57,14 +57,14 @@ void Client::delete_chat_photo(const PeerRef& chat) {
         fn::channels_editPhoto req;
         req.channel = channel_ref(chat);
         req.photo = std::make_shared<tl::InputChatPhoto>(tl::InputChatPhoto{empty});
-        session_->call(req);
+        call_rpc(req);
         return;
     }
     if (chat.kind != PeerKind::Chat) throw std::invalid_argument("delete_chat_photo expects a group or channel");
     fn::messages_editChatPhoto req;
     req.chat_id = chat.id;
     req.photo = std::make_shared<tl::InputChatPhoto>(tl::InputChatPhoto{empty});
-    session_->call(req);
+    call_rpc(req);
 }
 
 }  // namespace cppgram

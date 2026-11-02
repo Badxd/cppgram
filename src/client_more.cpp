@@ -50,7 +50,7 @@ std::vector<Message> Client::get_scheduled_messages(const PeerRef& chat) {
     fn::messages_getScheduledHistory req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.hash = 0;
-    return collect_messages(session_->call(req));
+    return collect_messages(call_rpc(req));
 }
 
 std::vector<Message> Client::get_discussion_replies(const PeerRef& chat, std::int32_t message_id, std::int32_t limit) {
@@ -59,7 +59,7 @@ std::vector<Message> Client::get_discussion_replies(const PeerRef& chat, std::in
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.msg_id = message_id;
     req.limit = limit;
-    return collect_messages(session_->call(req));
+    return collect_messages(call_rpc(req));
 }
 
 std::vector<Message> Client::search_global(const std::string& query, std::int32_t limit) {
@@ -69,7 +69,7 @@ std::vector<Message> Client::search_global(const std::string& query, std::int32_
     req.filter = std::make_shared<tl::MessagesFilter>(tl::MessagesFilter{ty::inputMessagesFilterEmpty{}});
     req.offset_peer = std::make_shared<tl::InputPeer>(tl::InputPeer{ty::inputPeerEmpty{}});
     req.limit = limit;
-    return collect_messages(session_->call(req));
+    return collect_messages(call_rpc(req));
 }
 
 void Client::delete_chat_history(const PeerRef& chat, bool revoke) {
@@ -82,7 +82,7 @@ void Client::delete_chat_history(const PeerRef& chat, bool revoke) {
     req.max_id = 0;
     req.revoke = revoke;
     req.just_clear = false;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::answer_pre_checkout_query(std::int64_t query_id, bool success, const std::string& error) {
@@ -91,7 +91,7 @@ void Client::answer_pre_checkout_query(std::int64_t query_id, bool success, cons
     req.query_id = query_id;
     req.success = success;
     if (!success && !error.empty()) req.error_ = error;
-    session_->call(req);
+    call_rpc(req);
 }
 
 std::string Client::request_callback_answer(const PeerRef& chat, std::int32_t message_id, const std::string& data) {
@@ -100,7 +100,7 @@ std::string Client::request_callback_answer(const PeerRef& chat, std::int32_t me
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.msg_id = message_id;
     req.data = Bytes(data.begin(), data.end());
-    const tl::messages_BotCallbackAnswer answer = session_->call(req);
+    const tl::messages_BotCallbackAnswer answer = call_rpc(req);
     if (const auto* a = std::get_if<ty::messages_botCallbackAnswer>(&answer.value)) {
         if (a->url) return *a->url;
         if (a->message) return *a->message;
@@ -114,7 +114,7 @@ std::string Client::export_chat_invite_link(const PeerRef& chat) {
     require_session();
     fn::messages_exportChatInvite req;
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
-    const tl::ExportedChatInvite invite = session_->call(req);
+    const tl::ExportedChatInvite invite = call_rpc(req);
     if (const auto* e = std::get_if<ty::chatInviteExported>(&invite.value)) return e->link;
     throw std::runtime_error("export_chat_invite_link: join-request invite returned, use create_chat_invite_link");
 }
@@ -129,7 +129,7 @@ std::string Client::create_chat_invite_link(const PeerRef& chat, std::optional<s
     req.usage_limit = usage_limit;
     if (!title.empty()) req.title = title;
     req.request_needed = request_needed;
-    const tl::ExportedChatInvite invite = session_->call(req);
+    const tl::ExportedChatInvite invite = call_rpc(req);
     if (const auto* e = std::get_if<ty::chatInviteExported>(&invite.value)) return e->link;
     if (const auto* pj = std::get_if<ty::chatInvitePublicJoinRequests>(&invite.value)) {
         (void)pj;
@@ -144,7 +144,7 @@ void Client::revoke_chat_invite_link(const PeerRef& chat, const std::string& lin
     req.peer = std::make_shared<tl::InputPeer>(input_peer(chat));
     req.link = link;
     req.revoked = true;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::set_chat_title(const PeerRef& chat, const std::string& title) {
@@ -153,14 +153,14 @@ void Client::set_chat_title(const PeerRef& chat, const std::string& title) {
         fn::channels_editTitle req;
         req.channel = channel_input(chat);
         req.title = title;
-        session_->call(req);
+        call_rpc(req);
         return;
     }
     if (chat.kind != PeerKind::Chat) throw std::invalid_argument("set_chat_title expects a group or channel");
     fn::messages_editChatTitle req;
     req.chat_id = chat.id;
     req.title = title;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::promote_chat_member(const PeerRef& chat, const PeerRef& user, const AdminRights& rights,
@@ -181,7 +181,7 @@ void Client::promote_chat_member(const PeerRef& chat, const PeerRef& user, const
     req.user_id = input_user_ptr(user);
     req.admin_rights = std::make_shared<tl::ChatAdminRights>(tl::ChatAdminRights{r});
     if (!rank.empty()) req.rank = rank;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::restrict_chat_member(const PeerRef& chat, const PeerRef& user, const Restrictions& restrictions,
@@ -201,7 +201,7 @@ void Client::restrict_chat_member(const PeerRef& chat, const PeerRef& user, cons
     req.channel = channel_input(chat);
     req.participant = std::make_shared<tl::InputPeer>(input_peer(user));
     req.banned_rights = std::make_shared<tl::ChatBannedRights>(tl::ChatBannedRights{rights});
-    session_->call(req);
+    call_rpc(req);
 }
 
 // ---- contacts, account
@@ -214,21 +214,21 @@ void Client::add_contact(const PeerRef& user, const std::string& first_name, con
     req.first_name = first_name;
     req.last_name = last_name;
     req.phone = phone;
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::delete_contacts(const std::vector<PeerRef>& users) {
     require_session();
     fn::contacts_deleteContacts req;
     for (const auto& u : users) req.id.push_back(input_user_ptr(u));
-    session_->call(req);
+    call_rpc(req);
 }
 
 std::vector<User> Client::get_contacts() {
     require_session();
     fn::contacts_getContacts req;
     req.hash = 0;
-    const tl::contacts_Contacts result = session_->call(req);
+    const tl::contacts_Contacts result = call_rpc(req);
     std::vector<User> out;
     if (const auto* c = std::get_if<ty::contacts_contacts>(&result.value)) {
         cache_users_chats(c->users, {});
@@ -252,7 +252,7 @@ std::vector<User> Client::import_contacts(const std::vector<ContactInput>& conta
         pc.last_name = c.last_name;
         req.contacts.push_back(std::make_shared<tl::InputContact>(tl::InputContact{pc}));
     }
-    const tl::contacts_ImportedContacts result = session_->call(req);
+    const tl::contacts_ImportedContacts result = call_rpc(req);
     std::vector<User> out;
     std::visit(
         [&](const auto& v) {
@@ -272,14 +272,14 @@ void Client::block_user(const PeerRef& user) {
     require_session();
     fn::contacts_block req;
     req.id = std::make_shared<tl::InputPeer>(input_peer(user));
-    session_->call(req);
+    call_rpc(req);
 }
 
 void Client::unblock_user(const PeerRef& user) {
     require_session();
     fn::contacts_unblock req;
     req.id = std::make_shared<tl::InputPeer>(input_peer(user));
-    session_->call(req);
+    call_rpc(req);
 }
 
 User Client::update_profile(std::optional<std::string> first_name, std::optional<std::string> last_name,
@@ -289,7 +289,7 @@ User Client::update_profile(std::optional<std::string> first_name, std::optional
     req.first_name = std::move(first_name);
     req.last_name = std::move(last_name);
     req.about = std::move(about);
-    const tl::User raw = session_->call(req);
+    const tl::User raw = call_rpc(req);
     if (auto user = detail::user_from_tl(raw)) return *user;
     throw std::runtime_error("account.updateProfile returned an unusable user");
 }
@@ -298,7 +298,7 @@ User Client::set_username(const std::string& username) {
     require_session();
     fn::account_updateUsername req;
     req.username = username;
-    const tl::User raw = session_->call(req);
+    const tl::User raw = call_rpc(req);
     if (auto user = detail::user_from_tl(raw)) return *user;
     throw std::runtime_error("account.updateUsername returned an unusable user");
 }
@@ -306,8 +306,8 @@ User Client::set_username(const std::string& username) {
 void Client::log_out() {
     require_session();
     fn::auth_logOut req;
-    session_->call(req);
-    if (next_auth_state(auth_state_, AuthEvent::LoggedOut)) auth_state_ = *next_auth_state(auth_state_, AuthEvent::LoggedOut);
+    call_rpc(req);
+    if (const auto next = next_auth_state(auth_state_, AuthEvent::LoggedOut)) set_auth_state(*next);
     disconnect();
 }
 
@@ -324,7 +324,7 @@ void Client::set_bot_commands(const std::vector<BotCommandSpec>& commands, const
         bc.description = c.description;
         req.commands.push_back(std::make_shared<tl::BotCommand>(tl::BotCommand{bc}));
     }
-    session_->call(req);
+    call_rpc(req);
 }
 
 std::vector<BotCommandSpec> Client::get_bot_commands(const std::string& lang_code) {
@@ -332,7 +332,7 @@ std::vector<BotCommandSpec> Client::get_bot_commands(const std::string& lang_cod
     fn::bots_getBotCommands req;
     req.scope = std::make_shared<tl::BotCommandScope>(tl::BotCommandScope{ty::botCommandScopeDefault{}});
     req.lang_code = lang_code;
-    const auto list = session_->call(req);
+    const auto list = call_rpc(req);
     std::vector<BotCommandSpec> out;
     for (const auto& c : list) {
         if (!c) continue;
@@ -361,7 +361,7 @@ void Client::answer_inline_query(std::int64_t query_id, const std::vector<Inline
         r.send_message = std::make_shared<tl::InputBotInlineMessage>(tl::InputBotInlineMessage{text});
         req.results.push_back(std::make_shared<tl::InputBotInlineResult>(tl::InputBotInlineResult{r}));
     }
-    session_->call(req);
+    call_rpc(req);
 }
 
 }  // namespace cppgram

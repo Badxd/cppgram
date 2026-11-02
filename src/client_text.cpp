@@ -63,7 +63,7 @@ Message Client::send_text(const PeerRef& target, const std::string& text, ParseM
         for (const auto& e : formatted.entities) entities.push_back(to_tl_entity(e));
         req.entities = std::move(entities);
     }
-    const tl::Updates updates = session_->call(req);
+    const tl::Updates updates = call_rpc(req);
     if (auto msg = find_sent_message(updates, target, formatted.text, 0)) return *msg;
     throw std::runtime_error("formatted message was sent but no id was returned by the server");
 }
@@ -80,7 +80,7 @@ Message Client::edit_text(const PeerRef& target, std::int32_t message_id, const 
         for (const auto& e : formatted.entities) entities.push_back(to_tl_entity(e));
         req.entities = std::move(entities);
     }
-    const tl::Updates updates = session_->call(req);
+    const tl::Updates updates = call_rpc(req);
     if (auto msg = find_sent_message(updates, target, formatted.text, message_id)) return *msg;
     throw std::runtime_error("edit applied but the server returned no message");
 }
