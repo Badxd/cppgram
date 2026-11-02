@@ -60,6 +60,7 @@ add_library(cppgram
     src/client_login.cpp
     src/transfer.cpp
     src/mtproto/cancel.cpp
+    src/mtproto/socks5.cpp
     src/channel_pts.cpp
     src/client_extra.cpp
     src/client_more.cpp
@@ -103,6 +104,7 @@ add_library(cppgram
     src/client_send.cpp
     src/client_session.cpp
     src/session_string.cpp
+    src/session_crypto.cpp
     src/convert.cpp
     src/filters.cpp
 )
