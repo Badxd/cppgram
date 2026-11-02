@@ -19,6 +19,10 @@
 - Fixed: `download_media` writes to `<path>.part`, checks the received size against the message, and renames on success. A failed download no longer leaves a partial file at the destination (finding F17).
 - Changed: `read_file` reads in one call instead of byte by byte.
 
+### Protocol (batch 11)
+- Fixed (F16): a replayed or resent server message is acknowledged but not processed again. Bounded memory (4096 recent message ids).
+- New: `ChannelPtsTracker` (per-channel pts bookkeeping). Not yet used by the update loop.
+
 ### CI and tooling
 - Fixed: CI installs `libboost-dev` and `nlohmann-json3-dev` (both are required by `find_package`). Both jobs now.
 - Fixed: the sanitizer job passes each CMake flag as one argument, with the same configuration as `tools/run_sanitizers.sh`. Both configure commands were run locally from scratch and succeed.

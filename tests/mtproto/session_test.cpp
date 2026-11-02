@@ -327,7 +327,8 @@ public:
         reply.salt = 1;
         reply.session_id = inner.session_id;
         reply.seq_no = 1;
-        reply.message_id = (static_cast<std::uint64_t>(server_now) << 32) | 4u;
+        // Server message ids are unique: time in the high bits and a counter in the low bits.
+        reply.message_id = (static_cast<std::uint64_t>(server_now) << 32) | static_cast<std::uint64_t>(4 * requests_);
         if (requests_ == 1) {
             first_msg_id_ = inner.message_id;
             ty::bad_msg_notification bad;
@@ -651,4 +652,57 @@ TEST(SessionStore, NewerSchemaIsRefusedNotOverwritten) {
     ::unlink(path.c_str());
     ::unlink((path + "-wal").c_str());
     ::unlink((path + "-shm").c_str());
+}
+
+namespace {
+
+// Server that sends the same encrypted update twice (a replay or an unacknowledged resend), then a new one.
+class ReplayingServer : public PacketChannel {
+public:
+    explicit ReplayingServer(Bytes key) : key_(std::move(key)) {
+        const std::uint64_t first_id = make_message_id() + 4;
+        const std::uint64_t second_id = first_id + 4;
+        script_.push_back(make_update(first_id, 1));
+        script_.push_back(script_.front());  // byte-identical replay
+        script_.push_back(make_update(second_id, 2));
+    }
+    void send_packet(const Bytes&) override {}
+    Bytes receive_packet() override { return script_.at(next_++); }
+
+private:
+    Bytes make_update(std::uint64_t msg_id, std::uint32_t tag) {
+        InnerMessage msg;
+        msg.salt = 1;
+        msg.session_id = 2;
+        msg.message_id = msg_id;
+        msg.seq_no = 1;
+        TlWriter w;
+        w.write_uint32(ty::updateShort::kId);
+        w.write_uint32(tag);
+        msg.body = w.take();
+        return encrypt_packet(key_, serialize_inner(msg), false);
+    }
+    Bytes key_;
+    std::vector<Bytes> script_;
+    std::size_t next_ = 0;
+};
+
+}  // namespace
+
+// F16: a replayed server packet must not produce a second update.
+TEST(Replay, DuplicateServerMessageIsNotProcessedTwice) {
+    const Bytes key = random_bytes(256);
+    ReplayingServer server(key);
+    MtSession session(server, SessionData{2, key, 0x1111222233334444ull, 0});
+    session.process_one();
+    session.process_one();  // replay
+    session.process_one();  // new message
+    const auto updates = session.take_updates();
+    ASSERT_EQ(updates.size(), 2u);
+    TlReader first(updates[0]);
+    EXPECT_EQ(first.read_uint32(), ty::updateShort::kId);
+    EXPECT_EQ(first.read_uint32(), 1u);
+    TlReader second(updates[1]);
+    EXPECT_EQ(second.read_uint32(), ty::updateShort::kId);
+    EXPECT_EQ(second.read_uint32(), 2u);
 }

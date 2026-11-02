@@ -15,6 +15,8 @@
 #include <stop_token>
 
 #include "cppgram/mtproto/cancel.h"
+#include <unordered_set>
+
 #include "cppgram/mtproto/retry.h"
 #include "cppgram/mtproto/tl.h"
 
@@ -139,7 +141,10 @@ private:
     std::uint64_t send_encrypted(const Bytes& body, bool content);
     void send_ack(std::uint64_t msg_id);
     void handle_packet(const Bytes& packet, Waiting* waiting);
+    // Duplicate check for server messages (F16). Returns false when msg_id was already processed.
+    bool remember_server_msg_id(std::uint64_t msg_id);
     void dispatch(const InnerMessage& inner, Waiting* waiting);
+    void dispatch_body(const InnerMessage& inner, Waiting* waiting);
     void process_one_into(Waiting* waiting);
 
     PacketChannel& channel_;
@@ -147,6 +152,11 @@ private:
     std::uint64_t session_id_;
     std::uint32_t content_counter_ = 0;
     std::deque<Bytes> pending_updates_;
+    // Recently processed server message ids. A replayed packet carries an id that is already here, so it is
+    // acknowledged (if needed) but not processed again. Bounded: the oldest ids are forgotten first.
+    static constexpr std::size_t kSeenMsgIdCapacity = 4096;
+    std::deque<std::uint64_t> seen_msg_order_;
+    std::unordered_set<std::uint64_t> seen_msg_ids_;
     std::size_t update_queue_limit_ = 1024;
 };
 

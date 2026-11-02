@@ -15,3 +15,12 @@ Build (clang with libFuzzer and ASan runtime):
     ./build-fuzz/fuzz_tl_reader corpus/tl -max_total_time=600
 
 Expected rejections (`TlError`, `std::runtime_error`) are caught in the harness; anything else is a finding.
+
+## Seed corpus for the session string target
+
+`make_session_seeds.cpp` writes valid session strings (random keys, not real accounts) so the libFuzzer run reaches
+the body parser instead of failing at the base64 step:
+
+    clang++ -std=c++20 -O1 -Iinclude -Isrc fuzz/make_session_seeds.cpp build/Release/libcppgram.a -lcrypto -lsqlite3 -lz -o make_session_seeds
+    ./make_session_seeds corpus/session_string
+    ./fuzz_session_string corpus/session_string -max_total_time=120 -timeout=10
