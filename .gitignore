@@ -46,3 +46,4 @@ out/
 bot_workspace/
 *.bak
 build-san/
+build-tsan/
