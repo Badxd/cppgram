@@ -13,3 +13,4 @@
 | [BENCHMARKS.md](BENCHMARKS.md) | Measured local numbers and environment |
 | [VERSIONING.md](VERSIONING.md) | Semver policy and API compatibility rules |
 | [MIGRATION.md](MIGRATION.md) | What changed for existing code and data |
+- [Encrypted session files](SESSION_ENCRYPTION.md): passphrase, backup, recovery, limits.
