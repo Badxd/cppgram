@@ -156,9 +156,16 @@ void Client::connect() {
     mtproto::validate_retry_policy(options_.retry);
     for (int attempt = 1;; ++attempt) {
         try {
-            connection_->connect(options_.dc_ip, options_.dc_port);
+            if (options_.socks5) {
+                connection_->connect_via_socks5(*options_.socks5, options_.dc_ip, options_.dc_port);
+            } else {
+                connection_->connect(options_.dc_ip, options_.dc_port);
+            }
             break;
         } catch (const mtproto::ConnectionError& e) {
+            // Rejected proxy credentials and refused targets are final; only transient failures are retried.
+            const auto* proxy = dynamic_cast<const mtproto::ProxyError*>(&e);
+            if (proxy != nullptr && !proxy->transient()) throw;
             if (!mtproto::may_retry(options_.retry, attempt)) throw;
             const auto delay = mtproto::backoff_delay(options_.retry, attempt, client_jitter01());
             debug_log(debug, std::string("tcp: connect failed (") + e.what() + "), retrying");

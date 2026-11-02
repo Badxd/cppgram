@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include <cerrno>
+#include <stdexcept>
 #include <cstring>
 
 namespace cppgram::mtproto {
@@ -35,6 +36,23 @@ void Connection::connect(const std::string& ipv4, std::uint16_t port) {
         close();
         throw ConnectionError("connect " + ipv4 + ": " + err);
     }
+    int one = 1;
+    ::setsockopt(fd_, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+    init_sent_ = false;
+    transport_ = Transport(transport_.kind());
+}
+
+void Connection::connect_via_socks5(const Socks5Options& proxy, const std::string& ipv4, std::uint16_t port) {
+    close();
+    int fd = -1;
+    try {
+        fd = socks5_connect(proxy, ipv4, port);
+    } catch (const Socks5Error& e) {
+        throw ProxyError(e.what(), e.transient());
+    } catch (const std::invalid_argument& e) {
+        throw ProxyError(e.what(), false);
+    }
+    fd_ = fd;
     int one = 1;
     ::setsockopt(fd_, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
     init_sent_ = false;

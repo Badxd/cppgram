@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "cppgram/mtproto/socks5.h"
+#include "cppgram/mtproto/connection.h"
 
 using namespace cppgram::mtproto;
 
@@ -280,4 +281,30 @@ TEST(Socks5, RetryRejectsZeroAttempts) {
     o.proxy_host = "127.0.0.1";
     EXPECT_THROW(socks5_connect_with_retry(o, "203.0.113.7", 443, 0, std::chrono::milliseconds(1)),
                  std::invalid_argument);
+}
+
+TEST(Socks5Connection, ConnectionTunnelsThroughProxyAndReportsRejectionAsFinal) {
+    {
+        FakeProxy proxy(FakeProxy::Mode::Ok);
+        cppgram::mtproto::Connection conn(cppgram::mtproto::TransportKind::Intermediate);
+        conn.connect_via_socks5(opts_for(proxy), "203.0.113.7", 443);
+        EXPECT_TRUE(conn.is_open());
+        conn.close();
+        proxy.join();
+        EXPECT_EQ(proxy.target, "203.0.113.7");
+        EXPECT_EQ(proxy.target_port, 443);
+    }
+    {
+        FakeProxy proxy(FakeProxy::Mode::RejectAuth);
+        Socks5Options o = opts_for(proxy);
+        o.auth = Socks5Auth{"alice", "wrong"};
+        cppgram::mtproto::Connection conn(cppgram::mtproto::TransportKind::Intermediate);
+        try {
+            conn.connect_via_socks5(o, "203.0.113.7", 443);
+            FAIL() << "expected rejection";
+        } catch (const cppgram::mtproto::ProxyError& e) {
+            EXPECT_FALSE(e.transient());
+        }
+        EXPECT_FALSE(conn.is_open());
+    }
 }

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 
+#include "cppgram/mtproto/socks5.h"
 #include "cppgram/mtproto/transport.h"
 
 namespace cppgram::mtproto {
@@ -16,6 +17,16 @@ public:
 class ConnectionTimeout : public ConnectionError {
 public:
     using ConnectionError::ConnectionError;
+};
+
+// A SOCKS5 proxy refused or failed the tunnel. transient() is false for rejected credentials and refused targets.
+class ProxyError : public ConnectionError {
+public:
+    ProxyError(const std::string& message, bool transient) : ConnectionError(message), transient_(transient) {}
+    bool transient() const noexcept { return transient_; }
+
+private:
+    bool transient_;
 };
 
 // Anything that can exchange whole MTProto packets (already decrypted or plain, depending on the layer).
@@ -34,6 +45,8 @@ public:
     Connection& operator=(const Connection&) = delete;
 
     void connect(const std::string& ipv4, std::uint16_t port);
+    // Connects to ipv4:port through a SOCKS5 proxy. Failures throw ProxyError.
+    void connect_via_socks5(const Socks5Options& proxy, const std::string& ipv4, std::uint16_t port);
     // Receive timeout in milliseconds (0 = block forever). Expiry throws ConnectionTimeout.
     void set_receive_timeout(int milliseconds);
     void close() noexcept;

@@ -17,6 +17,7 @@
 #include "cppgram/convert.h"
 #include "cppgram/filters.h"
 #include "cppgram/mtproto/retry.h"
+#include "cppgram/mtproto/socks5.h"
 #include "cppgram/mtproto/connection.h"
 #include "cppgram/mtproto/schema/api.h"
 #include "cppgram/mtproto/session.h"
@@ -36,6 +37,8 @@ struct ClientOptions {
     std::string session_path = "cppgram.session";
     // Base64 session from export_session_string(). Used only when no saved session exists yet.
     std::string session_string;
+    // SOCKS5 proxy for the main DC connection. Unset: direct TCP. CDN downloads still connect directly.
+    std::optional<mtproto::Socks5Options> socks5;
     std::string device_model = "cppgram";
     std::string system_version = "linux";
     std::string app_version = "0.1.0";
