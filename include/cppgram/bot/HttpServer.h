@@ -1,10 +1,7 @@
 #pragma once
 
-#include <boost/asio.hpp>
-#include <boost/asio/signal_set.hpp>
-#include <boost/beast/core/flat_buffer.hpp>
-#include <boost/beast/http.hpp>
-
+// Standard headers first: Boost.Asio 1.74 (e.g. awaitable.hpp) uses std::exchange
+// without including <utility> itself, so <utility> must be seen before any Boost include.
 #include <csignal>
 #include <exception>
 #include <functional>
@@ -16,6 +13,11 @@
 #include <string_view>
 #include <unordered_map>
 #include <utility>
+
+#include <boost/asio.hpp>
+#include <boost/asio/signal_set.hpp>
+#include <boost/beast/core/flat_buffer.hpp>
+#include <boost/beast/http.hpp>
 
 namespace cppgram::bot {
 
