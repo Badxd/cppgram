@@ -19,7 +19,7 @@ tested component set, not a proven client.
 | libFuzzer + ASan, TL reader | 500 s | 11.7M runs, 0 crashes |
 | libFuzzer + ASan, HTML parser | 500 s | 7.2M runs, 0 crashes |
 | libFuzzer + ASan, session string | 100 s | 66.9M runs, 0 crashes |
-| ASan + UBSan, test binary | see `san_build.log` / run log | filled in below if completed |
+| ASan + UBSan, full ctest | `ctest` in build-san, `-O0 -g0`, -j1 | 267/267 pass, 0 ASan or UBSan reports |
 
 Fuzzing used ASan only, not UBSan, and ran for minutes rather than hours.
 
