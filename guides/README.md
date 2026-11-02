@@ -15,3 +15,4 @@
 | [MIGRATION.md](MIGRATION.md) | What changed for existing code and data |
 - [Encrypted session files](SESSION_ENCRYPTION.md): passphrase, backup, recovery, limits.
 - [Obfuscated proxy plan](OBFUSCATED_PROXY_PLAN.md): design only, not implemented.
+- [Release report](RELEASE_REPORT.md): verified results, incomplete list, verdict.
