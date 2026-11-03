@@ -1,9 +1,14 @@
 // cppgram - blocking TCP connection that moves MTProto packets through a transport codec (POSIX sockets).
 #pragma once
 
+#include <chrono>
 #include <cstdint>
+#include <optional>
+#include <stdexcept>
 #include <string>
 
+#include "cppgram/mtproto/obfuscated.h"
+#include "cppgram/mtproto/proxy_secret.h"
 #include "cppgram/mtproto/socks5.h"
 #include "cppgram/mtproto/transport.h"
 
@@ -19,7 +24,8 @@ public:
     using ConnectionError::ConnectionError;
 };
 
-// A SOCKS5 proxy refused or failed the tunnel. transient() is false for rejected credentials and refused targets.
+// A SOCKS5 or MTProto proxy refused or failed the tunnel. transient() is false for rejected credentials and
+// refused targets.
 class ProxyError : public ConnectionError {
 public:
     ProxyError(const std::string& message, bool transient) : ConnectionError(message), transient_(transient) {}
@@ -44,10 +50,19 @@ public:
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
 
+    // Direct TCP connection. Failures throw ConnectionError; a connect that does not finish within
+    // set_connect_timeout() throws ConnectionTimeout.
     void connect(const std::string& ipv4, std::uint16_t port);
     // Connects to ipv4:port through a SOCKS5 proxy. Failures throw ProxyError.
     void connect_via_socks5(const Socks5Options& proxy, const std::string& ipv4, std::uint16_t port);
-    // Receive timeout in milliseconds (0 = block forever). Expiry throws ConnectionTimeout.
+    // Connects to an MTProto proxy (obfuscated transport) and sends the 64-byte handshake for dc_id.
+    // The secret must be a plain or padded-intermediate secret; fake-TLS secrets throw std::invalid_argument.
+    // Connect failures and timeouts throw ProxyError with transient() == true.
+    void connect_obfuscated(const std::string& proxy_host, std::uint16_t proxy_port, const ProxySecret& secret,
+                            std::int16_t dc_id, std::chrono::milliseconds timeout);
+    // Timeout for establishing a TCP connection, in milliseconds (default 10000).
+    void set_connect_timeout(int milliseconds) noexcept { connect_timeout_ms_ = milliseconds; }
+    // Receive and send timeout in milliseconds (0 = block forever). Expiry throws ConnectionTimeout.
     void set_receive_timeout(int milliseconds);
     void close() noexcept;
     bool is_open() const noexcept { return fd_ >= 0; }
@@ -61,6 +76,9 @@ private:
     Transport transport_;
     int fd_ = -1;
     bool init_sent_ = false;
+    int connect_timeout_ms_ = 10000;
+    int io_timeout_ms_ = 0;
+    std::optional<ObfuscatedClient> obfuscated_;
 };
 
 }  // namespace cppgram::mtproto

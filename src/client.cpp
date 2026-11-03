@@ -148,15 +148,39 @@ void Client::connect() {
     disconnect();
     set_auth_state(AuthState::Connecting);
     const bool debug = options_.debug;
+    if (options_.socks5 && options_.mtproto_proxy) {
+        set_auth_state(AuthState::Disconnected);
+        throw std::invalid_argument("ClientOptions: socks5 and mtproto_proxy cannot be used together");
+    }
+    // Parse the proxy secret once, before any network activity. A malformed or unsupported secret is final.
+    std::optional<mtproto::ProxySecret> proxy_secret;
+    if (options_.mtproto_proxy) {
+        proxy_secret = mtproto::parse_proxy_secret(options_.mtproto_proxy->secret);
+        if (proxy_secret->kind == mtproto::ProxySecretKind::FakeTls) {
+            set_auth_state(AuthState::Disconnected);
+            throw std::invalid_argument("fake-TLS (ee) proxy secrets are not supported");
+        }
+    }
     connection_ = std::make_unique<mtproto::Connection>(mtproto::TransportKind::Intermediate);
-    debug_log(debug, "tcp: connecting to " + options_.dc_ip + ":" + std::to_string(options_.dc_port) +
-                         " (dc " + std::to_string(options_.dc_id) + ")");
+    connection_->set_connect_timeout(options_.connect_timeout_ms);
+    if (options_.mtproto_proxy) {
+        debug_log(debug, "tcp: connecting to MTProto proxy (dc " + std::to_string(options_.dc_id) + ")");
+    } else {
+        debug_log(debug, "tcp: connecting to " + options_.dc_ip + ":" + std::to_string(options_.dc_port) +
+                             " (dc " + std::to_string(options_.dc_id) + ")");
+    }
     // Connect with bounded retries. A refused or timed-out TCP connect is transient; the same connection
     // object cannot be reused after a failed connect, so each attempt gets a fresh Connection.
     mtproto::validate_retry_policy(options_.retry);
     for (int attempt = 1;; ++attempt) {
         try {
-            if (options_.socks5) {
+            if (options_.mtproto_proxy) {
+                const auto& proxy = *options_.mtproto_proxy;
+                connection_->set_connect_timeout(proxy.connect_timeout_ms);
+                connection_->connect_obfuscated(proxy.host, proxy.port, *proxy_secret,
+                                                static_cast<std::int16_t>(options_.dc_id),
+                                                std::chrono::milliseconds(proxy.connect_timeout_ms));
+            } else if (options_.socks5) {
                 connection_->connect_via_socks5(*options_.socks5, options_.dc_ip, options_.dc_port);
             } else {
                 connection_->connect(options_.dc_ip, options_.dc_port);
