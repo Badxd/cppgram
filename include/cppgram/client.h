@@ -7,6 +7,7 @@
 #include <fstream>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <utility>
@@ -16,6 +17,7 @@
 #include "cppgram/channel_pts.h"
 #include "cppgram/convert.h"
 #include "cppgram/filters.h"
+#include "cppgram/mtproto/auth.h"
 #include "cppgram/mtproto/retry.h"
 #include "cppgram/mtproto/socks5.h"
 #include "cppgram/mtproto/connection.h"
@@ -53,6 +55,9 @@ struct ClientOptions {
     // MTProto proxy (obfuscated transport) for the main DC connection. Unset: direct TCP. Cannot be combined
     // with socks5 (connect() throws std::invalid_argument if both are set).
     std::optional<MtprotoProxyOptions> mtproto_proxy;
+    // RSA public keys used to verify the DC during the first handshake. Empty (the default) uses Telegram's
+    // production keys. Only set this for a private DC or a test server that holds its own key.
+    std::vector<mtproto::RsaPublicKey> server_keys;
     std::string device_model = "cppgram";
     std::string system_version = "linux";
     std::string app_version = "0.1.0";
@@ -122,7 +127,8 @@ public:
     // Opens the connection, creates or loads the auth key, and runs initConnection.
     void connect();
     void disconnect();
-    bool is_connected() const noexcept { return session_ != nullptr; }
+    // Safe to call from any thread: reads the atomic flag, not session_, which run() replaces during reconnect.
+    bool is_connected() const noexcept { return connected_.load(std::memory_order_acquire); }
 
     // Feeds one raw TL update body (updates, updateShortMessage, ...) through the dispatcher.
     // Used by the update loop and useful for custom transports or tests.
@@ -166,6 +172,7 @@ public:
     // Stops run() after the current receive returns (at most keepalive_ms later) and interrupts any
     // retry or reconnect backoff in progress. Safe to call from another thread or a handler.
     void stop() noexcept {
+        std::lock_guard<std::mutex> lock(stop_mutex_);
         running_ = false;
         stop_source_.request_stop();
     }
@@ -786,6 +793,7 @@ private:
     }
     void notify_rpc_error(std::int32_t code, const std::string& name);
     void notify_connection(ConnectionEvent event);
+    void connect_impl();
     // Sets the authorization state and notifies on_auth_state when it changes.
     void set_auth_state(AuthState next);
     void report_handler_error(const std::string& stage, const std::exception& e);
@@ -805,7 +813,12 @@ private:
     };
     UpdateState state_;
     std::atomic<bool> running_{false};
+    // Mirrors session_ != nullptr for readers on other threads (is_connected()).
+    std::atomic<bool> connected_{false};
+    // Guards stop_source_: stop() may be called from any thread while run() replaces the source.
+    std::mutex stop_mutex_;
     std::stop_source stop_source_;
+    std::stop_token current_stop_token();
     AuthState auth_state_ = AuthState::Unauthenticated;
     // Applies one event; throws std::logic_error when the event is not legal in the current state.
     void apply_auth_event(AuthEvent event);

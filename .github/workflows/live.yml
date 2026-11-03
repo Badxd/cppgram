@@ -1,0 +1,29 @@
+name: live-check
+
+# Optional live Telegram check. Runs only when started by hand AND the repository secrets are set.
+# Never runs on push or pull requests, so forks and untrusted code cannot reach the secrets.
+# Secrets: TG_API_ID, TG_API_HASH, TG_BOT_TOKEN (bot account only). Nothing is printed by this workflow.
+on:
+  workflow_dispatch:
+
+jobs:
+  live-check:
+    if: ${{ secrets.TG_API_ID != '' && secrets.TG_API_HASH != '' && secrets.TG_BOT_TOKEN != '' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libboost-dev nlohmann-json3-dev libcurl4-openssl-dev libssl-dev zlib1g-dev libsqlite3-dev
+      - name: Build live check
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_LIVE_CHECK=ON
+          cmake --build build --target cppgram_live_check -j2
+      - name: Run live check
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+        run: ./build/cppgram_live_check

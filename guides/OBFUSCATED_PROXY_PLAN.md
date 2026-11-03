@@ -1,6 +1,9 @@
-# MTProto obfuscated proxy: plan (not implemented)
+# MTProto obfuscated proxy: design notes
 
-Status: design only. No code. The obfuscated transport is not implemented and is not verified against a real proxy.
+Status: implemented for the client side (plain and padded-intermediate secrets, `ClientOptions::mtproto_proxy`).
+Offline tested only. Compatibility with a real Telegram proxy server is NOT VERIFIED. Fake-TLS (`ee`) secrets are rejected.
+See [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md) for the verification status of each feature.
+
 
 ## What exists now
 

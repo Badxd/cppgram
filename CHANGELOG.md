@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Production readiness
+- Fixed: `Client::is_connected()` is safe to call from any thread. It reads an atomic flag instead of the session pointer that `run()` replaces during a reconnect (ThreadSanitizer data race).
+- Fixed: `~Client()` drops user handlers before disconnecting. A `Disconnected` event no longer runs user code after the handler's captured objects may be gone.
+- Fixed: the reconnect budget resets after a successful reconnect. A failed initial connect no longer leaves `is_connected()` true.
+- Fixed: `stop()` and `run()` no longer race on the stop source.
+- Tests: client-level fake-DC tests for reconnect, FLOOD_WAIT, stop during backoff or wait, and concurrent stop and drop (`tests/mtproto/client_fake_dc_test.cpp`).
+- CI: `.github/workflows/ci.yml` (header, schema and example checks; ASan and UBSan; TSan; clang-18 fuzz smoke run) and a manual `live.yml`. Not yet run on GitHub.
+- Docs: `guides/PRODUCTION_READINESS.md` lists what is offline tested, CI verified, live tested, blocked and not verified.
+
 ### Login and authorization
 - New: explicit authorization state machine (`cppgram/auth_state.h`, `Client::auth_state()`). Transition table and RPC error mapping are pure functions with tests.
 - New: `Client::send_login_code`, `sign_in_code`, `sign_in_password`, `probe_session`; `LoginCodeInfo` result type.

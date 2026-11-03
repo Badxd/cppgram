@@ -135,6 +135,20 @@ static double client_jitter01() {
 Client::Client(ClientOptions options) : options_(std::move(options)) {}
 
 Client::~Client() {
+    // Handlers may capture objects that the user has already destroyed or is destroying alongside the
+    // client. Drop them before disconnect() so no user code runs during destruction.
+    connection_handlers_.clear();
+    auth_handlers_.clear();
+    error_handlers_.clear();
+    rpc_error_handlers_.clear();
+    message_handlers_.clear();
+    callback_handlers_.clear();
+    raw_update_handlers_.clear();
+    edited_handlers_.clear();
+    member_handlers_.clear();
+    join_handlers_.clear();
+    deleted_handlers_.clear();
+    inline_handlers_.clear();
     disconnect();
 }
 
@@ -146,6 +160,17 @@ void Client::require_session() const {
 
 void Client::connect() {
     disconnect();
+    try {
+        connect_impl();
+    } catch (...) {
+        // A failed connect must not leave a half-open session behind: is_connected() would report true
+        // for a session that cannot be used.
+        disconnect();
+        throw;
+    }
+}
+
+void Client::connect_impl() {
     set_auth_state(AuthState::Connecting);
     const bool debug = options_.debug;
     if (options_.socks5 && options_.mtproto_proxy) {
@@ -194,7 +219,7 @@ void Client::connect() {
             const auto delay = mtproto::backoff_delay(options_.retry, attempt, client_jitter01());
             debug_log(debug, std::string("tcp: connect failed (") + e.what() + "), retrying");
             mtproto::sleep_cancellable(std::chrono::duration_cast<std::chrono::milliseconds>(delay),
-                                       stop_source_.get_token());
+                                       current_stop_token());
             connection_ = std::make_unique<mtproto::Connection>(mtproto::TransportKind::Intermediate);
         }
     }
@@ -225,6 +250,7 @@ void Client::connect() {
         PlainConnection plain(*connection_, debug);
         mtproto::HandshakeOptions handshake;
         handshake.dc_id = options_.dc_id;
+        handshake.keys = options_.server_keys;
         const mtproto::AuthKeyResult key = mtproto::create_auth_key(plain, handshake);
         data.dc_id = options_.dc_id;
         data.auth_key = key.auth_key;
@@ -240,9 +266,10 @@ void Client::connect() {
         debug_log(debug, "session: reusing saved auth key from " + path);
     }
     session_ = std::make_unique<mtproto::MtSession>(*connection_, data);
-    session_->set_stop_token(stop_source_.get_token());
+    session_->set_stop_token(current_stop_token());
     session_->set_retry_policy(options_.retry);
     session_->set_update_queue_limit(options_.max_pending_updates);
+    connected_.store(true, std::memory_order_release);
     if (storage_) {
         if (const auto saved = storage_->load_state()) {
             state_.pts = saved->pts;
@@ -281,6 +308,7 @@ void Client::connect() {
 void Client::disconnect() {
     const bool was_connected = session_ != nullptr;
     set_auth_state(AuthState::Disconnected);
+    connected_.store(false, std::memory_order_release);
     session_.reset();
     if (was_connected) notify_connection(ConnectionEvent::Disconnected);
     if (connection_) {
@@ -737,6 +765,7 @@ void Client::reconnect_after_drop() {
             throw mtproto::ConnectionError("gave up reconnecting after " + std::to_string(options_.max_reconnects) +
                                            " failed attempts");
         }
+        connected_.store(false, std::memory_order_release);
         session_.reset();
         if (connection_) {
             connection_->close();
@@ -744,12 +773,15 @@ void Client::reconnect_after_drop() {
         }
         mtproto::sleep_cancellable(
             mtproto::backoff_delay(options_.retry, reconnect_budget_.failures, client_jitter01()),
-            stop_source_.get_token());
+            current_stop_token());
         try {
             connect();
             connection_->set_receive_timeout(options_.keepalive_ms);
             if (was_authorized) probe_session();  // AuthRevoked/AuthExpired is recorded in auth_state()
             catch_up();  // recover updates missed while disconnected
+            // The outage is over. Start the next outage with a full budget: a quiet connection may never
+            // complete a process_one(), so the budget would otherwise never reset between drops.
+            reconnect_budget_.reset();
             return;
         } catch (const mtproto::ConnectionError&) {
             // Still down: loop, which spends one more unit of the budget.
@@ -757,11 +789,19 @@ void Client::reconnect_after_drop() {
     }
 }
 
+std::stop_token Client::current_stop_token() {
+    std::lock_guard<std::mutex> lock(stop_mutex_);
+    return stop_source_.get_token();
+}
+
 void Client::run() {
     require_session();
     // A new run starts unstopped; stop() from an earlier run no longer applies.
-    stop_source_ = std::stop_source{};
-    session_->set_stop_token(stop_source_.get_token());
+    {
+        std::lock_guard<std::mutex> lock(stop_mutex_);
+        stop_source_ = std::stop_source{};
+    }
+    session_->set_stop_token(current_stop_token());
     running_ = true;
     // Restored state (SQLite session) means updates may have been missed while offline.
     if (storage_ && state_.valid) catch_up();
@@ -1284,6 +1324,7 @@ std::int64_t Client::download_via_cdn(const ty::upload_fileCdnRedirect& redirect
     PlainConnection plain(cdn_conn, options_.debug);
     mtproto::HandshakeOptions handshake;
     handshake.dc_id = redirect.dc_id;
+    handshake.keys = options_.server_keys;
     const mtproto::AuthKeyResult key = mtproto::create_auth_key(plain, handshake);
     mtproto::SessionData data;
     data.dc_id = redirect.dc_id;

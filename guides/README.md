@@ -16,3 +16,4 @@
 - [Encrypted session files](SESSION_ENCRYPTION.md): passphrase, backup, recovery, limits.
 - [Obfuscated proxy plan](OBFUSCATED_PROXY_PLAN.md): design only, not implemented.
 - [Release report](RELEASE_REPORT.md): verified results, incomplete list, verdict.
+- [Production readiness](PRODUCTION_READINESS.md): feature status by label, how to run each check, live-test blockers.

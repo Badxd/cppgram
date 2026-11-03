@@ -14,6 +14,8 @@
 #include "cppgram/mtproto/crypto.h"
 #include "cppgram/mtproto/obfuscated.h"
 #include "cppgram/mtproto/proxy_secret.h"
+#include "cppgram/mtproto/transport.h"
+#include <optional>
 
 using namespace cppgram::mtproto;
 
@@ -199,4 +201,41 @@ TEST(ProxySecretForConnection, FakeTlsIsRejectedBeforeAnyNetworkUse) {
     Connection conn;
     EXPECT_THROW(conn.connect_obfuscated("127.0.0.1", 9, secret, 2, std::chrono::milliseconds(200)),
                  std::invalid_argument);
+}
+
+TEST(ObfuscatedStream, FragmentedReadsDecryptLikeOneRead) {
+    // Bytes arrive in arbitrary fragments on a socket. The keystream must advance per byte, so decrypting
+    // in pieces gives the same result as decrypting the whole stream at once.
+    auto client = ObfuscatedClient::create(ObfuscatedFraming::Intermediate, 2, secret_a(), fixed_init());
+    auto server = parse_obfuscated_handshake(client.handshake(), secret_a());
+    const Bytes message(1000, 0x6D);
+    const Bytes wire = server.to_client.apply(message);
+
+    Bytes pieces;
+    std::size_t pos = 0;
+    const std::size_t steps[] = {1, 3, 7, 16, 64, 5};
+    std::size_t step_index = 0;
+    while (pos < wire.size()) {
+        const std::size_t n = std::min(steps[step_index++ % 6], wire.size() - pos);
+        const Bytes chunk(wire.begin() + static_cast<std::ptrdiff_t>(pos), wire.begin() + static_cast<std::ptrdiff_t>(pos + n));
+        const Bytes out = client.decrypt(chunk);
+        pieces.insert(pieces.end(), out.begin(), out.end());
+        pos += n;
+    }
+    EXPECT_EQ(pieces, message);
+}
+
+TEST(ObfuscatedFrame, FragmentedFrameReassemblesToPayload) {
+    // The framing decoder receives decrypted bytes in fragments; the frame must reassemble byte-exact.
+    auto client = ObfuscatedClient::create(ObfuscatedFraming::Intermediate, 2, secret_a(), fixed_init());
+    const Bytes payload(300, 0x11);
+    const Bytes wire = client.frame(payload);
+    Transport decoder(TransportKind::Intermediate);
+    std::optional<Bytes> got;
+    for (std::size_t i = 0; i < wire.size(); ++i) {
+        decoder.feed(Bytes(1, wire[i]));  // one byte at a time
+        if (auto packet = decoder.next()) got = std::move(*packet);
+    }
+    ASSERT_TRUE(got.has_value());
+    EXPECT_EQ(*got, payload);
 }
