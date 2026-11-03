@@ -8,7 +8,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <stop_token>
 #include <thread>
+
+#include "cppgram/mtproto/cancel.h"
 
 #include "cppgram/client.h"
 #include "cppgram/mtproto/connection.h"
@@ -705,4 +708,24 @@ TEST(Replay, DuplicateServerMessageIsNotProcessedTwice) {
     TlReader second(updates[1]);
     EXPECT_EQ(second.read_uint32(), ty::updateShort::kId);
     EXPECT_EQ(second.read_uint32(), 2u);
+}
+
+TEST(Session, FloodWaitSleepCanBeCancelledWithoutResending) {
+    const Bytes key = random_bytes(256);
+    FloodServer server(key, "FLOOD_WAIT_30");
+    MtSession session(server, SessionData{2, key, 0x1111222233334444ull, 0});
+    RetryPolicy policy;
+    policy.max_flood_wait = std::chrono::seconds(60);
+    session.set_retry_policy(policy);
+    std::stop_source stop;
+    session.set_stop_token(stop.get_token());
+    std::thread canceller([&stop] {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        stop.request_stop();
+    });
+    const auto start = std::chrono::steady_clock::now();
+    EXPECT_THROW(session.invoke(Bytes{0x01, 0x02, 0x03, 0x04}), OperationCancelled);
+    canceller.join();
+    EXPECT_LT(std::chrono::steady_clock::now() - start, std::chrono::seconds(5));
+    EXPECT_EQ(server.requests(), 1);  // the request was not resent after the cancelled wait
 }

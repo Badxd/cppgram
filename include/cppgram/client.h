@@ -19,12 +19,23 @@
 #include "cppgram/mtproto/retry.h"
 #include "cppgram/mtproto/socks5.h"
 #include "cppgram/mtproto/connection.h"
+#include "cppgram/mtproto/proxy_secret.h"
 #include "cppgram/mtproto/schema/api.h"
 #include "cppgram/mtproto/session.h"
 #include "cppgram/parser.h"
 #include "cppgram/types.h"
 
 namespace cppgram {
+
+// MTProto proxy (obfuscated transport) for the main DC connection. The secret is hex text: 32 characters for
+// a plain secret, or "dd" followed by 32 characters for a padded-intermediate secret. Fake-TLS ("ee") secrets
+// are rejected. The secret is never logged.
+struct MtprotoProxyOptions {
+    std::string host;
+    std::uint16_t port = 443;
+    std::string secret;
+    int connect_timeout_ms = 10000;
+};
 
 struct ClientOptions {
     std::int32_t api_id = 0;
@@ -39,6 +50,9 @@ struct ClientOptions {
     std::string session_string;
     // SOCKS5 proxy for the main DC connection. Unset: direct TCP. CDN downloads still connect directly.
     std::optional<mtproto::Socks5Options> socks5;
+    // MTProto proxy (obfuscated transport) for the main DC connection. Unset: direct TCP. Cannot be combined
+    // with socks5 (connect() throws std::invalid_argument if both are set).
+    std::optional<MtprotoProxyOptions> mtproto_proxy;
     std::string device_model = "cppgram";
     std::string system_version = "linux";
     std::string app_version = "0.1.0";
