@@ -9,6 +9,11 @@
 - `connect()` resets the state to `Unauthenticated`; `disconnect()` sets `Disconnected`; `run()` re-probes an authorized session after a reconnect.
 - `login_bot` and `log_out` update the state. See `guides/AUTHENTICATION.md` (user login not live-tested).
 
+### MTProto proxy and connection timeouts
+- New: obfuscated MTProto proxy transport (`cppgram/mtproto/obfuscated.h`) and `ClientOptions::mtproto_proxy` (host, port, hex secret). Plain and padded-intermediate secrets are supported. Fake-TLS (`ee`) secrets are rejected. Offline tests only: live compatibility with Telegram proxy servers is not verified.
+- Changed: direct TCP connects are bounded by `ClientOptions::connect_timeout_ms` (non-blocking connect with a deadline). Previously a connect could block for the kernel's full SYN timeout.
+- Changed: send timeouts use the same value as receive timeouts.
+
 ### Networking and shutdown
 - New: cancellable waits (`cppgram/mtproto/cancel.h`). Retry backoff, reconnect backoff and flood-wait sleeps stop when `Client::stop()` is called; `run()` returns cleanly.
 - `Client::stop()` is safe to call from another thread. A new `run()` starts unstopped.
