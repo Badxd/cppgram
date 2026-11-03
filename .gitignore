@@ -47,3 +47,4 @@ bot_workspace/
 *.bak
 build-san/
 build-tsan/
+build-fuzz/
