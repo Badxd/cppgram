@@ -1,64 +1,110 @@
 # Production readiness status
 
-This page records what is verified and how. Each feature has one of these labels:
+Labels used in this project. Each one is a claim about the evidence, and no label means more than what is listed under it.
 
-- **IMPLEMENTED**: code exists in the tree.
-- **OFFLINE TESTED**: unit or fake-server tests pass locally. No real Telegram traffic.
-- **CI VERIFIED**: the same tests pass in a GitHub Actions run on the release commit.
-- **LIVE TESTED**: exercised against Telegram servers, a real proxy, or a real account.
-- **BLOCKED**: a live test was not run, with the reason given.
-- **NOT VERIFIED**: no test covers the behavior.
+- **IMPLEMENTED**: the code exists and is reachable through the public API or the documented tools.
+- **OFFLINE TESTED**: unit, protocol, fake-server or fake-DC tests pass. No Telegram traffic and no real proxy were used.
+- **GCC VERIFIED**: the library and all test targets build with g++-12 (12.4.0) from a fresh build directory, and ctest passes.
+- **CLANG VERIFIED**: the same, with clang++-18 (18.1.3).
+- **SANITIZER VERIFIED**: the offline tests pass under AddressSanitizer with UndefinedBehaviorSanitizer, or under ThreadSanitizer, with the recorded results.
+- **FUZZ TESTED**: the libFuzzer target ran for the recorded time and execution count without a crash or sanitizer report.
+- **NOT VERIFIED LIVE**: never run against Telegram servers, a real proxy or a real account. The project owner will test these later on Heroku with an authorized environment.
+- **BLOCKED**: a test that cannot run in this environment, with the reason given.
+- **UNSUPPORTED**: deliberately not implemented. Such secrets or features are rejected before any network use.
 
-Nothing on this page is LIVE TESTED unless a run log says so. The project had no authorized test account or proxy in the
-environment that produced this status.
+Nothing on this page has been verified live. The environment that produced it had no authorized account, proxy or Telegram
+credentials. No GitHub Actions run exists for this snapshot.
 
 ## Feature status
 
-| Area | Status | Evidence | Notes |
+| Area | Labels | Evidence | Notes |
 |---|---|---|---|
-| Reconnect after drop | IMPLEMENTED, OFFLINE TESTED | `tests/mtproto/client_fake_dc_test.cpp`: unexpected drop, repeated drops, budget exhaustion, stop during backoff, stop prevents reconnect, concurrent stop and drop stress | Bounded by `ClientOptions::max_reconnects` (default 5), exponential backoff with equal jitter. Budget resets after a successful reconnect. LIVE TESTED: BLOCKED (no account). |
-| FLOOD_WAIT | IMPLEMENTED, OFFLINE TESTED | Same file: retry after server delay, delay beyond policy returned without sleeping, bounded attempts, stop cancels the sleep. `session_test.cpp` covers cancellable sleep without resending. | Tested against a fake DC that returns `FLOOD_WAIT_n`. No real rate limit was triggered. LIVE TESTED: BLOCKED. |
-| SOCKS5 | IMPLEMENTED, OFFLINE TESTED | `tests/mtproto/connection_net_test.cpp`, `socks5` tests: CONNECT, username/password (RFC 1929), IPv4 and domain targets, connect timeout, refused proxy | Domain targets are sent to the proxy as a domain name (ATYP 0x03), so the proxy resolves them. IPv4 and IPv6 literals are sent in binary. LIVE TESTED: BLOCKED (no authorized proxy). |
-| Encrypted session file (CGE1) | IMPLEMENTED, OFFLINE TESTED | `SessionCrypto*` tests: round trip, wrong passphrase, tampered ciphertext, truncation, out-of-range scrypt cost | AES-256-GCM, scrypt N=2^15, r=8, p=1. Header is authenticated as AAD. Passphrase is read from `CPPGRAM_SESSION_PASSPHRASE`. LIVE TESTED: BLOCKED. See [SESSION_ENCRYPTION.md](SESSION_ENCRYPTION.md). |
-| Obfuscated MTProto proxy (client) | IMPLEMENTED, OFFLINE TESTED | `tests/mtproto/obfuscated_test.cpp`, `connection_net_test.cpp` (`ObfuscatedNet.*`) | Plain secrets (32 hex characters) and padded-intermediate secrets (`dd` followed by 32 hex characters). Fake-TLS (`ee`) secrets are rejected with `std::invalid_argument`. Handshake was cross-checked against two independent open-source implementations, not against Telegram servers. Server-to-client padded framing: NOT VERIFIED. LIVE TESTED: BLOCKED. |
-| Connect and I/O timeouts | IMPLEMENTED, OFFLINE TESTED | `ConnectionNet.*` tests | `connect_timeout_ms` and receive/send timeouts. |
-| Cancellation and shutdown | IMPLEMENTED, OFFLINE TESTED | `CancelStress*`, `Cancel*` tests | `Client::stop()` is safe from any thread. A new `run()` starts unstopped, by design. |
-| Thread safety | OFFLINE TESTED (TSan) | Full `cppgram_mtproto_test` under ThreadSanitizer: 237 tests passed, 0 warnings | Fixes in this round: `is_connected()` now reads an atomic flag. Handlers are cleared in `~Client()`. |
-| Memory and UB | OFFLINE TESTED (ASan, UBSan) | `tools/run_sanitizers.sh`: 316 of 316 tests passed, 0 sanitizer reports | |
-| Fuzzing | OFFLINE TESTED | See the fuzz section below | |
-| GitHub Actions | CI workflow written; NOT VERIFIED on GitHub | `.github/workflows/ci.yml`, `.github/workflows/live.yml` | The push to the remote was refused (HTTP 403), so no workflow has run on GitHub for the release commit. |
+| Reconnect after drop | IMPLEMENTED, OFFLINE TESTED, NOT VERIFIED LIVE | `ClientFakeDc.*`, `ClientLifecycle.*` | Bounded by `max_reconnects`, jittered backoff, cancellable. See [RECONNECT_AND_FLOOD_WAIT.md](RECONNECT_AND_FLOOD_WAIT.md). |
+| FLOOD_WAIT | IMPLEMENTED, OFFLINE TESTED, NOT VERIFIED LIVE | `ClientFakeDc.FloodWait*`, `ClientFakeDc.StopCancelsAFloodWaitInProgress` | Controlled fake DC only. No real rate limit was triggered. |
+| Client lifecycle and handlers | IMPLEMENTED, OFFLINE TESTED, SANITIZER VERIFIED | `ClientLifecycle.*` (connect/disconnect cycles, concurrent stop, state reads during reconnect, no handler after destruction) | Handlers must be registered before `connect()` or `run()`. Bot login is not covered by the fake DC. |
+| Session storage (SQLite) | IMPLEMENTED, OFFLINE TESTED, SANITIZER VERIFIED | `StorageConcurrency.*`, `Storage.*`, `SqliteEncrypted.*` | Calls are serialized per object. Two objects may share a file (WAL, busy timeout). |
+| Encrypted session (CGE1) | IMPLEMENTED, OFFLINE TESTED, FUZZ TESTED, NOT VERIFIED LIVE | `SessionCrypto.*`, `SessionStringEncrypted.*`, `EncryptedSession.*`, `fuzz_session_crypto` | AES-256-GCM, scrypt with bounded cost, header as AAD. Session files are mode 0600. See [SESSION_ENCRYPTION.md](SESSION_ENCRYPTION.md). |
+| SOCKS5 | IMPLEMENTED, OFFLINE TESTED, NOT VERIFIED LIVE | `Socks5.*`, `Socks5Connection.*`, `ConnectionNet.*` | No-auth and username/password. IPv4, IPv6 and domain targets. See [PROXIES.md](PROXIES.md). |
+| MTProto obfuscated proxy, plain and padded secrets | IMPLEMENTED, OFFLINE TESTED, NOT VERIFIED LIVE | `Obfuscated*`, `ObfuscatedNet.*`, `ObfuscatedFrame.*` | Padded server frames are handled offline. Whether real servers pad is unknown. |
+| Fake-TLS (`ee`) proxy secrets | UNSUPPORTED | `ObfuscatedNet.FakeTlsSecretIsRejectedBeforeConnecting` | Rejected before any connection. |
+| Padded-intermediate framing | IMPLEMENTED, OFFLINE TESTED, NOT VERIFIED LIVE | `ObfuscatedFrame.*`, `Crypto.TrailingTransportPaddingIsIgnoredButExtraBlockIsRejected` | Client and server-to-client directions, fragmented reads, truncation, error words, padding overrun. |
+| Thread safety | SANITIZER VERIFIED | TSan: 35 focused and 260 full tests, 0 warnings | See the results table below. |
+| Memory and undefined behavior | SANITIZER VERIFIED | ASan and UBSan: 339 of 339 tests, no reports | See the results table below. |
+| Build portability | GCC VERIFIED, CLANG VERIFIED | Fresh build directories for both compilers | C++20 is set on the library target. |
+| Fuzzing | FUZZ TESTED | Results table below | Smoke-length runs. Not a long campaign. |
+| CI workflows | IMPLEMENTED, NOT VERIFIED LIVE | `.github/workflows/ci.yml`, `live.yml` | Written, not executed on GitHub. |
+| Live Telegram behavior | NOT VERIFIED LIVE | See the list below | Postponed to the project owner. |
 
-## Running the checks locally
+## Verification results (final source)
 
-```
-make test                       # configure, build, run the unit and offline suite
-bash tools/run_sanitizers.sh    # ASan and UBSan, build-san/
-bash tools/run_tsan.sh          # ThreadSanitizer, build-tsan/ (slow: -j1)
-bash tools/run_fuzz_long.sh 600 # clang-18 libFuzzer targets, build-fuzz/
-bash tools/check_headers.sh     # each public header compiles alone
-bash tools/check_schema.sh      # TL schema reproduces from source
-bash tools/check_examples.sh    # examples compile
-```
+Commands are in the README and in [fuzz/README.md](../fuzz/README.md). Exact commit hashes and dates are in
+`commit-history.txt` in the package.
 
-## Live tests
+| Check | Environment | Result |
+|---|---|---|
+| Release build, fresh directory | g++-12 12.4.0, `-DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON` | Builds. Two false-positive warnings from GCC 12 were removed (`fake_dc.h`, `client_extra.cpp`). Final rebuild: 0 warnings. |
+| ctest | g++-12 | 339 of 339 passed |
+| Release build, fresh directory | clang++-18 18.1.3 | Builds. 0 warnings. Unused constants removed from `client.cpp`. |
+| ctest | clang++-18 | 339 of 339 passed |
+| ASan + UBSan | `tools/run_sanitizers.sh` | See the final run below. |
+| TSan | `tools/run_tsan.sh` | 35 focused, 260 full, 0 warnings |
+| Header self-containment | `tools/check_headers.sh` | Exit 0 |
+| Example syntax | `tools/check_examples.sh` | Exit 0 |
 
-`examples/live_check.cpp` reads `TG_API_ID`, `TG_API_HASH` and `TG_BOT_TOKEN` from the environment. It does not write them to
-disk. `.github/workflows/live.yml` runs only when started by hand and only when those repository secrets are set.
+Fuzzing, all with clang-18 libFuzzer and ASan. Every run exited 0 with no crash, timeout or sanitizer report.
 
-Live checks that have not been run: user login, reconnect against Telegram, FLOOD_WAIT against Telegram, SOCKS5 to a real
-proxy, obfuscated proxy against a real proxy, and encrypted sessions with a real account. Each is BLOCKED until someone with
-an authorized account or proxy runs it. Results must be recorded with the commit SHA and date.
+| Target | Corpus | Duration | Executions | Coverage (edges) |
+|---|---|---|---|---|
+| `fuzz_tl_reader` | none (no TL seed generator in the repo) | 601 s | 16,749,453 | 30 |
+| `fuzz_session_string` | none | 601 s | 446,703,929 | 13 |
+| `fuzz_session_string` | 8 valid session strings | 301 s | 106,432,734 | 14 |
+| `fuzz_html_parser` | none | 601 s | 10,908,327 | 28 |
+| `fuzz_session_crypto` | none | 601 s | 15,812,122 | 5 (most inputs fail the magic check) |
+| `fuzz_session_crypto` | 4 valid and 11 invalid CGE1 seeds | 601 s | 21,385 | 16 |
+
+The CEG1 numbers are low on purpose. Each decryption that gets past the header runs scrypt (about 30 ms), so the seeded
+run covers about 35 inputs per second. Coverage is limited to one passphrase and to the code reached through the seeds.
+
+## Live tests: postponed to the project owner
+
+Each item is **NOT VERIFIED LIVE — USER WILL TEST LATER**:
+
+- Real Telegram reconnect.
+- Real Telegram FLOOD_WAIT.
+- SOCKS5 connection to Telegram.
+- Encrypted session restore with a real Telegram account.
+- Real MTProto obfuscated proxy compatibility.
+- Real Telegram padded-intermediate server framing compatibility.
+
+GitHub Actions and any push are also out of scope for this snapshot.
 
 ## Known limitations
 
-- Obfuscated proxy: fake-TLS secrets are not supported. Server-to-client padded framing is not verified.
-- No live verification of any Telegram interaction in this round.
-- `Client::stop()` before `run()` is ignored by design. Call `stop()` after `run()` has started.
-- Session encryption protects the file at rest. It does not protect memory, and it does not help if the passphrase is stored
-  next to the file.
+- No live verification of any Telegram interaction.
+- Obfuscated proxy: fake-TLS (`ee`) secrets are UNSUPPORTED. Whether real servers pad their frames is unknown.
+- `fuzz_tl_reader` has no seed corpus in the repository. The session-string target is seeded only with valid inputs.
+- CEG1 fuzzing is limited by scrypt cost. A deeper campaign needs a test-only build with lower cost, which this
+  project does not provide.
+- Handlers (`Client::on_*`) must be registered before `connect()` or `run()`. Registration during a run is a data race.
+- Scrypt for encrypted sessions allocates up to 128 MiB while deriving a key, if the file asks for the maximum cost.
+- Results come from one machine. No CI run exists for this snapshot.
+- `Client::stop()` before `run()` is ignored by design.
+
+## Running the checks
+
+    CXX=g++-12 CC=gcc-12 cmake -S . -B build/gcc -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON
+    cmake --build build/gcc -j2 && ctest --test-dir build/gcc --output-on-failure
+    CXX=clang++-18 CC=clang-18 cmake -S . -B build/clang -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON
+    cmake --build build/clang -j1 && ctest --test-dir build/clang --output-on-failure
+    bash tools/run_sanitizers.sh
+    bash tools/run_tsan.sh
+    bash tools/run_fuzz_long.sh 600
+    bash tools/check_headers.sh
+    bash tools/check_examples.sh
 
 ## Security notes
 
-- Never commit session files, passphrases, API hashes, bot tokens or private keys. The `.gitignore` covers `build-*/`.
-- Credentials for live tests come only from the environment or GitHub Secrets.
-- Proxy secrets are parsed and validated before any network I/O.
+- Never commit session files, passphrases, API hashes, bot tokens or private keys. `.gitignore` covers build directories.
+- Session files are created with mode 0600.
+- Proxy secrets and SOCKS5 credentials are never logged. Error messages do not include them.
+- The full review and its findings are in [SECURITY_AUDIT.md](SECURITY_AUDIT.md).

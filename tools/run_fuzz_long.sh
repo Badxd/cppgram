@@ -9,8 +9,8 @@ LOGS="$BUILD/logs"
 mkdir -p "$LOGS"
 cmake -S "$ROOT" -B "$BUILD" -DCMAKE_CXX_COMPILER=clang++-18 -DCMAKE_C_COMPILER=clang-18 \
     -DENABLE_TESTS=OFF -DBUILD_FUZZERS=ON -DCMAKE_BUILD_TYPE=Release
-cmake --build "$BUILD" -j1 --target fuzz_tl_reader fuzz_session_string fuzz_html_parser
-for target in fuzz_tl_reader fuzz_session_string fuzz_html_parser; do
+cmake --build "$BUILD" -j1 --target fuzz_tl_reader fuzz_session_string fuzz_html_parser fuzz_session_crypto
+for target in fuzz_tl_reader fuzz_session_string fuzz_html_parser fuzz_session_crypto; do
     corpus="$BUILD/corpus/$target"
     mkdir -p "$corpus"
     start=$(date +%s)

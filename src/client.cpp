@@ -32,8 +32,6 @@ namespace tl = mtproto::tl;
 namespace {
 
 constexpr std::int32_t kLayer = 232;
-constexpr std::size_t kSmallFileLimit = 10u * 1024u * 1024u;
-constexpr std::size_t kPartSize = 512u * 1024u;
 constexpr std::int32_t kDownloadChunk = 1024 * 1024;
 
 // Adapts a raw packet connection to the handshake's plain-message channel.
@@ -796,13 +794,15 @@ std::stop_token Client::current_stop_token() {
 
 void Client::run() {
     require_session();
-    // A new run starts unstopped; stop() from an earlier run no longer applies.
+    // A new run starts unstopped; stop() from an earlier run no longer applies. The new source and running_ = true are
+    // set under the same lock stop() takes. Otherwise a stop() that landed between the two could be overwritten by
+    // running_ = true, and the loop would run without a stop request.
     {
         std::lock_guard<std::mutex> lock(stop_mutex_);
         stop_source_ = std::stop_source{};
+        running_ = true;
     }
     session_->set_stop_token(current_stop_token());
-    running_ = true;
     // Restored state (SQLite session) means updates may have been missed while offline.
     if (storage_ && state_.valid) catch_up();
     connection_->set_receive_timeout(options_.keepalive_ms);

@@ -239,3 +239,110 @@ TEST(ObfuscatedFrame, FragmentedFrameReassemblesToPayload) {
     ASSERT_TRUE(got.has_value());
     EXPECT_EQ(*got, payload);
 }
+
+// Server-to-client padded frames: the padded-intermediate writer adds 0..15 bytes to each frame and counts them in the
+// length prefix. The receiver reads the frame with the normal intermediate reader and decrypts the MTProto packet. The
+// packet decoder drops trailing bytes beyond the ciphertext's 16-byte blocks, so the padding does not reach the TL layer.
+TEST(ObfuscatedFrame, PaddedServerFramesDecryptToTheOriginalPacket) {
+    const Bytes auth_key = random_bytes(256);
+    const Bytes plain_packet = encrypt_packet(auth_key, serialize_inner(InnerMessage{}), false);
+    std::array<std::size_t, 16> seen{};
+    for (int i = 0; i < 200; ++i) {
+        auto server_side = ObfuscatedClient::create(ObfuscatedFraming::PaddedIntermediate, 2, secret_a(), fixed_init());
+        const Bytes framed = server_side.frame(plain_packet);
+        ASSERT_GE(framed.size(), 4 + plain_packet.size());
+        ASSERT_LE(framed.size(), 4 + plain_packet.size() + 15);
+        seen[framed.size() - 4 - plain_packet.size()]++;
+
+        Transport reader(TransportKind::Intermediate);
+        reader.feed(framed);
+        const auto frame = reader.next();
+        ASSERT_TRUE(frame.has_value());
+        EXPECT_EQ(decrypt_packet(auth_key, *frame, false), decrypt_packet(auth_key, plain_packet, false));
+    }
+    // The random pad length should cover more than one value over 200 frames.
+    std::size_t distinct = 0;
+    for (std::size_t n : seen) distinct += n > 0 ? 1 : 0;
+    EXPECT_GT(distinct, 1u);
+}
+
+namespace {
+
+// Builds one server-to-client padded frame for an encrypted packet, using the same writer as the client.
+Bytes padded_server_frame(const Bytes& packet) {
+    auto writer = ObfuscatedClient::create(ObfuscatedFraming::PaddedIntermediate, 2, secret_a(), fixed_init());
+    return writer.frame(packet);
+}
+
+}  // namespace
+
+TEST(ObfuscatedFrame, ManyPaddedServerFramesInOneReadAllDecrypt) {
+    const Bytes auth_key = random_bytes(256);
+    std::vector<Bytes> packets;
+    Bytes stream;
+    for (int i = 0; i < 20; ++i) {
+        InnerMessage msg{};
+        msg.message_id = 0x1000 + static_cast<std::uint64_t>(i);
+        packets.push_back(encrypt_packet(auth_key, serialize_inner(msg), false));
+        const Bytes framed = padded_server_frame(packets.back());
+        stream.insert(stream.end(), framed.begin(), framed.end());
+    }
+    Transport reader(TransportKind::Intermediate);
+    reader.feed(stream);
+    for (int i = 0; i < 20; ++i) {
+        const auto frame = reader.next();
+        ASSERT_TRUE(frame.has_value()) << "frame " << i;
+        EXPECT_EQ(decrypt_packet(auth_key, *frame, false), decrypt_packet(auth_key, packets[i], false)) << "frame " << i;
+    }
+    EXPECT_FALSE(reader.next().has_value());
+}
+
+TEST(ObfuscatedFrame, PaddedServerFrameSplitAtEveryOffsetReassembles) {
+    const Bytes auth_key = random_bytes(256);
+    const Bytes packet = encrypt_packet(auth_key, serialize_inner(InnerMessage{}), false);
+    const Bytes framed = padded_server_frame(packet);
+    const Bytes expected = decrypt_packet(auth_key, packet, false);
+    for (std::size_t split = 0; split <= framed.size(); ++split) {
+        Transport reader(TransportKind::Intermediate);
+        reader.feed(Bytes(framed.begin(), framed.begin() + static_cast<std::ptrdiff_t>(split)));
+        const auto early = reader.next();
+        if (split < framed.size()) EXPECT_FALSE(early.has_value()) << "split " << split;
+        reader.feed(Bytes(framed.begin() + static_cast<std::ptrdiff_t>(split), framed.end()));
+        const auto frame = early ? early : reader.next();
+        ASSERT_TRUE(frame.has_value()) << "split " << split;
+        EXPECT_EQ(decrypt_packet(auth_key, *frame, false), expected) << "split " << split;
+    }
+}
+
+TEST(ObfuscatedFrame, TruncatedPaddedFrameIsNotReturnedAsPartialData) {
+    const Bytes auth_key = random_bytes(256);
+    const Bytes packet = encrypt_packet(auth_key, serialize_inner(InnerMessage{}), false);
+    const Bytes framed = padded_server_frame(packet);
+    Transport reader(TransportKind::Intermediate);
+    reader.feed(Bytes(framed.begin(), framed.end() - 1));
+    EXPECT_FALSE(reader.next().has_value());
+    reader.feed(Bytes(framed.end() - 1, framed.end()));
+    EXPECT_TRUE(reader.next().has_value());
+}
+
+TEST(ObfuscatedFrame, ServerErrorWordInPlaceOfLengthIsRejected) {
+    // Telegram sends small negative int32 codes (for example -404) where a length would be.
+    Bytes stream = {0x6c, 0xfe, 0xff, 0xff};  // -404 little endian
+    Transport reader(TransportKind::Intermediate);
+    reader.feed(stream);
+    EXPECT_THROW(reader.next(), TransportError);
+}
+
+TEST(ObfuscatedFrame, PaddingBeyondOneBlockFailsDecryption) {
+    // Extra bytes that add a whole AES block are not transport padding and must fail msg_key checking.
+    const Bytes auth_key = random_bytes(256);
+    Bytes packet = encrypt_packet(auth_key, serialize_inner(InnerMessage{}), false);
+    const Bytes block = random_bytes(16);
+    packet.insert(packet.end(), block.begin(), block.end());
+    const Bytes framed = padded_server_frame(packet);
+    Transport reader(TransportKind::Intermediate);
+    reader.feed(framed);
+    const auto frame = reader.next();
+    ASSERT_TRUE(frame.has_value());
+    EXPECT_THROW(decrypt_packet(auth_key, *frame, false), CryptoError);
+}

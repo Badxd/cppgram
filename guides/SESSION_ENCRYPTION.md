@@ -9,7 +9,8 @@ Not covered yet: SQLite session storage and `export_session_string()`. Both hold
 - When it is set, every save writes a `CGE1` envelope: `magic | log2N | r | p | salt(16) | nonce(12) | tag(16) | ciphertext`.
 - Key: scrypt (N=2^15, r=8, p=1) over the passphrase and a random 16-byte salt, giving a 32-byte key.
 - Cipher: AES-256-GCM with a fresh random 12-byte nonce on every save. The header is authenticated as additional data.
-- The KDF parameters are checked on load (log2N 14..20, r 1..16, p 1..4). Values outside that range are refused.
+- The KDF parameters are checked on load: log2N 14..17, r 1..8, p 1..4. Scrypt memory is 128 * N * r, so the largest accepted file needs 128 MiB. Values outside that range are refused before any memory is allocated.
+- Blobs larger than 16 MiB are refused. Session files are a few kilobytes.
 
 ## Behaviour
 
@@ -39,6 +40,6 @@ Failures never fall back to a new login. A corrupt session is reported, not repl
 
 ## Limits
 
-- scrypt cost is fixed at N=2^15 for new files. Files written by a future version with other parameters still open, as long as they are within the accepted range.
+- scrypt cost is fixed at N=2^15 for new files. Files written by a future version with other parameters still open, as long as they are within the accepted range (N up to 2^17, r up to 8). Earlier builds accepted up to 2^20 and r=16; those files are refused now. The writer in this code only ever produces N=2^15, r=8, p=1.
 - There is no key escrow. A lost passphrase means a lost session.
 - Encryption protects the file at rest. It does not protect a running process whose memory can be read by the same user.

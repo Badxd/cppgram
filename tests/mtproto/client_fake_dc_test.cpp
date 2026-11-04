@@ -318,3 +318,100 @@ TEST(ClientFakeDc, ConcurrentStopAndDropStress) {
         client.disconnect();
     }
 }
+
+// ---- lifecycle and concurrency ----
+
+TEST(ClientLifecycle, ConnectDisconnectCyclesLeaveNoStaleState) {
+    FakeDc dc;
+    SessionFile file("cycle");
+    Client client(options_for(dc, file.path));
+    for (int round = 0; round < 5; ++round) {
+        client.connect();
+        EXPECT_TRUE(client.is_connected()) << "round " << round;
+        client.disconnect();
+        EXPECT_FALSE(client.is_connected()) << "round " << round;
+        client.disconnect();  // second disconnect is a no-op
+        EXPECT_FALSE(client.is_connected());
+    }
+    client.stop();  // stop without run() is accepted
+}
+
+TEST(ClientLifecycle, DisconnectAndStopBeforeConnectAreSafe) {
+    FakeDc dc;
+    SessionFile file("never-connected");
+    {
+        Client client(options_for(dc, file.path));
+        client.disconnect();
+        client.stop();
+        EXPECT_FALSE(client.is_connected());
+    }  // destruction without ever connecting
+    EXPECT_EQ(dc.connections_accepted(), 0u);
+}
+
+TEST(ClientLifecycle, ManyThreadsCallingStopWhileRunningReturnCleanly) {
+    FakeDc dc;
+    SessionFile file("concurrent-stop");
+    Client client(options_for(dc, file.path));
+    client.connect();
+    Runner done(client);
+    // stop() before run() is ignored by design, so wait until run() has started. is_running() turns true under the
+    // lock that installs the stop source, so every stop() below takes effect.
+    ASSERT_TRUE(wait_until([&] { return client.is_running(); }, 5s));
+
+    std::vector<std::thread> stoppers;
+    for (int t = 0; t < 4; ++t) {
+        stoppers.emplace_back([&client] {
+            for (int i = 0; i < 200; ++i) client.stop();
+        });
+    }
+    for (auto& th : stoppers) th.join();
+    ASSERT_EQ(done.fut.wait_for(5s), std::future_status::ready);
+    EXPECT_NO_THROW(done.fut.get());
+}
+
+TEST(ClientLifecycle, ConnectionStateIsReadableFromOtherThreadsDuringReconnects) {
+    FakeDc dc;
+    SessionFile file("state-readers");
+    Client client(options_for(dc, file.path));
+    client.connect();
+    Runner done(client);
+    ASSERT_TRUE(wait_until([&] { return dc.connections_accepted() == 1; }, 5s));
+
+    std::atomic<bool> reading{true};
+    std::atomic<std::size_t> reads{0};
+    std::vector<std::thread> readers;
+    for (int t = 0; t < 3; ++t) {
+        readers.emplace_back([&] {
+            while (reading.load()) {
+                (void)client.is_connected();
+                reads.fetch_add(1);
+            }
+        });
+    }
+    for (int drop = 2; drop <= 3; ++drop) {
+        dc.drop_connections();
+        ASSERT_TRUE(wait_until([&] { return dc.connections_accepted() == static_cast<std::size_t>(drop) && client.is_connected(); }, 10s))
+            << "reconnect " << drop;
+    }
+    reading = false;
+    for (auto& th : readers) th.join();
+    EXPECT_GT(reads.load(), 0u);
+    client.stop();
+    ASSERT_EQ(done.fut.wait_for(5s), std::future_status::ready);
+    EXPECT_NO_THROW(done.fut.get());
+}
+
+TEST(ClientLifecycle, HandlersDoNotRunAfterClientDestruction) {
+    FakeDc dc;
+    SessionFile file("handler-teardown");
+    std::atomic<int> calls{0};
+    int calls_at_destroy = -1;
+    {
+        Client client(options_for(dc, file.path));
+        client.on_connection_state([&calls](Client&, Client::ConnectionEvent) { calls.fetch_add(1); });
+        client.connect();
+        ASSERT_TRUE(calls.load() >= 1);  // Connected was reported
+        calls_at_destroy = calls.load();
+    }  // ~Client clears handlers before disconnecting, so the Disconnected event is not delivered
+    EXPECT_EQ(calls.load(), calls_at_destroy);
+}

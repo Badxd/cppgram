@@ -1,14 +1,17 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "cppgram/session_crypto.h"
+#include "session_crypto_detail.h"
 
 using namespace cppgram::session_crypto;
+namespace detail = cppgram::session_crypto::detail;
 
 namespace {
 
@@ -97,4 +100,62 @@ TEST(SessionCrypto, ErrorMessageDoesNotEchoSecrets) {
         EXPECT_EQ(msg.find("hunter2"), std::string::npos);
         EXPECT_EQ(msg.find("payload"), std::string::npos);
     }
+}
+
+// ---- bounds and seams (regression tests for the resource and validation review) ----
+
+// Regression: before the bound was lowered, a header asking for N = 2^20, r = 16 was accepted, which needs
+// about 2 GiB of scrypt memory from an untrusted file. The bound is now 128 MiB. Rejection happens before any
+// allocation, so these checks are fast.
+TEST(SessionCrypto, ScryptCostAboveTheMemoryBoundIsRejectedBeforeDerivation) {
+    auto blob = encrypt("pw", bytes_of("x"));
+    blob[4] = 18;  // N = 2^18 with r = 8 is 256 MiB
+    EXPECT_THROW(decrypt("pw", blob), std::runtime_error);
+    blob[4] = 15;
+    blob[5] = 16;  // r = 16 doubles memory again
+    EXPECT_THROW(decrypt("pw", blob), std::runtime_error);
+    blob[5] = 0;
+    EXPECT_THROW(decrypt("pw", blob), std::runtime_error);
+}
+
+TEST(SessionCrypto, OversizedBlobIsRejectedBeforeAnyWork) {
+    std::vector<std::uint8_t> huge(16u * 1024u * 1024u + 1, 0);
+    std::copy_n(kMagic.data(), 4, huge.begin());
+    huge[4] = 15;
+    huge[5] = 8;
+    huge[6] = 1;
+    EXPECT_THROW(decrypt("pw", huge), std::runtime_error);
+}
+
+TEST(SessionCrypto, OpenWithKeyNeedsTheRightKeyAndAuthenticatesEveryByte) {
+    const auto plain = bytes_of("open-with-key payload");
+    const auto blob = encrypt("pw", plain);
+    const auto key = detail::derive_key_for("pw", blob);
+    ASSERT_EQ(key.size(), 32u);
+    EXPECT_EQ(detail::open_with_key(key.data(), blob), plain);
+
+    auto wrong = key;
+    wrong[0] ^= 0x01;
+    EXPECT_THROW(detail::open_with_key(wrong.data(), blob), std::runtime_error);
+
+    auto tampered = blob;
+    tampered.back() ^= 0x80;  // ciphertext byte
+    EXPECT_THROW(detail::open_with_key(key.data(), tampered), std::runtime_error);
+    tampered = blob;
+    tampered[7] ^= 0x01;  // salt is covered by the key, so this changes the derived key and fails
+    EXPECT_THROW(detail::open_with_key(key.data(), tampered), std::runtime_error);
+}
+
+TEST(SessionCrypto, EveryTruncationLengthIsRejected) {
+    const auto blob = encrypt("pw", bytes_of("truncate me"));
+    const auto key = detail::derive_key_for("pw", blob);
+    for (std::size_t n = 0; n < blob.size(); ++n) {
+        std::vector<std::uint8_t> cut(blob.begin(), blob.begin() + static_cast<std::ptrdiff_t>(n));
+        EXPECT_THROW(detail::open_with_key(key.data(), cut), std::runtime_error) << "len " << n;
+    }
+}
+
+TEST(SessionCrypto, HeaderValidatorAcceptsWhatTheWriterProduces) {
+    const auto blob = encrypt("pw", bytes_of("writer output"));
+    EXPECT_NO_THROW(detail::validate_header(blob));
 }

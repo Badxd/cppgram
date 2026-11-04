@@ -7,6 +7,7 @@
 
 #include "secure_file.h"
 
+#include <mutex>
 #include <stdexcept>
 #include <vector>
 
@@ -27,6 +28,18 @@ constexpr int kStoreSchemaVersion = 2;
 }  // namespace
 
 SqliteStorage::SqliteStorage(const std::string& path) {
+    try {
+        open_store(path);
+    } catch (...) {
+        // A constructor that throws never runs the destructor, so release the handle here. sqlite3_open can
+        // return a handle even when it fails, and the checks below throw without closing it.
+        if (db_) sqlite3_close(db_);
+        db_ = nullptr;
+        throw;
+    }
+}
+
+void SqliteStorage::open_store(const std::string& path) {
     detail::ensure_private_file(path);
     check(sqlite3_open(path.c_str(), &db_), db_, "open sqlite session store");
     sqlite3_busy_timeout(db_, 5000);  // wait for a competing writer instead of failing at once
@@ -86,7 +99,10 @@ SqliteStorage::SqliteStorage(const std::string& path) {
     check(sqlite3_prepare_v2(db_, "PRAGMA quick_check", -1, &qc, nullptr), db_, "quick_check");
     std::string verdict = "no result";
     if (sqlite3_step(qc) == SQLITE_ROW) {
-        verdict = reinterpret_cast<const char*>(sqlite3_column_text(qc, 0));
+        // sqlite3_column_text returns NULL when the value is NULL or allocation failed. Never build a string from NULL.
+        if (const unsigned char* text = sqlite3_column_text(qc, 0)) {
+            verdict = reinterpret_cast<const char*>(text);
+        }
     }
     sqlite3_finalize(qc);
     if (verdict != "ok") {
@@ -101,6 +117,7 @@ SqliteStorage::~SqliteStorage() {
 }
 
 bool SqliteStorage::load_session(mtproto::SessionData& out) const {
+    std::lock_guard<std::mutex> lock(mutex_);
     sqlite3_stmt* stmt = nullptr;
     check(sqlite3_prepare_v2(db_, "SELECT dc_id, auth_key, server_salt, time_offset FROM session WHERE id = 1", -1, &stmt, nullptr),
           db_, "prepare load_session");
@@ -135,6 +152,7 @@ bool SqliteStorage::load_session(mtproto::SessionData& out) const {
 }
 
 void SqliteStorage::save_session(const mtproto::SessionData& data) {
+    std::lock_guard<std::mutex> lock(mutex_);
     sqlite3_stmt* stmt = nullptr;
     check(sqlite3_prepare_v2(db_,
                              "INSERT OR REPLACE INTO session (id, dc_id, auth_key, server_salt, time_offset) "
@@ -156,6 +174,7 @@ void SqliteStorage::save_session(const mtproto::SessionData& data) {
 }
 
 std::optional<StoredUpdateState> SqliteStorage::load_state() const {
+    std::lock_guard<std::mutex> lock(mutex_);
     sqlite3_stmt* stmt = nullptr;
     check(sqlite3_prepare_v2(db_, "SELECT pts, qts, date, seq FROM update_state WHERE id = 1", -1, &stmt, nullptr),
           db_, "prepare load_state");
@@ -173,6 +192,7 @@ std::optional<StoredUpdateState> SqliteStorage::load_state() const {
 }
 
 void SqliteStorage::save_state(const StoredUpdateState& state) {
+    std::lock_guard<std::mutex> lock(mutex_);
     sqlite3_stmt* stmt = nullptr;
     check(sqlite3_prepare_v2(db_,
                              "INSERT OR REPLACE INTO update_state (id, pts, qts, date, seq) VALUES (1, ?, ?, ?, ?)",

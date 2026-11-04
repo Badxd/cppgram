@@ -36,8 +36,11 @@ std::optional<Message> Client::copy_message(const PeerRef& from, const PeerRef& 
     req.drop_author = true;
     req.from_peer = std::make_shared<tl::InputPeer>(input_peer(from));
     req.to_peer = std::make_shared<tl::InputPeer>(input_peer(to));
-    req.id = {message_id};
-    req.random_id = {next_random_id()};
+    // Assigned with clear()/push_back: GCC 12 reports a false -Wstringop-overread for vector = {value}.
+    req.id.clear();
+    req.id.push_back(message_id);
+    req.random_id.clear();
+    req.random_id.push_back(next_random_id());
     const tl::Updates updates = call_rpc(req);
 
     const std::vector<std::shared_ptr<tl::Update>>* list = nullptr;

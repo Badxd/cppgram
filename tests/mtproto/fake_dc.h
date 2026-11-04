@@ -126,7 +126,9 @@ private:
         res.server_nonce = server_nonce_;
         // 1724114033281923457 = 1229739323 * 1402015859
         res.pq = Bytes{0x17, 0xED, 0x48, 0x94, 0x1A, 0x08, 0xF9, 0x81};
-        res.server_public_key_fingerprints = {static_cast<std::int64_t>(rsa_fingerprint(modulus_, exponent_))};
+        // Built with push_back: GCC 12 reports a false -Wstringop-overread for vector assignment from an initializer list.
+        res.server_public_key_fingerprints.clear();
+        res.server_public_key_fingerprints.push_back(static_cast<std::int64_t>(rsa_fingerprint(modulus_, exponent_)));
         TlWriter w;
         res.serialize(w);
         reply(w);

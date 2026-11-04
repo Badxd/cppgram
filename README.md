@@ -90,6 +90,12 @@ int main() {
 
 ## Documentation
 
+Production readiness status (what is offline tested, locally verified, or not verified live): [guides/PRODUCTION_READINESS.md](guides/PRODUCTION_READINESS.md).
+Reconnect and FLOOD_WAIT: [guides/RECONNECT_AND_FLOOD_WAIT.md](guides/RECONNECT_AND_FLOOD_WAIT.md).
+SOCKS5 and MTProto proxy: [guides/PROXIES.md](guides/PROXIES.md).
+Encrypted sessions: [guides/SESSION_ENCRYPTION.md](guides/SESSION_ENCRYPTION.md).
+
+
 See [guides/](guides/README.md) for installation, authentication, sessions, architecture, the API support
 matrix, operations, the threat model, benchmarks and migration notes.
 
@@ -102,13 +108,34 @@ make tl-generate  # regenerate the TL code from schema/*.tl (C++ tool, no Python
 make install INSTALL_PREFIX=build/install
 ```
 
-Dependencies: CMake 3.16+, a C++20 compiler, OpenSSL, zlib, SQLite 3, libcurl, Boost (headers), nlohmann/json and
-GoogleTest (tests only). On Debian or Ubuntu:
+Dependencies: CMake 3.16+, a C++20 compiler (verified with g++-12 12.4.0 and clang++-18 18.1.3), OpenSSL, zlib, SQLite 3,
+libcurl, Boost (headers), nlohmann/json and GoogleTest (tests only). On Debian or Ubuntu:
 
 ```sh
 sudo apt-get install -y build-essential cmake libssl-dev zlib1g-dev libsqlite3-dev \
     libcurl4-openssl-dev libboost-dev nlohmann-json3-dev libgtest-dev
 ```
+
+Clang and GCC builds in separate directories (use `-j1` with Clang on an 8 GiB machine):
+
+```sh
+CXX=g++-12 CC=gcc-12 cmake -S . -B build/gcc -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON
+CXX=clang++-18 CC=clang-18 cmake -S . -B build/clang -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON
+cmake --build build/clang -j1 && ctest --test-dir build/clang --output-on-failure
+```
+
+Testing and checks:
+
+| Command | What it runs |
+|---|---|
+| `ctest --test-dir build/Release --output-on-failure` | All offline unit, protocol, fake-server and lifecycle tests |
+| `bash tools/run_sanitizers.sh` | Same tests under AddressSanitizer and UndefinedBehaviorSanitizer (`build-san/`) |
+| `bash tools/run_tsan.sh` | Concurrency tests under ThreadSanitizer (`build-tsan/`, slow with `-j1`) |
+| `bash tools/run_fuzz_long.sh 600` | Four libFuzzer targets, clang-18, 600 s each (`build-fuzz/`); see `fuzz/README.md` |
+| `bash tools/check_headers.sh` | Every public header compiles on its own |
+| `bash tools/check_examples.sh` | Examples compile |
+
+Nothing in these checks contacts Telegram. Live testing is a separate step: see [guides/PRODUCTION_READINESS.md](guides/PRODUCTION_READINESS.md).
 
 CMake options: `ENABLE_TESTS`, `BUILD_LIVE_CHECK`, `BUILD_SHARED_LIBS`, `ENABLE_SANITIZERS`, `ENABLE_COVERAGE`,
 `BUILD_DOCUMENTATION`.

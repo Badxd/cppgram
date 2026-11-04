@@ -242,7 +242,7 @@ endif()
 
 option(BUILD_FUZZERS "Build libFuzzer targets (clang with libFuzzer + ASan runtime)" OFF)
 if(BUILD_FUZZERS)
-    foreach(fuzz_name fuzz_tl_reader fuzz_session_string fuzz_html_parser)
+    foreach(fuzz_name fuzz_tl_reader fuzz_session_string fuzz_html_parser fuzz_session_crypto)
         add_executable(${fuzz_name} fuzz/${fuzz_name}.cpp)
         target_include_directories(${fuzz_name} PRIVATE include src)
         target_link_libraries(${fuzz_name} PRIVATE cppgram)

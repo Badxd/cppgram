@@ -76,6 +76,23 @@ TEST(Crypto, PacketRoundTripBothDirections) {
     EXPECT_THROW(decrypt_packet(auth_key, in_packet, true), CryptoError);
 }
 
+TEST(Crypto, TrailingTransportPaddingIsIgnoredButExtraBlockIsRejected) {
+    const Bytes auth_key = random_bytes(256);
+    const InnerMessage msg{};
+    const Bytes packet = encrypt_packet(auth_key, serialize_inner(msg), false);
+    for (std::size_t pad = 0; pad < 16; ++pad) {
+        Bytes padded = packet;
+        const Bytes junk = random_bytes(pad);
+        padded.insert(padded.end(), junk.begin(), junk.end());
+        EXPECT_EQ(decrypt_packet(auth_key, padded, false), decrypt_packet(auth_key, packet, false)) << "pad " << pad;
+    }
+    Bytes extra_block = packet;
+    const Bytes block = random_bytes(16);
+    extra_block.insert(extra_block.end(), block.begin(), block.end());
+    EXPECT_THROW(decrypt_packet(auth_key, extra_block, false), CryptoError);
+    EXPECT_THROW(decrypt_packet(auth_key, Bytes(23, 0), false), CryptoError);
+}
+
 TEST(Crypto, PacketTamperingDetected) {
     const Bytes auth_key = random_bytes(256);
     Bytes packet = encrypt_packet(auth_key, serialize_inner(InnerMessage{}), true);

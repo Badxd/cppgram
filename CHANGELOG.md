@@ -2,7 +2,23 @@
 
 ## Unreleased
 
+### Security and robustness (final offline round)
+- Fixed: the encrypted session reader accepted scrypt cost up to N = 2^20 with r = 16, about 2 GiB of memory, from an untrusted file. The accepted range is now N up to 2^17 and r up to 8 (at most 128 MiB). The writer is unchanged.
+- Fixed: encrypted session blobs above 16 MiB are refused before any work. `encrypt` enforces the same cap.
+- Fixed: `SqliteStorage` leaked its SQLite handle when the constructor threw after `sqlite3_open`.
+- Fixed: `SqliteStorage` read a NULL `sqlite3_column_text` result in the integrity check.
+- Changed: `SqliteStorage` methods are serialized by a mutex. Two stores may share one file (WAL mode, busy timeout).
+- Fixed: `Client::run()` set `running_` outside the lock that installs the stop source. A `stop()` in that window could be overwritten. The two are now set together.
+- New: `Client::is_running()`.
+- Changed: `decrypt_packet` ignores up to 15 trailing bytes after the ciphertext's 16-byte blocks (obfuscated padded-intermediate transport). Those bytes are not authenticated.
+- New: CEG1 fuzz target `fuzz_session_crypto`. Invalid CEG1 seeds (`make_session_seeds`).
+- Tests: session bound and size regressions, every-byte authentication, truncation at every length, storage concurrency (no torn reads, two stores on one file, corrupted and truncated files), client lifecycle (connect/disconnect cycles, concurrent stop, state reads during reconnects, no handler after destruction), padded server frames (many per read, split at every offset, truncated, server error word, padding overrun).
+- Docs: `guides/SECURITY_AUDIT.md`, `guides/RECONNECT_AND_FLOOD_WAIT.md`, `guides/PROXIES.md`, Clang and GCC build instructions in `guides/LINUX_INSTALL.md`, fuzz README.
+
 ### Production readiness
+- New: encrypted session fuzz target `fuzz_session_crypto` (CGE1 parsing and authenticated decryption). Added to `tools/run_fuzz_long.sh`.
+- Changed: `decrypt_packet` ignores 0 to 15 trailing bytes after the ciphertext's 16-byte blocks. Obfuscated padded-intermediate frames may carry such padding. Trailing bytes are not authenticated, so this does not weaken msg_key checking. Tested: `Crypto.TrailingTransportPaddingIsIgnoredButExtraBlockIsRejected`, `ObfuscatedFrame.PaddedServerFramesDecryptToTheOriginalPacket`.
+- Docs: `guides/RECONNECT_AND_FLOOD_WAIT.md`, `guides/PROXIES.md`.
 - Fixed: `Client::is_connected()` is safe to call from any thread. It reads an atomic flag instead of the session pointer that `run()` replaces during a reconnect (ThreadSanitizer data race).
 - Fixed: `~Client()` drops user handlers before disconnecting. A `Disconnected` event no longer runs user code after the handler's captured objects may be gone.
 - Fixed: the reconnect budget resets after a successful reconnect. A failed initial connect no longer leaves `is_connected()` true.

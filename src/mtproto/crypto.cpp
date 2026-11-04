@@ -310,15 +310,20 @@ Bytes decrypt_packet(const Bytes& auth_key, const Bytes& packet, bool outgoing) 
     if (auth_key.size() != 256) {
         throw CryptoError("auth key must be 256 bytes");
     }
-    if (packet.size() < 24 || (packet.size() - 24) % 16 != 0) {
+    if (packet.size() < 24) {
         throw CryptoError("encrypted packet has invalid size");
     }
+    // The ciphertext is always a whole number of 16-byte blocks. Obfuscated padded-intermediate transport may add
+    // 0..15 bytes after it, which the length prefix counts. Those trailing bytes are not part of the ciphertext and
+    // are not authenticated, so dropping them cannot change the decrypted message. Anything 16 or more bytes long
+    // becomes a whole extra block and fails the msg_key check.
+    const std::size_t cipher_len = (packet.size() - 24) / 16 * 16;
     if (slice(packet, 0, 8) != auth_key_id(auth_key)) {
         throw CryptoError("auth_key_id mismatch");
     }
     const Bytes msg_key = slice(packet, 8, 16);
     const AesParams params = derive_aes_params(auth_key, msg_key, outgoing);
-    const Bytes plain = aes_ige_decrypt(slice(packet, 24, packet.size() - 24), params.key, params.iv);
+    const Bytes plain = aes_ige_decrypt(slice(packet, 24, cipher_len), params.key, params.iv);
     if (!constant_time_equal(compute_msg_key(auth_key, plain, outgoing), msg_key)) {
         throw CryptoError("msg_key mismatch");
     }

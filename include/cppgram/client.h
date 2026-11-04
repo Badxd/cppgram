@@ -130,6 +130,9 @@ public:
     // Safe to call from any thread: reads the atomic flag, not session_, which run() replaces during reconnect.
     bool is_connected() const noexcept { return connected_.load(std::memory_order_acquire); }
 
+    // True from the start of run() until it returns. A stop() issued after this is true always takes effect.
+    bool is_running() const noexcept { return running_.load(std::memory_order_acquire); }
+
     // Feeds one raw TL update body (updates, updateShortMessage, ...) through the dispatcher.
     // Used by the update loop and useful for custom transports or tests.
     void dispatch_raw_update(const mtproto::Bytes& body) { handle_update_body(body); }
@@ -150,6 +153,8 @@ public:
     void on_error(ErrorHandler handler);
     // Typed event handlers. A handler that throws is reported through on_error and does not stop the others.
     // Handlers run on the thread that caused the event (the update loop, or the caller of connect/login).
+    // Register all handlers before connect() or run(). Registration is not synchronized with event dispatch, so
+    // registering from another thread while run() is active is a data race. Handlers are cleared when the client is destroyed.
     void on_connection_state(ConnectionHandler handler);
     void on_auth_state(AuthStateHandler handler);
     void on_rpc_error(RpcErrorHandler handler);

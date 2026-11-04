@@ -7,7 +7,7 @@ Only the environment below was built and tested. Other distributions and compile
 | Item | Tested value |
 |---|---|
 | OS | Ubuntu 24.04.5 LTS (kernel 6.18, virtual machine, 2 vCPU, 7.8 GiB RAM) |
-| Compiler | g++ 13.3.0 (C++20) |
+| Compilers | g++-12 12.4.0 and g++ 13.3.0 (C++20); clang++-18 18.1.3 (C++20). See "Compilers" below. |
 | CMake | 3.28.3 |
 | OpenSSL | 3.0.13 (libssl-dev 3.0.13-0ubuntu3.16) |
 | SQLite | 3.45.1 (libsqlite3-dev) |
@@ -17,7 +17,34 @@ Only the environment below was built and tested. Other distributions and compile
 | nlohmann-json | 3.11.3 (nlohmann-json3-dev) |
 | GoogleTest | 1.14.0 (libgtest-dev); tests only |
 
-Clang 18 was used only to build the libFuzzer targets (see `fuzz/README.md`).
+Clang 18 builds the full library and tests as well as the libFuzzer targets (see `fuzz/README.md`).
+
+## Requirements
+
+- C++20 (`cxx_std_20`, set on the library target). Any compiler with full C++20 and the listed libraries works.
+  Verified: g++-12 12.4.0, g++ 13.3.0 (default on Ubuntu 24.04), clang++-18 18.1.3.
+- CMake 3.16 or newer. OpenSSL 3, SQLite 3, Boost headers, libcurl, zlib, nlohmann-json. GoogleTest for tests.
+
+## Compilers
+
+GCC (Release, tests):
+
+```sh
+CXX=g++-12 CC=gcc-12 cmake -S . -B build/gcc -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON
+cmake --build build/gcc -j2
+ctest --test-dir build/gcc --output-on-failure
+```
+
+Clang (Release, tests):
+
+```sh
+sudo apt-get install -y clang-18
+CXX=clang++-18 CC=clang-18 cmake -S . -B build/clang -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON
+cmake --build build/clang -j1
+ctest --test-dir build/clang --output-on-failure
+```
+
+Use `-j1` with Clang on an 8 GiB machine: the generated schema files are large.
 
 ## Packages (Ubuntu 24.04)
 
