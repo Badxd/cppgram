@@ -1,0 +1,102 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libboost-dev nlohmann-json3-dev libcurl4-openssl-dev libssl-dev zlib1g-dev libsqlite3-dev libgtest-dev
+      - name: Configure (Release, tests on)
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON
+      - name: Build (single job to stay under runner memory)
+        run: cmake --build build -j1
+      - name: Test
+        run: ctest --test-dir build --output-on-failure --timeout 300
+
+  checks:
+    # Header self-containment, TL schema reproducibility, and example syntax. No network access needed.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libboost-dev nlohmann-json3-dev libcurl4-openssl-dev libssl-dev zlib1g-dev libsqlite3-dev libgtest-dev
+      - name: Header self-containment
+        run: bash tools/check_headers.sh
+      - name: Build TL code generator
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF
+          cmake --build build --target cppgram_tl_codegen -j2
+      - name: TL schema reproducibility
+        run: bash tools/check_schema.sh
+      - name: Examples compile (syntax only)
+        run: bash tools/check_examples.sh
+
+  sanitizers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libboost-dev nlohmann-json3-dev libcurl4-openssl-dev libssl-dev zlib1g-dev libsqlite3-dev libgtest-dev
+      - name: Configure (ASan + UBSan, tests on)
+        # Same configuration as tools/run_sanitizers.sh. No debug info: -g makes the api_impl_*.cpp
+        # compiles run out of memory on 8 GB runners.
+        run: |
+          cmake -S . -B build-san -DCMAKE_BUILD_TYPE=None -DENABLE_TESTS=ON \
+            "-DCMAKE_CXX_FLAGS=-O0 -g0 -fsanitize=address,undefined -fno-omit-frame-pointer" \
+            "-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined" \
+            "-DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=address,undefined"
+      - name: Build
+        run: cmake --build build-san -j1
+      - name: Test
+        env:
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-san --output-on-failure --timeout 600
+
+  thread-sanitizer:
+    # Runs the mtproto test binary (client lifecycle, reconnect, FLOOD_WAIT, stop races, SOCKS5, proxy).
+    # Same configuration as tools/run_tsan.sh. The bot/webhook tests are not included.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libboost-dev nlohmann-json3-dev libcurl4-openssl-dev libssl-dev zlib1g-dev libsqlite3-dev libgtest-dev
+      - name: Build and run ThreadSanitizer tests
+        run: bash tools/run_tsan.sh
+
+  fuzz:
+    # Compiles the libFuzzer targets with clang-18 and runs each for 60 seconds as a smoke test.
+    # Long runs (600 s each) are documented in guides/ and run by hand: tools/run_fuzz_long.sh 600.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake clang-18 libclang-rt-18-dev libboost-dev nlohmann-json3-dev libcurl4-openssl-dev libssl-dev zlib1g-dev libsqlite3-dev
+      - name: Build and smoke-run fuzz targets
+        run: bash tools/run_fuzz_long.sh 60
+      - name: Upload fuzz logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-logs
+          path: build-fuzz/logs/

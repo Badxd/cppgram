@@ -1,0 +1,48 @@
+name: live-check
+
+# Optional live Telegram check. Runs only when started by hand.
+# Never runs on push or pull requests, so forks and untrusted code cannot reach the secrets.
+# Secrets: TG_API_ID, TG_API_HASH, TG_BOT_TOKEN (bot account only). Nothing is printed by this workflow.
+#
+# The secrets context is not available in a job-level `if:`, so the check is a step that sets an output.
+# Every later step is gated on that output.
+on:
+  workflow_dispatch:
+
+jobs:
+  live-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Telegram secrets
+        id: secrets-check
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+        run: |
+          if [ -n "$TG_API_ID" ] && [ -n "$TG_API_HASH" ] && [ -n "$TG_BOT_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "Telegram secrets are configured."
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Live check skipped: TG_API_ID, TG_API_HASH and TG_BOT_TOKEN must all be set."
+          fi
+      - name: Install dependencies
+        if: steps.secrets-check.outputs.enabled == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build libboost-dev nlohmann-json3-dev libcurl4-openssl-dev libssl-dev zlib1g-dev libsqlite3-dev
+      - name: Build live check
+        if: steps.secrets-check.outputs.enabled == 'true'
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_LIVE_CHECK=ON -DCPPGRAM_USE_CCACHE=OFF
+          cmake --build build --target cppgram_live_check --parallel 2
+      - name: Run live check
+        if: steps.secrets-check.outputs.enabled == 'true'
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+        run: ./build/cppgram_live_check

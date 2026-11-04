@@ -1,0 +1,443 @@
+#include <cctype>
+#include "cppgram/mtproto/session.h"
+
+#include <zlib.h>
+
+#include <chrono>
+#include <thread>
+#include <cstdio>
+#include <cstring>
+#include <fcntl.h>
+#include <unistd.h>
+#include <fstream>
+#include <iterator>
+#include <string>
+
+#include "cppgram/mtproto/schema/api.h"
+#include "../secure_file.h"
+#include "cppgram/session_crypto.h"
+
+#include <cstdlib>
+#include <optional>
+
+namespace cppgram::mtproto {
+
+namespace {
+
+namespace ty = tl::types;
+
+constexpr std::uint32_t kGzipPackedId = 0x3072cfa1u;
+constexpr std::uint32_t kMsgContainerId = 0x73f1f8dcu;
+constexpr std::uint32_t kPingId = 0x7abe77ecu;
+constexpr char kSessionMagic[4] = {'C', 'G', 'S', '2'};
+constexpr char kLegacySessionMagic[4] = {'C', 'G', 'S', '1'};
+constexpr std::size_t kSessionBodySize = 4 + 8 + 8 + 8 + 256;  // magic, dc, offset, salt, key
+
+bool is_updates_id(std::uint32_t id) {
+    switch (id) {
+        case ty::updates::kId:
+        case ty::updateShort::kId:
+        case ty::updatesCombined::kId:
+        case ty::updateShortMessage::kId:
+        case ty::updateShortChatMessage::kId:
+        case ty::updateShortSentMessage::kId:
+        case ty::updatesTooLong::kId:
+            return true;
+        default:
+            return false;
+    }
+}
+
+void put_le32(Bytes& out, std::uint32_t v) {
+    for (int i = 0; i < 4; ++i) out.push_back(static_cast<std::uint8_t>(v >> (8 * i)));
+}
+
+void put_le64(Bytes& out, std::uint64_t v) {
+    for (int i = 0; i < 8; ++i) out.push_back(static_cast<std::uint8_t>(v >> (8 * i)));
+}
+
+std::uint32_t get_le32(const Bytes& b, std::size_t pos) {
+    return static_cast<std::uint32_t>(b[pos]) | (static_cast<std::uint32_t>(b[pos + 1]) << 8) |
+           (static_cast<std::uint32_t>(b[pos + 2]) << 16) | (static_cast<std::uint32_t>(b[pos + 3]) << 24);
+}
+
+std::uint64_t get_le64(const Bytes& b, std::size_t pos) {
+    return static_cast<std::uint64_t>(get_le32(b, pos)) | (static_cast<std::uint64_t>(get_le32(b, pos + 4)) << 32);
+}
+
+
+
+// Unpacks the body of rpc_result: gzip_packed is inflated, rpc_error becomes an exception.
+Bytes unpack_rpc_payload(const Bytes& payload) {
+    if (payload.size() < 4) {
+        throw RpcError(0, "short rpc payload");
+    }
+    TlReader r(payload);
+    const std::uint32_t id = r.read_uint32();
+    if (id == ty::rpc_error::kId) {
+        const ty::rpc_error err = ty::rpc_error::read_body(r);
+        throw_rpc_error(err.error_code, err.error_message);
+    }
+    if (id == kGzipPackedId) {
+        return unpack_rpc_payload(gunzip(r.read_bytes()));
+    }
+    return payload;
+}
+
+}  // namespace
+
+void throw_rpc_error(std::int32_t code, const std::string& message) {
+    const std::string prefix = "FLOOD_WAIT_";
+    if (message.compare(0, prefix.size(), prefix) == 0) {
+        std::int32_t seconds = 0;
+        for (std::size_t i = prefix.size(); i < message.size() && std::isdigit(static_cast<unsigned char>(message[i])); ++i) {
+            seconds = seconds * 10 + (message[i] - '0');
+        }
+        throw FloodWaitError(code, message, seconds);
+    }
+    throw RpcError(code, message);
+}
+
+
+namespace {
+
+// Passphrase for encrypted session files. Read from the environment only; empty counts as unset.
+std::optional<std::string> session_passphrase() {
+    const char* value = std::getenv(std::string(session_crypto::kSessionPassphraseEnv).c_str());
+    if (value == nullptr || *value == '\0') return std::nullopt;
+    return std::string(value);
+}
+
+// Parses a plain CGS2 or CGS1 image into out.
+void parse_session_image(const Bytes& file, const std::string& path, SessionData& out) {
+    const bool v2 = file.size() == kSessionBodySize + 4 && std::memcmp(file.data(), kSessionMagic, 4) == 0;
+    const bool v1 = file.size() == kSessionBodySize && std::memcmp(file.data(), kLegacySessionMagic, 4) == 0;
+    if (!v2 && !v1) {
+        throw SessionCorruptError("session file has an unknown format or wrong size: " + path);
+    }
+    if (v2) {
+        const std::uint32_t stored = get_le32(file, kSessionBodySize);
+        const std::uint32_t actual = crc32(Bytes(file.begin(), file.begin() + static_cast<std::ptrdiff_t>(kSessionBodySize)));
+        if (stored != actual) {
+            throw SessionCorruptError("session file checksum mismatch (file is damaged): " + path);
+        }
+    }
+
+    const std::int64_t dc = static_cast<std::int64_t>(get_le64(file, 4));
+    const std::int64_t offset = static_cast<std::int64_t>(get_le64(file, 12));
+    const std::uint64_t salt = get_le64(file, 20);
+    if (dc < 1 || dc > 5) {
+        throw SessionCorruptError("session file holds an invalid data-center id: " + std::to_string(dc));
+    }
+    out.dc_id = static_cast<std::int32_t>(dc);
+    out.time_offset = offset;
+    out.server_salt = salt;
+    out.auth_key.assign(file.begin() + 28, file.begin() + 28 + 256);
+}
+
+}  // namespace
+
+bool load_session_file(const std::string& path, SessionData& out) {
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+        return false;
+    }
+    const Bytes file((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    if (session_crypto::is_encrypted(file)) {
+        // Encrypted file: the passphrase must come from the environment. Plain files are still accepted, and
+        // they are encrypted the next time they are saved while a passphrase is set.
+        const auto passphrase = session_passphrase();
+        if (!passphrase) {
+            throw SessionCorruptError("session file is encrypted; set CPPGRAM_SESSION_PASSPHRASE to open it: " + path);
+        }
+        Bytes image;
+        try {
+            image = session_crypto::decrypt(*passphrase, file);
+        } catch (const std::runtime_error& e) {
+            throw SessionCorruptError(std::string(e.what()) + ": " + path);
+        }
+        parse_session_image(image, path, out);
+        return true;
+    }
+    parse_session_image(file, path, out);
+    return true;
+}
+
+void save_session_file(const std::string& path, const SessionData& data) {
+    if (data.auth_key.size() != 256) {
+        throw std::runtime_error("cannot save session without a 256-byte auth key");
+    }
+    Bytes image;
+    image.reserve(kSessionBodySize + 4);
+    image.insert(image.end(), kSessionMagic, kSessionMagic + 4);
+    put_le64(image, static_cast<std::uint64_t>(static_cast<std::int64_t>(data.dc_id)));
+    put_le64(image, static_cast<std::uint64_t>(data.time_offset));
+    put_le64(image, data.server_salt);
+    image.insert(image.end(), data.auth_key.begin(), data.auth_key.end());
+    put_le32(image, crc32(image));
+    // With a passphrase set, the whole CGS2 image is wrapped in an authenticated CGE1 envelope.
+    Bytes payload = image;
+    if (const auto passphrase = session_passphrase()) {
+        payload = session_crypto::encrypt(*passphrase, image);
+    }
+    // Crash-safe replace: write a private temp file, fsync it, then rename over the old session.
+    // A crash at any point leaves either the old session or the new one, never a half-written file.
+    const std::string tmp = path + ".tmp";
+    detail::ensure_private_file(tmp);
+    {
+        std::ofstream out(tmp, std::ios::binary | std::ios::trunc);
+        if (!out) {
+            throw std::runtime_error("cannot open session temp file for writing: " + tmp);
+        }
+        out.write(reinterpret_cast<const char*>(payload.data()), static_cast<std::streamsize>(payload.size()));
+        out.flush();
+        if (!out) {
+            std::remove(tmp.c_str());
+            throw std::runtime_error("failed to write session file: " + tmp);
+        }
+    }
+    const int fd = ::open(tmp.c_str(), O_RDONLY);
+    if (fd < 0 || ::fsync(fd) != 0) {
+        if (fd >= 0) ::close(fd);
+        std::remove(tmp.c_str());
+        throw std::runtime_error("failed to sync session file: " + tmp);
+    }
+    ::close(fd);
+    if (std::rename(tmp.c_str(), path.c_str()) != 0) {
+        std::remove(tmp.c_str());
+        throw std::runtime_error("failed to replace session file: " + path);
+    }
+    // Best effort: persist the rename itself.
+    const std::string dir = path.find('/') == std::string::npos ? "." : path.substr(0, path.rfind('/') + 1);
+    const int dfd = ::open(dir.c_str(), O_RDONLY);
+    if (dfd >= 0) {
+        ::fsync(dfd);
+        ::close(dfd);
+    }
+}
+
+Bytes gunzip(const Bytes& data) {
+    z_stream s{};
+    if (inflateInit2(&s, 16 + MAX_WBITS) != Z_OK) {
+        throw CryptoError("inflateInit2 failed");
+    }
+    s.next_in = const_cast<Bytef*>(data.data());
+    s.avail_in = static_cast<uInt>(data.size());
+    Bytes out;
+    unsigned char buf[16384];
+    int ret = Z_OK;
+    do {
+        s.next_out = buf;
+        s.avail_out = sizeof(buf);
+        ret = inflate(&s, Z_NO_FLUSH);
+        if (ret != Z_OK && ret != Z_STREAM_END) {
+            inflateEnd(&s);
+            throw CryptoError("gzip inflate failed");
+        }
+        out.insert(out.end(), buf, buf + (sizeof(buf) - s.avail_out));
+    } while (ret != Z_STREAM_END && !(s.avail_in == 0 && s.avail_out != 0));
+    inflateEnd(&s);
+    if (ret != Z_STREAM_END) {
+        throw CryptoError("truncated gzip data");
+    }
+    return out;
+}
+
+MtSession::MtSession(PacketChannel& channel, SessionData data)
+    : channel_(channel), data_(std::move(data)), session_id_(le_u64_from(random_bytes(8))) {}
+
+std::uint64_t MtSession::send_encrypted(const Bytes& body, bool content) {
+    const std::uint64_t msg_id = make_message_id(data_.time_offset);
+    InnerMessage inner;
+    inner.salt = data_.server_salt;
+    inner.session_id = session_id_;
+    inner.message_id = msg_id;
+    // Content messages carry odd seqno (2n+1); service messages carry the current even value.
+    inner.seq_no = content ? static_cast<std::uint32_t>(2 * content_counter_++ + 1)
+                           : static_cast<std::uint32_t>(2 * content_counter_);
+    inner.body = body;
+    channel_.send_packet(encrypt_packet(data_.auth_key, serialize_inner(inner), true));
+    return msg_id;
+}
+
+void MtSession::send_ack(std::uint64_t msg_id) {
+    ty::msgs_ack ack;
+    ack.msg_ids = {static_cast<std::int64_t>(msg_id)};
+    TlWriter w;
+    ack.serialize(w);
+    send_encrypted(w.bytes(), false);
+}
+
+void MtSession::send_content(const Bytes& body) {
+    send_encrypted(body, true);
+}
+
+Bytes MtSession::invoke(const Bytes& request_body) {
+    const auto deadline = std::chrono::steady_clock::now() + request_timeout_;
+    int attempts = 0;
+    for (;;) {
+        ++attempts;
+        const std::uint64_t msg_id = send_encrypted(request_body, true);
+        Waiting waiting;
+        waiting.msg_id = msg_id;
+        bool flood_waited = false;
+        while (!waiting.found && !waiting.salt_changed) {
+            if (std::chrono::steady_clock::now() >= deadline) {
+                throw ConnectionTimeout("request timed out waiting for rpc_result");
+            }
+            try {
+                process_one_into(&waiting);
+            } catch (const FloodWaitError& e) {
+                // The server rejected the request before running it, so resending is safe.
+                // Wait the server-given time, but only within the policy limit and attempt budget.
+                const bool within_limit = e.seconds() >= 0 && std::chrono::seconds(e.seconds()) <= retry_policy_.max_flood_wait;
+                if (!within_limit || !may_retry(retry_policy_, attempts)) throw;
+                sleep_cancellable(std::chrono::seconds(e.seconds()), stop_);
+                flood_waited = true;
+                break;
+            }
+        }
+        if (waiting.found) {
+            return waiting.result;
+        }
+        if (!flood_waited && !may_retry(retry_policy_, attempts)) {
+            throw std::runtime_error("server kept rejecting the request after salt/time updates");
+        }
+    }
+}
+
+void MtSession::process_one() {
+    process_one_into(nullptr);
+}
+
+void MtSession::process_one_into(Waiting* waiting) {
+    const Bytes packet = channel_.receive_packet();
+    const Bytes plain = decrypt_packet(data_.auth_key, packet, false);
+    dispatch(parse_inner(plain), waiting);
+}
+
+std::vector<Bytes> MtSession::take_updates() {
+    std::vector<Bytes> out;
+    out.reserve(pending_updates_.size());
+    for (Bytes& body : pending_updates_) out.push_back(std::move(body));
+    pending_updates_.clear();
+    return out;
+}
+
+bool MtSession::remember_server_msg_id(std::uint64_t msg_id) {
+    if (!seen_msg_ids_.insert(msg_id).second) return false;
+    seen_msg_order_.push_back(msg_id);
+    if (seen_msg_order_.size() > kSeenMsgIdCapacity) {
+        seen_msg_ids_.erase(seen_msg_order_.front());
+        seen_msg_order_.pop_front();
+    }
+    return true;
+}
+
+void MtSession::dispatch(const InnerMessage& inner, Waiting* waiting) {
+    if (!remember_server_msg_id(inner.message_id)) {
+        // Replay or resend of a message we already handled: acknowledge it so the server stops resending,
+        // but do not process the content again (no duplicate updates, no second rpc_result handling).
+        if ((inner.seq_no & 1u) != 0) send_ack(inner.message_id);
+        return;
+    }
+    dispatch_body(inner, waiting);
+}
+
+void MtSession::dispatch_body(const InnerMessage& inner, Waiting* waiting) {
+    // Server content messages must be acknowledged, otherwise the server resends them.
+    if ((inner.seq_no & 1u) != 0) {
+        send_ack(inner.message_id);
+    }
+    if (inner.body.size() < 4) {
+        return;
+    }
+    TlReader r(inner.body);
+    const std::uint32_t id = r.read_uint32();
+    switch (id) {
+        case ty::rpc_result::kId: {
+            const std::uint64_t req_msg_id = r.read_uint64();
+            Bytes payload = r.read_raw(r.remaining());
+            if (waiting != nullptr && req_msg_id == waiting->msg_id) {
+                // Unpack first: an rpc_error throws here, and `found` must stay false in that case.
+                waiting->result = unpack_rpc_payload(payload);
+                waiting->found = true;
+            }
+            return;
+        }
+        case ty::bad_server_salt::kId: {
+            const ty::bad_server_salt bad = ty::bad_server_salt::read_body(r);
+            data_.server_salt = static_cast<std::uint64_t>(bad.new_server_salt);
+            if (waiting != nullptr && bad.bad_msg_id == static_cast<std::int64_t>(waiting->msg_id)) {
+                waiting->salt_changed = true;
+            }
+            return;
+        }
+        case ty::bad_msg_notification::kId: {
+            const ty::bad_msg_notification bad = ty::bad_msg_notification::read_body(r);
+            const bool for_us = waiting != nullptr && bad.bad_msg_id == static_cast<std::int64_t>(waiting->msg_id);
+            if (bad.error_code == 16 || bad.error_code == 17) {
+                // 16: msg_id too low, 17: msg_id too high. Our clock is off. The server's own message id
+                // carries its unix time in the high 32 bits, so take the offset from it and resend.
+                const auto server_time = static_cast<std::int64_t>(inner.message_id >> 32);
+                const auto local_time = std::chrono::duration_cast<std::chrono::seconds>(
+                                            std::chrono::system_clock::now().time_since_epoch())
+                                            .count();
+                if (server_time <= 0) {
+                    throw RpcError(bad.error_code, "bad_msg_notification without server time");
+                }
+                data_.time_offset = server_time - static_cast<std::int64_t>(local_time);
+                if (for_us) {
+                    waiting->salt_changed = true;  // invoke() resends with the corrected msg_id
+                }
+                return;
+            }
+            if (for_us) {
+                throw RpcError(bad.error_code, "bad_msg_notification");
+            }
+            return;
+        }
+        case ty::new_session_created::kId: {
+            const ty::new_session_created created = ty::new_session_created::read_body(r);
+            data_.server_salt = static_cast<std::uint64_t>(created.server_salt);
+            return;
+        }
+        case kPingId: {
+            ty::pong pong;
+            pong.msg_id = static_cast<std::int64_t>(inner.message_id);
+            pong.ping_id = r.read_int64();
+            TlWriter w;
+            pong.serialize(w);
+            send_encrypted(w.bytes(), false);
+            return;
+        }
+        case kMsgContainerId: {
+            const std::uint32_t count = r.read_uint32();
+            for (std::uint32_t i = 0; i < count; ++i) {
+                InnerMessage sub;
+                sub.salt = inner.salt;
+                sub.session_id = inner.session_id;
+                sub.message_id = r.read_uint64();
+                sub.seq_no = r.read_uint32();
+                const std::uint32_t length = r.read_uint32();
+                sub.body = r.read_raw(length);
+                dispatch(sub, waiting);
+            }
+            return;
+        }
+        case kGzipPackedId: {
+            InnerMessage sub = inner;
+            sub.body = gunzip(r.read_bytes());
+            sub.seq_no = 0;  // already acknowledged above
+            dispatch_body(sub, waiting);  // same message id as the wrapper: already recorded
+            return;
+        }
+        default:
+            if (is_updates_id(id)) {
+                pending_updates_.push_back(inner.body);
+            }
+            return;
+    }
+}
+
+}  // namespace cppgram::mtproto
