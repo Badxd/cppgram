@@ -42,7 +42,7 @@ Commands are in the README and in [fuzz/README.md](../fuzz/README.md). Exact com
 
 | Check | Environment | Result |
 |---|---|---|
-| Release build, fresh directory | g++-12 12.4.0, `-DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON` | Builds. Two false-positive warnings from GCC 12 were removed (`fake_dc.h`, `client_extra.cpp`). Final rebuild: 0 warnings. |
+| Release build, fresh directory | g++-12 12.4.0, `-DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON` | Builds. Two false-positive warnings from GCC 12 were removed (`fake_dc.h`, `extra.cpp`). Final rebuild: 0 warnings. |
 | ctest | g++-12 | 339 of 339 passed |
 | Release build, fresh directory | clang++-18 18.1.3 | Builds. 0 warnings. Unused constants removed from `client.cpp`. |
 | ctest | clang++-18 | 339 of 339 passed |

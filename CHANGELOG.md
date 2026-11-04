@@ -1,5 +1,10 @@
 # Changelog
 
+## Source layout
+
+- Renamed `src/client_*.cpp` to plain area names (`send.cpp`, `chats.cpp`, `stickers.cpp`, ...). `client.cpp` is unchanged. `client_batch5/6/7.cpp` became `misc_5/6/7.cpp`, and `client_bot.cpp` became `bot_methods.cpp` to avoid a clash with `Bot.cpp`. No code changed.
+- README rewritten shorter.
+
 ## Build speed
 
 - Makefile: uses Ninja when it is installed. `configure` runs once per build directory instead of on every `make build`.

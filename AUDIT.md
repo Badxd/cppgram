@@ -31,7 +31,7 @@ Commit 2bdbd22, clean `git archive` copy, `cmake -DCMAKE_BUILD_TYPE=Release -DEN
 - Working tree at e5405b9 (same config): build exit 0, 4 warnings (3 generated `fl_flags`, deprecated RSA in the handshake test), ctest 160/160 pass (includes 13 new tests).
 
 Warnings at 2bdbd22:
-- `client_more.cpp`: unused `next_random_id_more` (fixed in working tree).
+- `more.cpp`: unused `next_random_id_more` (fixed in working tree).
 - `auth.cpp`: unused `exchange` (fixed in working tree).
 - `api_impl_3.cpp`, `api_impl_4.cpp`: unused `fl_flags` (generated code, open, see F7).
 - `tests/mtproto/handshake_test.cpp`: deprecated OpenSSL RSA API (open, see F8).

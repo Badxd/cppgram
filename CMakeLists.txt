@@ -115,54 +115,54 @@ add_library(cppgram
     src/mtproto/session.cpp
     src/mtproto/srp.cpp
     src/client.cpp
-    src/client_login.cpp
+    src/login.cpp
     src/transfer.cpp
     src/mtproto/cancel.cpp
     src/mtproto/socks5.cpp
     src/mtproto/proxy_secret.cpp
     src/mtproto/obfuscated.cpp
     src/channel_pts.cpp
-    src/client_extra.cpp
-    src/client_more.cpp
-    src/client_media.cpp
-    src/client_markup.cpp
-    src/client_stickers.cpp
-    src/client_text.cpp
+    src/extra.cpp
+    src/more.cpp
+    src/media.cpp
+    src/markup.cpp
+    src/stickers.cpp
+    src/text.cpp
     src/parser.cpp
     src/storage.cpp
-    src/client_bot.cpp
-    src/client_message.cpp
-    src/client_chats.cpp
-    src/client_forum.cpp
-    src/client_folders.cpp
-    src/client_invites.cpp
-    src/client_stories_messages.cpp
-    src/client_folder_invites.cpp
-    src/client_forum_and_stars.cpp
-    src/client_account_settings.cpp
-    src/client_contacts_and_blocks.cpp
-    src/client_business_and_stealth.cpp
-    src/client_batch5.cpp
-    src/client_batch6.cpp
-    src/client_batch7.cpp
+    src/bot_methods.cpp
+    src/message.cpp
+    src/chats.cpp
+    src/forum.cpp
+    src/folders.cpp
+    src/invites.cpp
+    src/stories_messages.cpp
+    src/folder_invites.cpp
+    src/forum_and_stars.cpp
+    src/account_settings.cpp
+    src/contacts_and_blocks.cpp
+    src/business_and_stealth.cpp
+    src/misc_5.cpp
+    src/misc_6.cpp
+    src/misc_7.cpp
     src/dc.cpp
-    src/client_chat_extras.cpp
-    src/client_invite_check.cpp
-    src/client_own_star_gifts.cpp
-    src/client_star_gift_listing.cpp
-    src/client_star_gift_collections.cpp
-    src/client_story_reactions.cpp
-    src/client_bot_admin.cpp
-    src/client_business_bots.cpp
-    src/client_poll_stop.cpp
-    src/client_checklists.cpp
-    src/client_inline_edit.cpp
-    src/client_payment_receipts.cpp
-    src/client_story_posting.cpp
-    src/client_account_security.cpp
-    src/client_profile.cpp
-    src/client_send.cpp
-    src/client_session.cpp
+    src/chat_extras.cpp
+    src/invite_check.cpp
+    src/own_star_gifts.cpp
+    src/star_gift_listing.cpp
+    src/star_gift_collections.cpp
+    src/story_reactions.cpp
+    src/bot_admin.cpp
+    src/business_bots.cpp
+    src/poll_stop.cpp
+    src/checklists.cpp
+    src/inline_edit.cpp
+    src/payment_receipts.cpp
+    src/story_posting.cpp
+    src/account_security.cpp
+    src/profile.cpp
+    src/send.cpp
+    src/session.cpp
     src/session_string.cpp
     src/session_crypto.cpp
     src/convert.cpp
@@ -188,15 +188,15 @@ if(CPPGRAM_UNITY_BUILD)
         src/mtproto/schema/api_impl_9.cpp
         src/mtproto/srp.cpp
         src/client.cpp
-        src/client_send.cpp
-        src/client_media.cpp
-        src/client_chat_extras.cpp
-        src/client_batch5.cpp
-        src/client_bot.cpp
-        src/client_stickers.cpp
-        src/client_profile.cpp
-        src/client_own_star_gifts.cpp
-        src/client_star_gift_collections.cpp
+        src/send.cpp
+        src/media.cpp
+        src/chat_extras.cpp
+        src/misc_5.cpp
+        src/bot_methods.cpp
+        src/stickers.cpp
+        src/profile.cpp
+        src/own_star_gifts.cpp
+        src/star_gift_collections.cpp
         PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
     set_target_properties(cppgram PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 8)
 endif()
