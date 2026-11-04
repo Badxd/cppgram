@@ -70,3 +70,16 @@ API hashes, account IDs, usernames, and session files from any output first.
 <p align="center">
   <a href="https://dashboard.heroku.com/new?template=https://github.com/Badxd/cppgram"><img src="https://img.shields.io/badge/Deploy%20to-Heroku-430098?style=for-the-badge&logo=heroku&logoColor=white" alt="Deploy to Heroku"></a>
   
+
+## 5. Live tests (six tests)
+
+The image also contains `cppgram_live_tests`, which runs reconnect, flood_wait, socks5, session_restore,
+mtproto_proxy and padded_framing. Each test is independent. Set the extra config vars that the test needs
+(see `guides/LIVE_TESTS.md`), then run it:
+
+```bash
+heroku run --type=worker --app APP_NAME /app/cppgram_live_tests reconnect
+```
+
+Results are printed as `RESULT <name>: PASS|FAIL|SKIP|NOT_SUPPORTED`. A test is only PASS when the real call
+succeeded. Record the date, DC and proxy type with each result.

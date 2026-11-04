@@ -1,12 +1,23 @@
 cmake_minimum_required(VERSION 3.16)
 project(cppgram LANGUAGES CXX)
 
+# Build cache: reuse object files across configurations when ccache is available. Missing ccache is not an error.
+if(CPPGRAM_USE_CCACHE AND NOT CMAKE_CXX_COMPILER_LAUNCHER)
+    find_program(CPPGRAM_CCACHE_EXECUTABLE ccache)
+    if(CPPGRAM_CCACHE_EXECUTABLE)
+        set(CMAKE_CXX_COMPILER_LAUNCHER "${CPPGRAM_CCACHE_EXECUTABLE}")
+        message(STATUS "cppgram: using ccache for C++ compilation")
+    endif()
+endif()
+
 option(ENABLE_TESTS "Build tests" OFF)
 option(ENABLE_SANITIZERS "Instrument the library and tests with address and undefined behavior sanitizers" OFF)
 option(ENABLE_COVERAGE "Instrument the library and tests for code coverage" OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(BUILD_DOCUMENTATION "Build API documentation" OFF)
 option(BUILD_LIVE_CHECK "Build the live Telegram connectivity check (examples/live_check.cpp)" OFF)
+option(BUILD_LIVE_TESTS "Build the live Telegram test runner (examples/live_tests/live_tests.cpp). Needs real credentials to run" OFF)
+option(CPPGRAM_USE_CCACHE "Use ccache as the compiler launcher when it is installed" ON)
 option(ENABLE_BENCHMARKS "Build the micro-benchmark program (bench/bench_main.cpp). Measures local work only" OFF)
 
 include(GNUInstallDirs)
@@ -238,6 +249,14 @@ if(BUILD_LIVE_CHECK)
     add_executable(cppgram_live_check examples/live_check.cpp)
     target_link_libraries(cppgram_live_check PRIVATE cppgram)
     target_include_directories(cppgram_live_check PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+endif()
+
+# Live tests: only the runner and the library, no test suite, no fuzzers. Optimization is left at the CMake default
+# for the build type; a live run is network-bound, so there is no reason to pay for -O3 here.
+if(BUILD_LIVE_TESTS)
+    add_executable(cppgram_live_tests examples/live_tests/live_tests.cpp)
+    target_link_libraries(cppgram_live_tests PRIVATE cppgram)
+    target_include_directories(cppgram_live_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 endif()
 
 option(BUILD_FUZZERS "Build libFuzzer targets (clang with libFuzzer + ASan runtime)" OFF)

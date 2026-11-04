@@ -185,3 +185,10 @@ cppgram is released under the MIT License for the original tgbot-cpp parts (see 
 layer derives its schema from Kurigram (LGPL-3.0). See [NOTICE](NOTICE) for the full attribution.
 
 The Bot API layer is derived from [tgbot-cpp](https://github.com/reo7sp/tgbot-cpp) by Oleg Morozenkov and contributors.
+
+## Live Telegram tests
+
+`cppgram_live_tests` runs six tests against real Telegram or your proxy: reconnect, flood_wait, socks5,
+session_restore, mtproto_proxy and padded_framing. They need credentials in the environment and report
+PASS, FAIL, SKIP or NOT_SUPPORTED. See `guides/LIVE_TESTS.md`. Offline checks for the runner:
+`tools/check_live_tests_offline.sh <binary>`.

@@ -1,5 +1,13 @@
 # Changelog
 
+## Live tests
+
+- `cppgram_live_tests` (BUILD_LIVE_TESTS=ON): six independent real-Telegram tests with PASS, FAIL, SKIP and
+  NOT_SUPPORTED results. Reconnect uses a local relay to create a real network drop. session_restore checks encrypted
+  session reuse and wrong-passphrase refusal.
+- `tools/check_live_tests_offline.sh`: offline checks for SKIP, NOT_SUPPORTED and bad-secret paths.
+- Ninja, optional ccache, and a Dockerfile that builds only the live binaries with a cached dependency layer.
+
 ## Unreleased
 
 ### Security and robustness (final offline round)
