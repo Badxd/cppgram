@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -91,11 +92,17 @@ public:
     // Retry policy for FLOOD_WAIT (sleep and resend, bounded) and bad-salt/time resends (bounded by max_attempts).
     void set_retry_policy(RetryPolicy policy) { validate_retry_policy(policy); retry_policy_ = policy; }
     const RetryPolicy& retry_policy() const noexcept { return retry_policy_; }
+    // Called once for each FLOOD_WAIT the session sees, with the server-given seconds. Optional.
+    void set_flood_wait_observer(std::function<void(std::int32_t)> observer) { flood_observer_ = std::move(observer); }
 
     // Overall deadline for one invoke() call (default 30 s).
     void set_request_timeout(std::chrono::milliseconds timeout) noexcept { request_timeout_ = timeout; }
     // Flood-wait sleeps stop early when this token is requested (throws OperationCancelled).
     void set_stop_token(std::stop_token token) noexcept { stop_ = std::move(token); }
+    // Cancels a request that is waiting for its reply: invoke() throws OperationCancelled and sends nothing if the
+    // token is already requested. The server may still run a request that was sent before the cancel. Its late
+    // rpc_result is then ignored, because it no longer matches the waiting request. Empty = never cancelled.
+    void set_cancel_token(std::stop_token token) noexcept { cancel_ = std::move(token); }
     std::chrono::milliseconds request_timeout() const noexcept { return request_timeout_; }
 
     // Typed call: serializes the request and parses its result with the generated read_result().
@@ -129,6 +136,8 @@ public:
 private:
     std::chrono::milliseconds request_timeout_{std::chrono::seconds(30)};
     std::stop_token stop_;
+    std::stop_token cancel_;
+    std::function<void(std::int32_t)> flood_observer_;
     RetryPolicy retry_policy_{};
 
     struct Waiting {
@@ -145,7 +154,7 @@ private:
     bool remember_server_msg_id(std::uint64_t msg_id);
     void dispatch(const InnerMessage& inner, Waiting* waiting);
     void dispatch_body(const InnerMessage& inner, Waiting* waiting);
-    void process_one_into(Waiting* waiting);
+    void process_one_into(Waiting* waiting, std::chrono::steady_clock::time_point deadline);
 
     PacketChannel& channel_;
     SessionData data_;

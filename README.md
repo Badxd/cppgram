@@ -84,6 +84,12 @@ Build options:
 Other checks: `bash tools/check_headers.sh`, `bash tools/check_examples.sh`, `bash tools/run_sanitizers.sh`,
 `bash tools/run_tsan.sh`. None of them contact Telegram.
 
+## Errors, logging and Web Apps
+
+- `cppgram/errors.h`: typed errors (`errors::Error` and subclasses). `errors::categorize(e)` works for all errors of this library, old and new.
+- `cppgram/log.h`: structured logging with levels, components, request ids, sinks and secret redaction. Default level is WARN.
+- `cppgram/webapp.h`: verify Web App `initData`. Returns parsed data only when the signature and time checks pass.
+
 ## Usage in CMake
 
 ```cmake

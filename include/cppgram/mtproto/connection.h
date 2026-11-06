@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <optional>
 #include <stdexcept>
+#include <stop_token>
 #include <string>
 
 #include "cppgram/mtproto/obfuscated.h"
@@ -41,6 +42,15 @@ public:
     virtual ~PacketChannel() = default;
     virtual void send_packet(const Bytes& packet) = 0;
     virtual Bytes receive_packet() = 0;
+    // Like receive_packet(), but returns early by throwing OperationCancelled once `stop` is requested. The default
+    // ignores `stop`, so a channel that can block must override it to be cancellable.
+    // `deadline` bounds the whole wait; the default cannot honour it and only checks `stop` before blocking.
+    virtual Bytes receive_packet_cancellable(const std::stop_token& stop,
+                                             std::chrono::steady_clock::time_point deadline) {
+        (void)stop;
+        (void)deadline;
+        return receive_packet();
+    }
 };
 
 class Connection : public PacketChannel {
@@ -69,6 +79,10 @@ public:
 
     void send_packet(const Bytes& packet) override;
     Bytes receive_packet() override;
+    // Polls in short slices so a stop request is seen promptly. Receive timeouts still apply, measured from the
+    // last byte received. A token that can never stop uses the blocking receive_packet() path.
+    Bytes receive_packet_cancellable(const std::stop_token& stop,
+                                     std::chrono::steady_clock::time_point deadline) override;
 
 private:
     void send_all(const Bytes& data);

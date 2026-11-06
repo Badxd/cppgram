@@ -1,5 +1,6 @@
 #include <cctype>
 #include "cppgram/mtproto/session.h"
+#include "cppgram/log.h"
 
 #include <zlib.h>
 
@@ -277,41 +278,59 @@ Bytes MtSession::invoke(const Bytes& request_body) {
     int attempts = 0;
     for (;;) {
         ++attempts;
+        if (cancel_.stop_requested()) {
+            log::write(log::Level::Debug, "rpc", "request cancelled before it was sent");
+            throw OperationCancelled();
+        }
         const std::uint64_t msg_id = send_encrypted(request_body, true);
         Waiting waiting;
         waiting.msg_id = msg_id;
         bool flood_waited = false;
         while (!waiting.found && !waiting.salt_changed) {
             if (std::chrono::steady_clock::now() >= deadline) {
+                log::write(log::Level::Warn, "rpc", "request timed out waiting for rpc_result",
+                           {{"attempt", std::to_string(attempts)}});
                 throw ConnectionTimeout("request timed out waiting for rpc_result");
             }
             try {
-                process_one_into(&waiting);
+                process_one_into(&waiting, deadline);
+            } catch (const OperationCancelled&) {
+                log::write(log::Level::Info, "rpc", "request cancelled while waiting for its reply",
+                           {{"attempt", std::to_string(attempts)}});
+                throw;
             } catch (const FloodWaitError& e) {
+                if (flood_observer_) flood_observer_(e.seconds());
                 // The server rejected the request before running it, so resending is safe.
                 // Wait the server-given time, but only within the policy limit and attempt budget.
                 const bool within_limit = e.seconds() >= 0 && std::chrono::seconds(e.seconds()) <= retry_policy_.max_flood_wait;
                 if (!within_limit || !may_retry(retry_policy_, attempts)) throw;
+                log::write(log::Level::Warn, "rpc", "flood wait, sleeping",
+                           {{"seconds", std::to_string(e.seconds())}, {"attempt", std::to_string(attempts)}});
                 sleep_cancellable(std::chrono::seconds(e.seconds()), stop_);
                 flood_waited = true;
                 break;
+            } catch (const RpcError& e) {
+                log::write(log::Level::Debug, "rpc", "rpc error",
+                           {{"code", std::to_string(e.code())}, {"message", e.rpc_message()}});
+                throw;
             }
         }
         if (waiting.found) {
             return waiting.result;
         }
         if (!flood_waited && !may_retry(retry_policy_, attempts)) {
+            log::write(log::Level::Error, "rpc", "server kept rejecting the request", {{"attempts", std::to_string(attempts)}});
             throw std::runtime_error("server kept rejecting the request after salt/time updates");
         }
     }
 }
 
 void MtSession::process_one() {
-    process_one_into(nullptr);
+    process_one_into(nullptr, std::chrono::steady_clock::time_point::max());
 }
 
-void MtSession::process_one_into(Waiting* waiting) {
-    const Bytes packet = channel_.receive_packet();
+void MtSession::process_one_into(Waiting* waiting, std::chrono::steady_clock::time_point deadline) {
+    const Bytes packet = channel_.receive_packet_cancellable(cancel_, deadline);
     const Bytes plain = decrypt_packet(data_.auth_key, packet, false);
     dispatch(parse_inner(plain), waiting);
 }

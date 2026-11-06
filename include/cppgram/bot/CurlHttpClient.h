@@ -1,5 +1,9 @@
 #pragma once
 
+#include <memory>
+
+#include "cppgram/metrics.h"
+
 #include "cppgram/bot/HttpClient.h"
 #include "cppgram/bot/export.h"
 
@@ -48,8 +52,13 @@ public:
         _connectTimeout = timeout;
     }
 
+    // Optional transport metrics: cppgram_bot_http_responses_total{status} and cppgram_bot_http_timeouts_total.
+    void set_metrics(const std::shared_ptr<metrics::Registry>& registry);
+
 private:
     const char* _proxyUrl = NULL;
+    metrics::CounterFamily _http_responses;
+    metrics::Counter _timeouts;
     long _connectTimeout = 20L;
 };
 

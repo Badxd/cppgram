@@ -2,6 +2,7 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <stop_token>
 #include <fstream>
@@ -14,6 +15,9 @@
 #include <vector>
 
 #include "cppgram/auth_state.h"
+#include "cppgram/async.h"
+#include "cppgram/errors.h"
+#include "cppgram/metrics.h"
 #include "cppgram/channel_pts.h"
 #include "cppgram/convert.h"
 #include "cppgram/filters.h"
@@ -82,6 +86,12 @@ struct ClientOptions {
     bool verify_cdn_hashes = true;
     // Prints each connection stage (TCP, each handshake packet, session setup) to stderr.
     bool debug = false;
+    // Metrics registry (see metrics.h). Unset: no Client metrics are recorded. The Client keeps its own handles,
+    // so the registry may be shared with other code and scraped with render_prometheus().
+    std::shared_ptr<metrics::Registry> metrics;
+    // Bytes per upload part: a multiple of 1024, at most 512 KiB. 0 uses 512 KiB, the largest Telegram allows.
+    // Smaller parts suit slow links and make UploadProgress fire more often.
+    std::uint32_t upload_part_size = 0;
 };
 
 class SqliteStorage;
@@ -100,6 +110,41 @@ struct LoginCodeInfo {
     int timeout_seconds = 0;  // 0 when Telegram did not send a timeout
 };
 
+// Metric handles used by Client. When ClientOptions::metrics is unset, every handle is a no-op.
+struct TransferMetrics {
+    metrics::Gauge active;
+    metrics::Counter failures;
+    metrics::Histogram seconds;
+};
+
+struct ClientInstruments {
+    metrics::Counter rpc_requests;
+    metrics::Counter rpc_successes;
+    metrics::CounterFamily rpc_failures;         // label: category
+    metrics::Histogram rpc_latency;              // seconds
+    metrics::CounterFamily connection_attempts;  // label: dc_id
+    metrics::CounterFamily connections;          // label: dc_id
+    metrics::Counter disconnects;
+    metrics::Counter reconnect_attempts;
+    metrics::Gauge connected;                    // 1 while the session is ready, else 0
+    metrics::CounterFamily transport_errors;     // label: category
+    metrics::Counter auth_failures;
+    metrics::Counter flood_waits;
+    metrics::Counter upload_bytes;
+    metrics::Counter download_bytes;
+    metrics::Counter part_retries;               // upload or download parts retried after a transient failure
+    TransferMetrics upload;
+    TransferMetrics download;
+};
+
+namespace detail {
+ClientInstruments make_client_instruments(metrics::Registry* registry);
+
+inline double seconds_since(std::chrono::steady_clock::time_point start) {
+    return std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+}
+} // namespace detail
+
 class Client {
 public:
     using MessageHandler = std::function<void(Client&, const Message&)>;
@@ -110,6 +155,8 @@ public:
     using JoinRequestHandler = std::function<void(Client&, const JoinRequest&)>;
     using DeletedMessagesHandler = std::function<void(Client&, const DeletedMessages&)>;
     using DownloadProgress = std::function<void(std::int64_t done, std::int64_t total)>;
+    // Called after each uploaded part with the bytes sent so far and the file size.
+    using UploadProgress = std::function<void(std::int64_t done, std::int64_t total)>;
     // Connection lifecycle, fired by connect(), disconnect() and the reconnect path.
     enum class ConnectionEvent { Connected, Disconnected, Reconnecting };
     using ConnectionHandler = std::function<void(Client&, ConnectionEvent)>;
@@ -120,6 +167,33 @@ public:
     using ErrorHandler = std::function<void(Client&, const std::string& stage, const std::string& message)>;
 
     explicit Client(ClientOptions options);
+
+    // Asynchronous operations (see docs/ASYNC.md). Each runs on this client's worker thread, one at a time, in
+    // submission order. Submit from one thread at a time, and do not call synchronous methods while one of these
+    // is pending. async(f) runs f(client, stop_token) on that thread. The result holds f's return value or its
+    // exception. Cancelling before the operation starts means it never runs.
+    template <class F>
+    auto async(F&& f) -> async::AsyncResult<std::invoke_result_t<F, Client&, std::stop_token>> {
+        if (!runner_) runner_ = std::make_unique<async::Runner>();
+        return runner_->post([this, fn = std::forward<F>(f)](std::stop_token token) mutable -> decltype(auto) {
+            {
+                std::lock_guard<std::mutex> lock(stop_mutex_);
+                op_token_ = token;
+            }
+            struct ClearOperation {
+                Client& client;
+                ~ClearOperation() {
+                    std::lock_guard<std::mutex> lock(client.stop_mutex_);
+                    client.op_token_.reset();
+                }
+            } clear{*this};
+            return fn(*this, token);
+        });
+    }
+    // Connect, disconnect and bot login on the worker thread. A stop token links the operation to the caller.
+    async::AsyncResult<void> connect_async(std::stop_token stop = {});
+    async::AsyncResult<void> disconnect_async();
+    async::AsyncResult<void> login_bot_async(std::string bot_token, std::stop_token stop = {});
     ~Client();
     Client(const Client&) = delete;
     Client& operator=(const Client&) = delete;
@@ -646,6 +720,10 @@ public:
                           const std::string& caption = "");
     // Uploads a local file once and returns a handle. Use it in place of re-uploading the same file.
     UploadedFile save_file(const std::string& path);
+    // Uploads with per-part progress. Cancelling a save_file_async result stops the upload before the next part.
+    UploadedFile save_file(const std::string& path, UploadProgress progress);
+    async::AsyncResult<UploadedFile> save_file_async(const std::string& path, UploadProgress progress = {},
+                                                     std::stop_token stop = {});
     // Sets the bot menu button to open a URL with the given label.
     bool set_menu_button_url(const std::string& text, const std::string& url);
 
@@ -763,7 +841,32 @@ private:
                            const std::vector<std::shared_ptr<mtproto::tl::Chat>>& chats);
     void ping();
     std::shared_ptr<mtproto::tl::InputFile> upload(const std::string& path, std::string& out_name,
-                                                   std::int64_t& out_size);
+                                                   std::int64_t& out_size, const UploadProgress& progress = {});
+    // Calls an RPC and resends it after a transient failure: a 5xx server error, a timeout or a network error.
+    // Upload and download parts are idempotent on Telegram's side, so a resend is safe. After a timeout or a
+    // network error the session is treated as dead: the client reconnects first (same auth key, with the usual
+    // backoff and reconnect budget) and then resends. A resend on the dead session could never succeed.
+    template <class Request>
+    typename Request::Result call_with_part_retry(const Request& request) {
+        for (int attempt = 1;; ++attempt) {
+            try {
+                return call_rpc(request);
+            } catch (const std::exception& e) {
+                if (!retryable_part_error(e) || !mtproto::may_retry(options_.retry, attempt)) throw;
+                instruments_.part_retries.inc();
+                if (connection_lost(e)) {
+                    if (!options_.auto_reconnect) throw;
+                    reconnect_after_drop();  // throws ConnectionError once the reconnect budget is spent
+                } else {
+                    sleep_part_backoff(attempt);
+                }
+            }
+        }
+    }
+    static bool retryable_part_error(const std::exception& e);
+    static bool connection_lost(const std::exception& e);
+    void sleep_part_backoff(int attempt);
+    mtproto::tl::upload_File fetch_file_part(const mtproto::tl::functions::upload_getFile& req);
     std::vector<Message> collect_messages(const mtproto::tl::messages_Messages& result);
     std::optional<Message> find_sent_message(const mtproto::tl::Updates& updates, const PeerRef& target,
                                              const std::string& text, std::int32_t fallback_id);
@@ -771,6 +874,7 @@ private:
                        const std::string& caption);
 
     ClientOptions options_;
+    ClientInstruments instruments_;
     std::unique_ptr<mtproto::Connection> connection_;
     std::unique_ptr<mtproto::MtSession> session_;
     std::unique_ptr<SqliteStorage> storage_;  // set when session_path is a SQLite file
@@ -789,10 +893,26 @@ private:
     // Single entry point for every RPC: reports Telegram errors to on_rpc_error, then rethrows.
     template <class Request>
     typename Request::Result call_rpc(const Request& request) {
+        const auto started = std::chrono::steady_clock::now();
+        instruments_.rpc_requests.inc();
         try {
-            return session_->call(request);
-        } catch (const mtproto::RpcError& e) {
-            notify_rpc_error(e.code(), e.rpc_message());
+            prepare_session_tokens();
+            // The cancel token belongs to this call only. Clear it on every exit so a finished operation cannot
+            // cancel later waits, such as the run loop's receive.
+            struct ClearCancel {
+                mtproto::MtSession* session;
+                ~ClearCancel() { session->set_cancel_token(std::stop_token{}); }
+            } clear_cancel{session_.get()};
+            auto result = session_->call(request);
+            instruments_.rpc_successes.inc();
+            instruments_.rpc_latency.observe(detail::seconds_since(started));
+            return result;
+        } catch (const std::exception& e) {
+            instruments_.rpc_latency.observe(detail::seconds_since(started));
+            instruments_.rpc_failures.labels({std::string(errors::to_string(errors::categorize(e)))}).inc();
+            if (const auto* rpc = dynamic_cast<const mtproto::RpcError*>(&e)) {
+                notify_rpc_error(rpc->code(), rpc->rpc_message());
+            }
             throw;
         }
     }
@@ -823,7 +943,13 @@ private:
     // Guards stop_source_: stop() may be called from any thread while run() replaces the source.
     std::mutex stop_mutex_;
     std::stop_source stop_source_;
+    // Token of the async operation running on the worker thread, or nothing. Waits inside that operation use it.
+    std::optional<std::stop_token> op_token_;
+    std::unique_ptr<async::Runner> runner_;  // created on first async use; destroyed first in ~Client
     std::stop_token current_stop_token();
+    // Gives the session this call's stop tokens: the run/operation token for flood-wait sleeps, and the async
+    // operation token (if any) for cancelling a wait for a reply. Refreshed per call so no stale token survives.
+    void prepare_session_tokens();
     AuthState auth_state_ = AuthState::Unauthenticated;
     // Applies one event; throws std::logic_error when the event is not legal in the current state.
     void apply_auth_event(AuthEvent event);

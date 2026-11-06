@@ -6,6 +6,8 @@
 
 #include "cppgram/client.h"
 #include "cppgram/mtproto/session.h"
+#include "cppgram/errors.h"
+#include "cppgram/log.h"
 
 namespace cppgram {
 
@@ -47,7 +49,7 @@ bool Client::probe_session() {
 LoginCodeInfo Client::send_login_code(const std::string& phone_number) {
     require_session();
     if (!auth_can_login(auth_state_)) {
-        throw std::runtime_error(std::string("send_login_code not allowed in state ") + to_string(auth_state_));
+        throw errors::AuthenticationError(std::string("send_login_code not allowed in state ") + to_string(auth_state_));
     }
     apply_auth_event(AuthEvent::LoginStarted);
 
@@ -65,6 +67,7 @@ LoginCodeInfo Client::send_login_code(const std::string& phone_number) {
         throw;
     }
 
+    log::write(log::Level::Info, "login", "login code requested");
     LoginCodeInfo info;
     if (std::holds_alternative<ty::auth_sentCodeSuccess>(res.value)) {
         // Telegram accepted the account without a code (for example an existing authorization).
@@ -96,7 +99,7 @@ bool Client::sign_in_code(const std::string& phone_number, const std::string& co
                           const std::string& phone_code_hash) {
     require_session();
     if (auth_state_ != AuthState::CodeRequired) {
-        throw std::runtime_error(std::string("sign_in_code needs send_login_code first; state is ") +
+        throw errors::AuthenticationError(std::string("sign_in_code needs send_login_code first; state is ") +
                                  to_string(auth_state_));
     }
     apply_auth_event(AuthEvent::LoginStarted);
@@ -109,13 +112,21 @@ bool Client::sign_in_code(const std::string& phone_number, const std::string& co
         const tl::auth_Authorization res = call_rpc(req);
         if (std::holds_alternative<ty::auth_authorizationSignUpRequired>(res.value)) {
             apply_auth_event(AuthEvent::PermanentFailure);
+            log::write(log::Level::Warn, "login", "sign-up required; not supported");
+            instruments_.auth_failures.inc();
             throw std::runtime_error("this phone number has no Telegram account; sign-up is not supported");
         }
         apply_auth_event(AuthEvent::SignedIn);
+        log::write(log::Level::Info, "login", "signed in");
         return true;
     } catch (const mtproto::RpcError& e) {
         // SESSION_PASSWORD_NEEDED is a normal step: the account has 2FA, so report false and move on.
-        if (note_rpc_error(e.code(), e.rpc_message()) == AuthEvent::PasswordNeeded) return false;
+        if (note_rpc_error(e.code(), e.rpc_message()) == AuthEvent::PasswordNeeded) {
+            log::write(log::Level::Info, "login", "2FA password required");
+            return false;
+        }
+        log::write(log::Level::Warn, "login", "sign-in rejected", {{"code", std::to_string(e.code())}});
+        instruments_.auth_failures.inc();
         throw;
     }
 }
@@ -123,7 +134,7 @@ bool Client::sign_in_code(const std::string& phone_number, const std::string& co
 bool Client::sign_in_password(const std::string& password) {
     require_session();
     if (auth_state_ != AuthState::PasswordRequired) {
-        throw std::runtime_error(std::string("sign_in_password needs a 2FA challenge first; state is ") +
+        throw errors::AuthenticationError(std::string("sign_in_password needs a 2FA challenge first; state is ") +
                                  to_string(auth_state_));
     }
     apply_auth_event(AuthEvent::LoginStarted);
@@ -131,10 +142,13 @@ bool Client::sign_in_password(const std::string& password) {
         check_password(password);
     } catch (const mtproto::RpcError& e) {
         // Wrong password: state goes back to PasswordRequired and the RPC error is rethrown unchanged.
+        log::write(log::Level::Warn, "login", "2FA password rejected", {{"code", std::to_string(e.code())}});
+        instruments_.auth_failures.inc();
         note_rpc_error(e.code(), e.rpc_message());
         throw;
     }
     apply_auth_event(AuthEvent::SignedIn);
+    log::write(log::Level::Info, "login", "signed in with 2FA password");
     return true;
 }
 

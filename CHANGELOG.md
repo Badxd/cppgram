@@ -1,5 +1,72 @@
 # Changelog
 
+## Unreleased - coroutines, in-flight cancellation, transfer recovery, benchmarks
+
+- C++20 coroutines (`cppgram/task.h`): `async::Task<T>` is lazy and move-only. `co_await` accepts `Task` and
+  `this_task_stop_token()`. `async::spawn(runner, task)` runs it on a `Runner`. Exceptions and cancellation propagate.
+- In-flight RPC cancellation: a wait for a reply ends within one 50 ms poll slice when the async operation is
+  cancelled. A request cancelled before it is sent is never sent. A reply that arrives after a cancel is ignored.
+  `PacketChannel::receive_packet_cancellable` is new; its default ignores the stop token.
+- Synchronous `Client::stop()` is unchanged. It does not interrupt an RPC that a synchronous call waits for.
+- Transfer recovery: a timeout or dropped connection during an upload or download part reconnects and resends the
+  same part. A reconnect that never succeeds fails the transfer with a network error.
+- Downloads: a second concurrent download to the same `.part` file in one process is refused with
+  `FileTransferError`. Errors on a chunk are retried. Cancellation leaves the destination untouched.
+- Benchmarks: `cppgram_runtime_bench` (`ENABLE_BENCHMARKS=ON`) measures metrics, async and media transfers on a
+  loopback fake DC. Results and method: `docs/BENCHMARKS.md`.
+- `errors::categorize` maps `mtproto::OperationCancelled` to `Category::Cancelled`.
+- Documentation: `docs/ASYNC.md`, `docs/METRICS.md`, `docs/MEDIA.md`, `docs/BENCHMARKS.md`. The examples in them are
+  mirrored and compiled by `tests/async/docs_examples_test.cpp`.
+
+## Unreleased - metrics, async APIs and media transfers (Phases 5-7)
+
+- Metrics (`cppgram/metrics.h`): thread-safe counters, gauges and histograms in a `metrics::Registry`. Series are
+  capped per family (default 128), with extra label sets folded into an `__overflow__` series. Label values pass
+  through `log::redact`. Disabled registries and default-constructed handles are no-ops.
+- Prometheus text exposition 0.0.4 (`cppgram/metrics_prometheus.h`): `render_prometheus()` and the content type
+  constant. No HTTP server is included; expose the text with your own endpoint.
+- `ClientOptions::metrics` (optional registry) records RPC counts and durations, connection attempts and
+  connections, disconnects, reconnects, the connected gauge, transport errors by category, auth failures, flood
+  waits, transferred bytes and part retries. `bot::Api::set_metrics` and `bot::CurlHttpClient::set_metrics` record
+  Bot API requests, API errors, HTTP status codes and timeouts. The Bot API token never appears in metric labels.
+- Asynchronous APIs (`cppgram/async.h`): `async::AsyncResult<T>` (move-only, `get`, `wait`, `cancel`, `link`) and
+  `async::Runner`, a serial FIFO executor with one worker thread that starts on the first post. Destroying a runner
+  cancels queued work and joins the worker. No detached threads and no global pool.
+- `Client::async`, `connect_async`, `disconnect_async`, `login_bot_async` and `save_file_async` wrap the synchronous
+  methods. Connect backoff and FLOOD_WAIT sleeps end promptly on cancel. An RPC already on the wire still ends at
+  its receive timeout. The synchronous API is unchanged. `Client` is still single-threaded.
+- Media transfers: uploads hash the file in one pass (MD5 via EVP) and send big-file parts with
+  `upload_part_size` (0 selects the default). Parts retry on 5xx, network and timeout errors with backoff.
+  `UploadProgress` reports bytes sent. `save_file` also accepts a progress callback and checks cancellation between
+  parts.
+- Downloads resume from a `.part` file. A `.part.meta` sidecar records the media fingerprint, and a mismatch is
+  refused. A `FILE_REFERENCE_EXPIRED` answer is reported with a clear message. A size mismatch removes the partial
+  files.
+- ABI: `ClientOptions` gained trailing fields (`metrics`, `upload_part_size`). `Client`, `bot::Api` and
+  `bot::CurlHttpClient` gained members and methods. `mtproto::MtSession` gained `set_flood_wait_observer`.
+
+## Unreleased - integration hardening (Phase 4.1)
+
+- Structured logging is wired into the connect lifecycle, the login flow, RPC errors and flood waits, the transport
+  (connection closed or recv failures), the Bot API (method name, error code, elapsed time) and the Curl transport.
+  Logs carry method and status only, never the API hash, bot token, phone number, codes, passwords or session data.
+- Curl transport errors are now `errors::NetworkError` with the method in the context. The request URL and the proxy
+  URL are removed from error text, because the Bot API URL carries the token.
+- Upload and download failures raised by the client are now `errors::FileTransferError`. Login state misuse is now
+  `errors::AuthenticationError`. Both still derive from `std::runtime_error`, so existing catch blocks keep working.
+- `mtproto::*` and `bot::TgException` are unchanged.
+- WebApp: the strict duplicate-key rule and the minimal user-field rule are now documented in `webapp.h`.
+- New tests in `tests/security/integration_test.cpp` (4 cases).
+
+## Errors, logging and Web App initData
+
+- New `cppgram/errors.h`: `cppgram::errors::Error` base (derives from `std::runtime_error`) with `Category`, `method()`, `code()`, `request_id()` and `retry_after()`. Types: NetworkError, TimeoutError, AuthenticationError, AuthorizationError, RpcError, BotApiError, FloodWaitError, SessionError, SerializationError, TransportError, FileTransferError, CancelledError.
+- `errors::categorize(e)` and `errors::context_of(e)` classify every existing error (`mtproto::*`, `bot::TgException`) without changing those types.
+- New `cppgram/log.h`: levels TRACE, DEBUG, INFO, WARN, ERROR, OFF; components; request ids; fields; pluggable sink; redaction of bot tokens and sensitive keys. Default level is WARN.
+- New `cppgram/webapp.h`: Telegram Web App initData verification (HMAC-SHA256, `WebAppData` key derivation, constant-time compare, auth_date max age and future skew, duplicate and malformed checks). Parsed data is returned only after the signature verifies.
+- Tests: `tests/security/` (49 cases). One known-answer vector was generated with Python `hmac`, independent of the C++ code.
+- Not wired yet: the MTProto client and Bot API code do not call `log::write` yet.
+
 ## Source layout
 
 - Renamed `src/client_*.cpp` to plain area names (`send.cpp`, `chats.cpp`, `stickers.cpp`, ...). `client.cpp` is unchanged. `client_batch5/6/7.cpp` became `misc_5/6/7.cpp`, and `client_bot.cpp` became `bot_methods.cpp` to avoid a clash with `Bot.cpp`. No code changed.

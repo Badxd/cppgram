@@ -8,6 +8,9 @@
 #include <string>
 #include <variant>
 
+#include "cppgram/errors.h"
+#include "cppgram/log.h"
+
 namespace cppgram::bot {
 
 namespace {
@@ -71,6 +74,37 @@ static std::size_t curlWriteString(char* ptr, std::size_t size, std::size_t nmem
     return size * nmemb;
 }
 
+void CurlHttpClient::set_metrics(const std::shared_ptr<metrics::Registry>& registry) {
+    if (!registry) {
+        _http_responses = {};
+        _timeouts = {};
+        return;
+    }
+    _http_responses = registry->counter("cppgram_bot_http_responses_total",
+                                        "HTTP responses from the Bot API host, by status (0 when no response arrived).",
+                                        {"status"});
+    _timeouts = registry->counter("cppgram_bot_http_timeouts_total", "Bot API HTTP requests that timed out.").labels({});
+}
+
+namespace {
+// libcurl can echo the request URL in its messages, and the Bot API URL carries the bot token. The full request URL
+// and the proxy URL (which can hold credentials) are replaced before any error text leaves this file.
+std::string scrub_text(std::string text, std::string_view secret) {
+    if (secret.empty()) return text;
+    std::size_t pos = 0;
+    while ((pos = text.find(secret, pos)) != std::string::npos) {
+        text.replace(pos, secret.size(), "<redacted>");
+        pos += 10;
+    }
+    return text;
+}
+
+std::string method_of(const std::string& url) {
+    const std::size_t slash = url.rfind('/');
+    return slash == std::string::npos ? url : url.substr(slash + 1);
+}
+} // namespace
+
 std::string CurlHttpClient::makeRequest(const std::string& url, std::span<const HttpFormField> fields) const {
     CURL* curl = getCurlHandle(this);
 
@@ -121,6 +155,10 @@ std::string CurlHttpClient::makeRequest(const std::string& url, std::span<const 
 
     auto res = curl_easy_perform(curl);
     curl_mime_free(mime);
+    long status = 0;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status);
+    _http_responses.labels({std::to_string(status)}).inc();
+    if (res == CURLE_OPERATION_TIMEDOUT) _timeouts.inc();
 
     if (res == CURLcode::CURLE_ABORTED_BY_CALLBACK
         && ((state.isEternalCancel && state.isEternalCancel->load())
@@ -144,7 +182,13 @@ std::string CurlHttpClient::makeRequest(const std::string& url, std::span<const 
         } else {
             errmsg = curl_easy_strerror(res);
         }
-        throw std::runtime_error(std::string("curl error: ") + errmsg);
+        const std::string_view proxy = _proxyUrl ? std::string_view(_proxyUrl) : std::string_view();
+        errmsg = log::redact(scrub_text(scrub_text(errmsg, url), proxy));
+        const std::string method = method_of(url);
+        log::write(log::Level::Warn, "bot_http", "request failed", {{"method", method}, {"reason", errmsg}});
+        errors::Context context;
+        context.method = method;
+        throw errors::NetworkError("curl error: " + errmsg, context);
     }
 
     return response;

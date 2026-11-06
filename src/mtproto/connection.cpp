@@ -1,4 +1,5 @@
 #include "cppgram/mtproto/connection.h"
+#include "cppgram/log.h"
 
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -10,10 +11,14 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <cerrno>
+#include <chrono>
 #include <cstring>
 #include <memory>
 #include <stdexcept>
+
+#include "cppgram/mtproto/cancel.h"
 
 namespace cppgram::mtproto {
 namespace {
@@ -224,9 +229,11 @@ Bytes Connection::receive_packet() {
         if (n < 0) {
             if (errno == EINTR) continue;
             if (errno == EAGAIN || errno == EWOULDBLOCK) throw ConnectionTimeout("receive timed out");
+            log::write(log::Level::Warn, "transport", "recv failed", {{"errno", std::to_string(errno)}});
             throw ConnectionError(std::string("recv: ") + std::strerror(errno));
         }
         if (n == 0) {
+            log::write(log::Level::Warn, "transport", "connection closed by server");
             throw ConnectionError("connection closed by server");
         }
         Bytes chunk(buf, buf + n);
@@ -234,6 +241,62 @@ Bytes Connection::receive_packet() {
             chunk = obfuscated_->decrypt(chunk);
         }
         transport_.feed(chunk);
+    }
+}
+
+Bytes Connection::receive_packet_cancellable(const std::stop_token& stop,
+                                             std::chrono::steady_clock::time_point deadline) {
+    if (!stop.stop_possible() && deadline == std::chrono::steady_clock::time_point::max()) return receive_packet();
+    if (fd_ < 0) {
+        throw ConnectionError("not connected");
+    }
+    constexpr int kPollSliceMs = 50;
+    using clock = std::chrono::steady_clock;
+    auto idle_deadline = clock::now() + std::chrono::milliseconds(io_timeout_ms_);
+    for (;;) {
+        if (auto packet = transport_.next()) {
+            return std::move(*packet);
+        }
+        if (stop.stop_requested()) {
+            throw OperationCancelled();
+        }
+        if (clock::now() >= deadline) {
+            throw ConnectionTimeout("receive timed out");
+        }
+        int wait_ms = kPollSliceMs;
+        if (io_timeout_ms_ > 0) {
+            const auto now = clock::now();
+            if (now >= idle_deadline) {
+                throw ConnectionTimeout("receive timed out");
+            }
+            const auto remaining =
+                std::chrono::duration_cast<std::chrono::milliseconds>(idle_deadline - now).count();
+            wait_ms = static_cast<int>(std::min<long long>(kPollSliceMs, std::max<long long>(1, remaining)));
+        }
+        pollfd pfd{fd_, POLLIN, 0};
+        const int ready = ::poll(&pfd, 1, wait_ms);
+        if (ready < 0) {
+            if (errno == EINTR) continue;
+            throw ConnectionError(std::string("poll: ") + std::strerror(errno));
+        }
+        if (ready == 0) continue;  // slice elapsed: loop to re-check the stop token and the timeout
+        std::uint8_t buf[4096];
+        const ssize_t n = ::recv(fd_, buf, sizeof(buf), MSG_DONTWAIT);
+        if (n < 0) {
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) continue;
+            log::write(log::Level::Warn, "transport", "recv failed", {{"errno", std::to_string(errno)}});
+            throw ConnectionError(std::string("recv: ") + std::strerror(errno));
+        }
+        if (n == 0) {
+            log::write(log::Level::Warn, "transport", "connection closed by server");
+            throw ConnectionError("connection closed by server");
+        }
+        Bytes chunk(buf, buf + n);
+        if (obfuscated_) {
+            chunk = obfuscated_->decrypt(chunk);
+        }
+        transport_.feed(chunk);
+        idle_deadline = clock::now() + std::chrono::milliseconds(io_timeout_ms_);
     }
 }
 

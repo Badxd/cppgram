@@ -6,6 +6,7 @@
 #pragma once
 
 #include <arpa/inet.h>
+#include <functional>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <openssl/bn.h>
@@ -296,6 +297,20 @@ public:
         for (int fd : client_fds_) ::shutdown(fd, SHUT_RDWR);
     }
 
+    // Test-scripted answers. The handler gets the method id and the arguments (positioned after the id). It writes
+    // the TL result and returns true, or returns false to let the built-in answers handle the request.
+    using Handler = std::function<bool(std::uint32_t method_id, TlReader& args, TlWriter& result)>;
+    void set_handler(Handler handler) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        handler_ = std::move(handler);
+    }
+
+    // Shuts down every client connection from inside a handler, where the lock is already held (drop_connections()
+    // would deadlock there). The handler's own answer is then lost, as it would be on a real dropped connection.
+    void drop_connections_in_handler() {
+        for (int fd : client_fds_) ::shutdown(fd, SHUT_RDWR);
+    }
+
     // While refusing, new connections are closed right after accept, so the client's reconnect attempts fail.
     void set_refusing(bool refusing) { refusing_ = refusing; }
 
@@ -431,7 +446,12 @@ private:
         if (id == fn::ping_delay_disconnect::kId) {
             return true;  // the client sends this without waiting for an answer
         }
-        if (id == fn::ping::kId) {
+        // handle() holds mutex_ for the whole request, so the handler is read without taking it again.
+        const Handler test_handler = handler_;
+        TlWriter test_writer;
+        if (test_handler && test_handler(id, r, test_writer)) {
+            result = test_writer.take();
+        } else if (id == fn::ping::kId) {
             ty::pong pong;
             pong.msg_id = static_cast<std::int64_t>(inner.message_id);
             pong.ping_id = r.read_int64();
@@ -514,6 +534,7 @@ private:
     std::vector<std::thread> workers_;
     std::unique_ptr<FakeServer> handshake_;
     int flood_remaining_ = 0;
+    Handler handler_;
     std::string flood_message_;
 };
 

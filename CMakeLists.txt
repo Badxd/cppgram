@@ -99,6 +99,9 @@ add_library(cppgram
     src/mtproto/retry.cpp
     src/update_gate.cpp
     src/auth_state.cpp
+    src/metrics.cpp
+    src/metrics_prometheus.cpp
+    src/async.cpp
     src/mtproto/schema/api_impl_0.cpp
     src/mtproto/schema/api_impl_1.cpp
     src/mtproto/schema/api_impl_2.cpp
@@ -129,6 +132,9 @@ add_library(cppgram
     src/stickers.cpp
     src/text.cpp
     src/parser.cpp
+    src/errors.cpp
+    src/log.cpp
+    src/webapp.cpp
     src/storage.cpp
     src/bot_methods.cpp
     src/message.cpp
@@ -321,6 +327,13 @@ add_custom_target(tl-check
 if(ENABLE_BENCHMARKS)
     add_executable(cppgram_bench bench/bench_main.cpp)
     target_link_libraries(cppgram_bench PRIVATE cppgram)
+
+    # Metrics, async and media benchmarks. The media part reuses the test-only loopback fake DC, which includes
+    # gtest headers, so GTest is needed to build this target.
+    find_package(GTest REQUIRED)
+    add_executable(cppgram_runtime_bench bench/runtime_bench.cpp)
+    target_link_libraries(cppgram_runtime_bench PRIVATE cppgram GTest::gtest)
+    target_compile_definitions(cppgram_runtime_bench PRIVATE CPPGRAM_BENCH_BUILD_TYPE="${CMAKE_BUILD_TYPE}")
 endif()
 
 if(BUILD_LIVE_CHECK)

@@ -300,10 +300,21 @@ std::vector<DocumentRef> Client::get_favorite_stickers() {
 }
 
 UploadedFile Client::save_file(const std::string& path) {
+    return save_file(path, UploadProgress{});
+}
+
+UploadedFile Client::save_file(const std::string& path, UploadProgress progress) {
     require_session();
     UploadedFile out;
-    out.handle = upload(path, out.name, out.size);
+    out.handle = upload(path, out.name, out.size, progress);
     return out;
+}
+
+async::AsyncResult<UploadedFile> Client::save_file_async(const std::string& path, UploadProgress progress,
+                                                         std::stop_token stop) {
+    auto result = async([path, progress](Client& client, std::stop_token) { return client.save_file(path, progress); });
+    result.link(std::move(stop));
+    return result;
 }
 
 bool Client::set_menu_button_url(const std::string& text, const std::string& url) {

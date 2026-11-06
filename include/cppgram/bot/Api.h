@@ -1,5 +1,7 @@
 #pragma once
 
+#include "cppgram/metrics.h"
+
 #include "cppgram/bot/HttpFormField.h"
 #include "cppgram/bot/InputFile.h"
 #include "cppgram/bot/Types.h"
@@ -34,6 +36,10 @@ class CPPGRAM_API Api {
 public:
     Api(std::string token, const HttpClient& httpClient, std::string url);
 
+    // Optional Bot API metrics: cppgram_bot_requests_total{method}, cppgram_bot_api_errors_total{code},
+    // cppgram_bot_request_duration_seconds{method}. Pass nullptr to turn them off.
+    void set_metrics(const std::shared_ptr<metrics::Registry>& registry);
+
 #include "cppgram/bot/ApiMethods.inc.h"
 
     /**
@@ -42,6 +48,9 @@ public:
     std::string downloadFile(std::string_view filePath, const std::vector<HttpFormField>& fields = { }) const;
 
     const HttpClient& _httpClient;
+    metrics::CounterFamily _requests;
+    metrics::CounterFamily _api_errors;
+    metrics::HistogramFamily _duration;
 
 protected:
     nlohmann::json sendRequest(std::string_view method, const std::vector<HttpFormField>& fields) const;
