@@ -6,6 +6,8 @@ add_executable(cppgram_bot_test
     bot/EventHandler.cpp
     bot/HttpFormField.cpp
     bot/HttpServer.cpp
+    bot/InlineKeyboard.cpp
+    bot/InlineKeyboardValidation.cpp
     bot/TgLongPoll.cpp
     bot/TgWebhookServer.cpp
     bot/TypesJson.cpp

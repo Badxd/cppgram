@@ -3832,6 +3832,16 @@ void to_json(nlohmann::json& json, const MaskPosition& value) {
 }
 
 void from_json(const nlohmann::json& json, MaybeInaccessibleMessage& value) {
+    // Telegram marks an inaccessible message with date 0. Such a payload also has chat, message_id and date, so the
+    // generic variant decode would accept it as a Message. Check the discriminator first.
+    const bool inaccessible = json.is_object() && json.contains("date") && json.at("date").is_number()
+        && json.at("date").get<std::int64_t>() == 0;
+    if (inaccessible) {
+        auto inaccessible = std::make_shared<InaccessibleMessage>();
+        json.get_to(*inaccessible);
+        value.value = std::move(inaccessible);
+        return;
+    }
     Json::decode(json, value.value);
 }
 

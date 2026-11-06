@@ -1135,13 +1135,18 @@ std::shared_ptr<Message> Api::editMessageReplyMarkup(std::variant<std::int64_t, 
                                                      std::string_view inlineMessageId,
                                                      std::shared_ptr<InlineKeyboardMarkup> replyMarkup,
                                                      std::string_view businessConnectionId) const {
+    // A missing markup means "remove the keyboard". Telegram needs an explicit empty keyboard for that, so never
+    // omit the field here.
+    if (!replyMarkup) {
+        replyMarkup = std::make_shared<InlineKeyboardMarkup>();
+    }
     return ApiResponse::decodeObjectOrTrue<Message>(sendRequest(
             "editMessageReplyMarkup",
             ApiRequest::makeFields(
                 ApiRequest::optional("chat_id", chatId),
                 ApiRequest::optional("message_id", messageId),
                 ApiRequest::optional("inline_message_id", inlineMessageId),
-                ApiRequest::optional("reply_markup", replyMarkup),
+                ApiRequest::required("reply_markup", replyMarkup),
                 ApiRequest::optional("business_connection_id", businessConnectionId)
             )
         ) );
