@@ -17,8 +17,13 @@ std::shared_ptr<tl::InputUser> self_user() {
     return std::make_shared<tl::InputUser>(tl::InputUser{ty::inputUserSelf{}});
 }
 
-// Converts an InputPeer from a folder back to a PeerRef (keeps access hashes).
-std::optional<PeerRef> peer_of_input(const tl::InputPeer& p) {
+PeerRef peer_for_invite_user(std::int64_t id, std::int64_t access_hash, bool has_hash) {
+    return PeerRef{PeerKind::User, id, access_hash, has_hash};
+}
+
+// Converts an InputPeer from a folder to a PeerRef. inputPeerSelf maps to the account's own user id, which the
+// caller passes in. inputPeerEmpty carries no peer and returns nullopt.
+std::optional<PeerRef> peer_of_input(const tl::InputPeer& p, std::int64_t self_id) {
     if (const auto* u = std::get_if<ty::inputPeerUser>(&p.value)) {
         return PeerRef{PeerKind::User, u->user_id, u->access_hash, true};
     }
@@ -28,11 +33,33 @@ std::optional<PeerRef> peer_of_input(const tl::InputPeer& p) {
     if (const auto* ch = std::get_if<ty::inputPeerChannel>(&p.value)) {
         return PeerRef{PeerKind::Channel, ch->channel_id, ch->access_hash, true};
     }
+    if (std::holds_alternative<ty::inputPeerSelf>(p.value)) {
+        return PeerRef{PeerKind::User, self_id, 0, false};
+    }
     return std::nullopt;
 }
 
-PeerRef peer_for_invite_user(std::int64_t id, std::int64_t access_hash, bool has_hash) {
-    return PeerRef{PeerKind::User, id, access_hash, has_hash};
+// Reads the fields shared by dialogFilter and dialogFilterChatlist.
+template <class F>
+FolderInfo folder_info_of(const F& d, std::int64_t self_id) {
+    FolderInfo info;
+    info.id = d.id;
+    info.title = d.title ? [&] {
+        const auto* t = std::get_if<ty::textWithEntities>(&d.title->value);
+        return t ? t->text : std::string{};
+    }() : std::string{};
+    if (d.emoticon) info.emoticon = *d.emoticon;
+    if (d.color) info.color = *d.color;
+    info.title_noanimate = d.title_noanimate;
+    for (const auto& p : d.pinned_peers) {
+        if (!p) continue;
+        if (auto ref = peer_of_input(*p, self_id)) info.pinned_peers.push_back(*ref);
+    }
+    for (const auto& p : d.include_peers) {
+        if (!p) continue;
+        if (auto ref = peer_of_input(*p, self_id)) info.include_peers.push_back(*ref);
+    }
+    return info;
 }
 
 }  // namespace
@@ -44,39 +71,39 @@ std::vector<FolderInfo> Client::get_folders() {
     std::vector<FolderInfo> out;
     const auto* list = std::get_if<ty::messages_dialogFilters>(&result.value);
     if (list == nullptr) return out;
+    const std::int64_t self = cache_.self_id();
     for (const auto& f : list->filters) {
         if (!f) continue;
-        const auto* d = std::get_if<ty::dialogFilter>(&f->value);
-        if (d == nullptr) continue;
-        FolderInfo info;
-        info.id = d->id;
-        if (d->title) {
-            if (const auto* t = std::get_if<ty::textWithEntities>(&d->title->value)) info.title = t->text;
+        // dialogFilterDefault is the built-in "All chats" view. It has no id or settings to edit, so it is not listed.
+        if (const auto* d = std::get_if<ty::dialogFilter>(&f->value)) {
+            FolderInfo info = folder_info_of(*d, self);
+            info.contacts = d->contacts;
+            info.non_contacts = d->non_contacts;
+            info.groups = d->groups;
+            info.broadcasts = d->broadcasts;
+            info.bots = d->bots;
+            info.exclude_muted = d->exclude_muted;
+            info.exclude_read = d->exclude_read;
+            info.exclude_archived = d->exclude_archived;
+            for (const auto& p : d->exclude_peers) {
+                if (!p) continue;
+                if (auto ref = peer_of_input(*p, self)) info.exclude_peers.push_back(*ref);
+            }
+            out.push_back(std::move(info));
+        } else if (const auto* c = std::get_if<ty::dialogFilterChatlist>(&f->value)) {
+            FolderInfo info = folder_info_of(*c, self);
+            info.shared = true;
+            info.has_my_invites = c->has_my_invites;
+            out.push_back(std::move(info));
         }
-        info.contacts = d->contacts;
-        info.non_contacts = d->non_contacts;
-        info.groups = d->groups;
-        info.broadcasts = d->broadcasts;
-        info.bots = d->bots;
-        info.exclude_muted = d->exclude_muted;
-        info.exclude_read = d->exclude_read;
-        info.exclude_archived = d->exclude_archived;
-        for (const auto& p : d->include_peers) {
-            if (!p) continue;
-            if (auto ref = peer_of_input(*p)) info.include_peers.push_back(*ref);
-        }
-        for (const auto& p : d->exclude_peers) {
-            if (!p) continue;
-            if (auto ref = peer_of_input(*p)) info.exclude_peers.push_back(*ref);
-        }
-        out.push_back(std::move(info));
     }
     return out;
 }
 
-
 FolderInfo Client::create_folder(const FolderInfo& folder) {
     require_session();
+    if (folder.shared) throw std::invalid_argument("create_folder cannot create a shared folder; use create_folder_invite_link");
+    // Ids come from every folder the account has, shared ones included, so a new id never collides with a shared folder.
     const auto existing = get_folders();
     std::int32_t next = 2;
     for (const auto& f : existing) next = std::max(next, f.id + 1);
@@ -89,10 +116,16 @@ FolderInfo Client::create_folder(const FolderInfo& folder) {
 
 void Client::edit_folder(const FolderInfo& folder) {
     require_session();
+    if (folder.shared) {
+        throw std::invalid_argument("edit_folder cannot change a shared folder; use the chatlist invite calls");
+    }
     if (folder.id < 2 || folder.id > 255) throw std::invalid_argument("folder id must be between 2 and 255");
     ty::dialogFilter d;
     d.id = folder.id;
     d.title = std::make_shared<tl::TextWithEntities>(tl::TextWithEntities{ty::textWithEntities{folder.title, {}}});
+    if (folder.emoticon) d.emoticon = *folder.emoticon;
+    if (folder.color) d.color = *folder.color;
+    if (folder.title_noanimate) d.title_noanimate = true;
     d.contacts = folder.contacts;
     d.non_contacts = folder.non_contacts;
     d.groups = folder.groups;
@@ -101,6 +134,9 @@ void Client::edit_folder(const FolderInfo& folder) {
     d.exclude_muted = folder.exclude_muted;
     d.exclude_read = folder.exclude_read;
     d.exclude_archived = folder.exclude_archived;
+    for (const auto& p : folder.pinned_peers) {
+        d.pinned_peers.push_back(std::make_shared<tl::InputPeer>(input_peer(p)));
+    }
     for (const auto& p : folder.include_peers) {
         d.include_peers.push_back(std::make_shared<tl::InputPeer>(input_peer(p)));
     }
@@ -126,6 +162,38 @@ void Client::reorder_folders(const std::vector<std::int32_t>& folder_ids) {
     fn::messages_updateDialogFiltersOrder req;
     req.order = folder_ids;
     call_rpc(req);
+}
+
+std::vector<SuggestedFolderInfo> Client::get_suggested_folders() {
+    require_session();
+    fn::messages_getSuggestedDialogFilters req;
+    const std::vector<std::shared_ptr<tl::DialogFilterSuggested>> result = call_rpc(req);
+    const std::int64_t self = cache_.self_id();
+    std::vector<SuggestedFolderInfo> out;
+    for (const auto& s : result) {
+        if (!s) continue;
+        const auto* sug = std::get_if<ty::dialogFilterSuggested>(&s->value);
+        if (sug == nullptr || !sug->filter) continue;
+        const auto* d = std::get_if<ty::dialogFilter>(&sug->filter->value);
+        if (d == nullptr) continue;  // a suggestion of the built-in view has no folder to add
+        SuggestedFolderInfo info;
+        info.folder = folder_info_of(*d, self);
+        info.folder.contacts = d->contacts;
+        info.folder.non_contacts = d->non_contacts;
+        info.folder.groups = d->groups;
+        info.folder.broadcasts = d->broadcasts;
+        info.folder.bots = d->bots;
+        info.folder.exclude_muted = d->exclude_muted;
+        info.folder.exclude_read = d->exclude_read;
+        info.folder.exclude_archived = d->exclude_archived;
+        for (const auto& p : d->exclude_peers) {
+            if (!p) continue;
+            if (auto ref = peer_of_input(*p, self)) info.folder.exclude_peers.push_back(*ref);
+        }
+        info.description = sug->description;
+        out.push_back(std::move(info));
+    }
+    return out;
 }
 
 std::vector<std::string> Client::get_invite_links(const PeerRef& chat, std::int32_t limit) {

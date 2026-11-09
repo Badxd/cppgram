@@ -6,6 +6,7 @@
 #include "cppgram/mtproto/srp.h"
 #include "cppgram/session_string.h"
 #include "cppgram/storage.h"
+#include "password_settings.h"
 
 namespace cppgram {
 
@@ -198,26 +199,8 @@ bool Client::set_password(const std::string& current_password, const std::string
     if (new_password.empty()) throw std::invalid_argument("set_password: new password must not be empty");
     const tl::account_Password result = fetch_password_settings(*session_);
     const auto* pw = std::get_if<ty::account_password>(&result.value);
-    if (pw == nullptr || !pw->new_algo) throw std::runtime_error("server sent no new password parameters");
-    const auto* algo = std::get_if<ty::passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow>(
-        &pw->new_algo->value);
-    if (algo == nullptr) throw std::runtime_error("server uses an unsupported password KDF algorithm");
-
-    // Mix fresh randomness into salt1 so the stored verifier is not tied to the server's suggested salt.
-    ty::passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow new_algo;
-    new_algo.salt1 = algo->salt1;
-    const mtproto::Bytes extra = mtproto::random_bytes(32);
-    new_algo.salt1.insert(new_algo.salt1.end(), extra.begin(), extra.end());
-    new_algo.salt2 = algo->salt2;
-    new_algo.g = algo->g;
-    new_algo.p = algo->p;
-
-    ty::account_passwordInputSettings settings;
-    settings.new_algo = std::make_shared<tl::PasswordKdfAlgo>(tl::PasswordKdfAlgo{new_algo});
-    settings.new_password_hash = mtproto::srp_verifier(
-        mtproto::Bytes(new_password.begin(), new_password.end()), new_algo.salt1, new_algo.salt2, new_algo.g,
-        new_algo.p);
-    settings.hint = hint;
+    if (pw == nullptr) throw std::runtime_error("unexpected account.getPassword response");
+    const ty::account_passwordInputSettings settings = detail::make_new_password_settings(*pw, new_password, hint);
 
     fn::account_updatePasswordSettings req;
     if (pw->current_algo && *pw->current_algo) {
@@ -324,6 +307,97 @@ bool Client::set_menu_button_url(const std::string& text, const std::string& url
     req.user_id = self_input_user();
     req.button = std::make_shared<tl::BotMenuButton>(tl::BotMenuButton{ty::botMenuButton{text, url}});
     return call_rpc(req);
+}
+
+}  // namespace cppgram
+
+namespace cppgram {
+
+WalletStateInfo Client::replace_wallet(const WalletReplacement& replacement, const std::string& password) {
+    require_session();
+    fn::wallet_replaceWallet req;
+    if (replacement.kind == WalletReplacement::Kind::New) {
+        req.wallet = std::make_shared<tl::InputWalletReplacement>(tl::InputWalletReplacement{ty::inputWalletNew{}});
+    } else {
+        if (replacement.public_key.empty()) throw std::invalid_argument("imported wallet needs a public key");
+        ty::inputWalletImported w;
+        w.public_key = replacement.public_key;
+        if (replacement.anchor_public_key) {
+            w.anchor_public_key = *replacement.anchor_public_key;
+        }
+        ty::walletOwnershipProof proof;
+        proof.timestamp = replacement.proof.timestamp;
+        proof.signature = replacement.proof.signature;
+        w.proof = std::make_shared<tl::WalletOwnershipProof>(tl::WalletOwnershipProof{proof});
+        req.wallet = std::make_shared<tl::InputWalletReplacement>(tl::InputWalletReplacement{w});
+    }
+    if (!password.empty()) {
+        const tl::account_Password result = fetch_password_settings(*session_);
+        const auto* pw = std::get_if<ty::account_password>(&result.value);
+        if (pw == nullptr) throw std::runtime_error("unexpected account.getPassword response");
+        req.password = std::make_shared<tl::InputCheckPasswordSRP>(make_password_check(*pw, password));
+    }
+    const tl::WalletState state = call_rpc(req);
+    WalletStateInfo out;
+    if (const auto* e = std::get_if<ty::walletStateEmpty>(&state.value)) {
+        out.empty = true;
+        out.creating = e->creating;
+        return out;
+    }
+    const auto* ws = std::get_if<ty::walletState>(&state.value);
+    if (ws == nullptr) throw std::runtime_error("unexpected WalletState variant");
+    out.empty = false;
+    out.backup_enabled = ws->backup_enabled;
+    out.can_export_phrase = ws->can_export_phrase;
+    out.can_enable_backup = ws->can_enable_backup;
+    out.address = ws->address;
+    out.public_key = ws->public_key;
+    out.balance = ws->balance;
+    return out;
+}
+
+}  // namespace cppgram
+
+namespace cppgram {
+
+TmpPasswordInfo Client::get_tmp_password(const std::string& password, std::int32_t period_seconds) {
+    require_session();
+    if (password.empty()) throw std::invalid_argument("get_tmp_password needs the 2FA password");
+    if (period_seconds <= 0) throw std::invalid_argument("get_tmp_password period must be positive");
+    const tl::account_Password result = fetch_password_settings(*session_);
+    const auto* pw = std::get_if<ty::account_password>(&result.value);
+    if (pw == nullptr) throw std::runtime_error("unexpected account.getPassword response");
+    fn::account_getTmpPassword req;
+    req.password = std::make_shared<tl::InputCheckPasswordSRP>(make_password_check(*pw, password));
+    req.period = period_seconds;
+    const tl::account_TmpPassword tmp = call_rpc(req);
+    const auto* t = std::get_if<ty::account_tmpPassword>(&tmp.value);
+    if (t == nullptr) throw std::runtime_error("unexpected account.TmpPassword variant");
+    TmpPasswordInfo out;
+    out.tmp_password = t->tmp_password;
+    out.valid_until = t->valid_until;
+    return out;
+}
+
+}  // namespace cppgram
+
+namespace cppgram {
+
+bool Client::edit_chat_creator(const PeerRef& peer, const PeerRef& user, const std::string& password) {
+    require_session();
+    if (password.empty()) throw std::invalid_argument("edit_chat_creator needs the 2FA password");
+    if (user.kind != PeerKind::User || !user.has_access_hash) {
+        throw std::invalid_argument("edit_chat_creator needs a user peer with an access hash");
+    }
+    const tl::account_Password result = fetch_password_settings(*session_);
+    const auto* pw = std::get_if<ty::account_password>(&result.value);
+    if (pw == nullptr) throw std::runtime_error("unexpected account.getPassword response");
+    fn::messages_editChatCreator req;
+    req.peer = std::make_shared<tl::InputPeer>(input_peer(peer));
+    req.user_id = std::make_shared<tl::InputUser>(tl::InputUser{ty::inputUser{user.id, user.access_hash}});
+    req.password = std::make_shared<tl::InputCheckPasswordSRP>(make_password_check(*pw, password));
+    (void)call_rpc(req);
+    return true;
 }
 
 }  // namespace cppgram

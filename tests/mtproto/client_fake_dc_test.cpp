@@ -379,9 +379,18 @@ TEST(ClientLifecycle, ConnectionStateIsReadableFromOtherThreadsDuringReconnects)
 
     std::atomic<bool> reading{true};
     std::atomic<std::size_t> reads{0};
-    std::vector<std::thread> readers;
+    // Joins the readers on every exit path. An ASSERT that returns early must not destroy joinable threads.
+    struct ReaderSet {
+        std::atomic<bool>& flag;
+        std::vector<std::thread> threads;
+        ~ReaderSet() {
+            flag = false;
+            for (auto& th : threads)
+                if (th.joinable()) th.join();
+        }
+    } readers{reading, {}};
     for (int t = 0; t < 3; ++t) {
-        readers.emplace_back([&] {
+        readers.threads.emplace_back([&] {
             while (reading.load()) {
                 (void)client.is_connected();
                 reads.fetch_add(1);
@@ -394,7 +403,7 @@ TEST(ClientLifecycle, ConnectionStateIsReadableFromOtherThreadsDuringReconnects)
             << "reconnect " << drop;
     }
     reading = false;
-    for (auto& th : readers) th.join();
+    for (auto& th : readers.threads) th.join();
     EXPECT_GT(reads.load(), 0u);
     client.stop();
     ASSERT_EQ(done.fut.wait_for(5s), std::future_status::ready);

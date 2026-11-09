@@ -2,6 +2,8 @@
 
 #include <stdexcept>
 
+#include "cppgram/convert.h"
+
 namespace cppgram {
 
 namespace fn = mtproto::tl::functions;
@@ -9,34 +11,6 @@ namespace ty = mtproto::tl::types;
 namespace tl = mtproto::tl;
 
 namespace {
-
-std::optional<SavedStarGiftInfo> to_saved_gift(const tl::SavedStarGift& wrapper) {
-    const auto* found = std::get_if<ty::savedStarGift>(&wrapper.value);
-    if (found == nullptr) return std::nullopt;
-    const auto& g = *found;
-    SavedStarGiftInfo out;
-    if (g.msg_id) out.msg_id = *g.msg_id;
-    if (g.saved_id) out.saved_id = *g.saved_id;
-    if (g.gift) {
-        if (const auto* regular = std::get_if<ty::starGift>(&g.gift->value)) {
-            out.gift_id = regular->id;
-        } else if (const auto* unique = std::get_if<ty::starGiftUnique>(&g.gift->value)) {
-            out.unique_slug = unique->slug;
-        }
-    }
-    out.date = g.date;
-    out.unsaved = g.unsaved;
-    out.name_hidden = g.name_hidden;
-    out.pinned_to_top = g.pinned_to_top;
-    out.can_upgrade = g.can_upgrade;
-    out.convert_stars = g.convert_stars;
-    out.upgrade_stars = g.upgrade_stars;
-    out.transfer_stars = g.transfer_stars;
-    if (g.message) {
-        if (const auto* text = std::get_if<ty::textWithEntities>(&(*g.message)->value)) out.message = text->text;
-    }
-    return out;
-}
 
 }  // namespace
 
@@ -57,7 +31,7 @@ SavedStarGiftPage Client::get_saved_star_gifts(const PeerRef& peer, const std::s
     if (page->next_offset) out.next_offset = *page->next_offset;
     for (const auto& gift : page->gifts) {
         if (!gift) continue;
-        if (auto info = to_saved_gift(*gift)) out.gifts.push_back(std::move(*info));
+        if (auto info = detail::saved_star_gift_from_tl(*gift)) out.gifts.push_back(std::move(*info));
     }
     return out;
 }

@@ -6,6 +6,7 @@
 #include <stdexcept>
 
 #include "cppgram/convert.h"
+#include "markup_detail.h"
 
 namespace cppgram {
 
@@ -172,23 +173,30 @@ void Client::set_online(bool online) {
 
 namespace cppgram {
 
-Message Client::send_uploaded(const PeerRef& target, const UploadedFile& file, bool as_photo,
-                              const std::string& caption) {
-    require_session();
-    if (!file.handle) throw std::invalid_argument("send_uploaded: the UploadedFile has no handle");
-    std::shared_ptr<tl::InputMedia> media;
+namespace detail {
+
+// Input media for a file uploaded with save_file: a photo, or a document with its MIME type and file name.
+std::shared_ptr<tl::InputMedia> uploaded_input_media(const UploadedFile& file, bool as_photo) {
+    if (!file.handle) throw std::invalid_argument("the UploadedFile has no handle");
     if (as_photo) {
         ty::inputMediaUploadedPhoto photo;
         photo.file = file.handle;
-        media = std::make_shared<tl::InputMedia>(tl::InputMedia{photo});
-    } else {
-        ty::inputMediaUploadedDocument doc;
-        doc.file = file.handle;
-        doc.mime_type = document_mime(file.name);
-        doc.attributes.push_back(std::make_shared<tl::DocumentAttribute>(tl::DocumentAttribute{ty::documentAttributeFilename{file.name}}));
-        media = std::make_shared<tl::InputMedia>(tl::InputMedia{doc});
+        return std::make_shared<tl::InputMedia>(tl::InputMedia{photo});
     }
-    return send_media(target, media, caption);
+    ty::inputMediaUploadedDocument doc;
+    doc.file = file.handle;
+    doc.mime_type = document_mime(file.name);
+    doc.attributes.push_back(
+        std::make_shared<tl::DocumentAttribute>(tl::DocumentAttribute{ty::documentAttributeFilename{file.name}}));
+    return std::make_shared<tl::InputMedia>(tl::InputMedia{doc});
+}
+
+}  // namespace detail
+
+Message Client::send_uploaded(const PeerRef& target, const UploadedFile& file, bool as_photo,
+                              const std::string& caption) {
+    require_session();
+    return send_media(target, detail::uploaded_input_media(file, as_photo), caption);
 }
 
 }  // namespace cppgram

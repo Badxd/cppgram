@@ -2,25 +2,30 @@
 
 C++20 library for Telegram. It has two parts:
 
-- **MTProto client** (`cppgram::Client`): logs in as a bot or a user and talks to Telegram directly.
-- **Bot API layer** (`cppgram::bot`): HTTP Bot API wrapper, derived from [tgbot-cpp](https://github.com/reo7sp/tgbot-cpp).
+- **MTProto client** (`cppgram::Client`): signs in as a bot or a user and talks to Telegram directly.
+- **Bot API layer** (`cppgram::bot`): an HTTP Bot API wrapper, derived from [tgbot-cpp](https://github.com/reo7sp/tgbot-cpp).
 
 Repository: [Badmunda05/cppgram](https://github.com/Badmunda05/cppgram)
 
 ## Status
 
-- [x] Tests: complete
-- [x] Live tests: complete
-- [x] MTProto client: login, messages, chats, users, bots, media, keyboards, polls, stickers, forums, folders, invites, privacy, sessions
-- [x] Updates: pts/qts/seq gap detection, getDifference, handler groups
-- [x] Storage: SQLite or binary session file, session strings
-- [x] Parser: HTML and MarkdownV2 entities, CDN downloads
-- [x] Bot API layer
-- [ ] Stories, payments and Stars, business, gifts, boosts, wallet/TON
+Version 0.1.0, a pre-release candidate. It is not production-ready and not approved for public release.
+
+- **Offline tests:** 624 test cases in 64 files, all passing in one historical run on GCC 13.3 Release, against fake
+  data centres and local sockets. Per-binary counts are in `TEST_RESULTS.md`.
+- **Live Telegram:** NOT RUN. Nothing in this release has been run against Telegram. The owner runs the live and VPS
+  steps in `VPS_TESTING_GUIDE.md`.
+- **Platforms:** Linux x86_64 with GCC 13.3 is the only platform built and tested. ARM64 and Clang are prepared in CI and
+  not run. Windows is not supported. See `docs/PORTABILITY.md`.
+- **Kurigram parity:** source and evidence classification only, see `PARITY_MATRIX.md`. No behavioural parity is claimed.
+- **Limits:** see `KNOWN_LIMITATIONS.md`. Fake-TLS MTProto proxy secrets are rejected. Secret chats and calls are not
+  implemented.
+
+For the reasoning behind the version number, see `RELEASE_NOTES.md`.
 
 ## Example
 
-Echo bot with the MTProto client:
+An echo bot with the MTProto client. This is a compile-checked snippet, not a run result.
 
 ```cpp
 #include <iostream>
@@ -47,53 +52,58 @@ int main() {
 }
 ```
 
-More examples are in [`examples`](examples), including Bot API ones.
+The full API is described in [`docs/API.md`](docs/API.md). Every `Client` member is listed in
+[`docs/API_INDEX.md`](docs/API_INDEX.md). More programs are in [`examples`](examples). They are compile-checked, not run.
 
 ## Build
 
-```sh
-make build              # configure and build the library and tests (Ninja when installed)
-make test               # run the gtest suites
-make live               # build only the live binaries, in build/live
-make live-offline-check # offline live-test checks: no network, no credentials
-make tl-generate        # regenerate the TL code from schema/*.tl
-make install INSTALL_PREFIX=build/install
-```
-
-Requirements: CMake 3.16+, a C++20 compiler (GCC 12+ or Clang 18+), OpenSSL, zlib, SQLite 3, libcurl, Boost (headers),
-nlohmann/json, and GoogleTest for the tests. On Debian or Ubuntu:
+Requirements: CMake 3.16 or later, a C++20 compiler (GCC 13.3 was used for verification; a Clang 18 job is defined in CI but has not run), OpenSSL, zlib, SQLite 3, libcurl, Boost (headers), nlohmann/json, and GoogleTest for the tests. On Ubuntu 24.04:
 
 ```sh
-sudo apt-get install -y build-essential cmake libssl-dev zlib1g-dev libsqlite3-dev \
+sudo apt-get install -y build-essential cmake ninja-build libssl-dev zlib1g-dev libsqlite3-dev \
     libcurl4-openssl-dev libboost-dev nlohmann-json3-dev libgtest-dev
 ```
+
+Common make targets:
+
+| Target | What it does |
+|---|---|
+| `make build` | Configure and build the library and the tests (Ninja when installed) |
+| `make test` | Run the offline gtest suites. Contacts no network |
+| `make install INSTALL_PREFIX=build/install` | Install headers, library and CMake package files |
+| `make checks` | Source-list, version, format-allowlist and example checks |
+| `make schema-check` | Regenerate the TL code and confirm it matches the checked-in files |
+| `make package` | Build the source release zip into `dist/` |
+| `make verify-release` | Check a release zip against its bundled checksums |
+| `make live` | Build the live-test binaries in `build/live`. Does not run them |
+| `make live-offline-check` | Check live-test wiring with no network and no credentials |
 
 Build options:
 
 | Option | Default | Effect |
 |---|---|---|
 | `ENABLE_TESTS` | `OFF` | Build the test suites |
-| `BUILD_LIVE_CHECK` / `BUILD_LIVE_TESTS` | `OFF` | Build the live binaries |
-| `BUILD_SHARED_LIBS` | `OFF` | Shared library |
+| `BUILD_LIVE_CHECK` / `BUILD_LIVE_TESTS` | `OFF` | Build the live binaries. They are not run by the build |
+| `BUILD_SHARED_LIBS` | `OFF` | Build a shared library |
 | `ENABLE_SANITIZERS` / `ENABLE_COVERAGE` | `OFF` | ASan and UBSan, or gcov coverage |
 | `CPPGRAM_USE_CCACHE` | `ON` | Use a compiler cache when one is installed |
-| `CPPGRAM_COMPILER_CACHE` | `auto` | `auto`, `ccache`, `sccache` or `off` |
 | `CPPGRAM_FAST_LINKER` | `auto` | `auto` (mold, then lld), `mold`, `lld` or `off` |
-| `CPPGRAM_UNITY_BUILD` | `OFF` | Merge sources into batches: faster clean builds |
+| `CPPGRAM_UNITY_BUILD` | `OFF` | Merge sources into batches. Faster clean builds |
 
-Other checks: `bash tools/check_headers.sh`, `bash tools/check_examples.sh`, `bash tools/run_sanitizers.sh`,
-`bash tools/run_tsan.sh`. None of them contact Telegram.
+The largest generated file needs about 2.8 GB to compile. Use `-j1` on a machine with less than 8 GB of RAM. See
+`BUILD_RESULTS.md`.
 
 ## Errors, logging and Web Apps
 
-- `cppgram/errors.h`: typed errors (`errors::Error` and subclasses). `errors::categorize(e)` works for all errors of this library, old and new.
-- `cppgram/log.h`: structured logging with levels, components, request ids, sinks and secret redaction. Default level is WARN.
-- `cppgram/webapp.h`: verify Web App `initData`. Returns parsed data only when the signature and time checks pass.
+- `cppgram/errors.h`: typed errors in the `cppgram::errors` namespace, derived from `errors::Error`.
+- `cppgram/log.h`: structured logging with levels, components, request ids and secret redaction. The default level is WARN.
+- `cppgram/webapp.h`: verifies Web App `initData`. It returns parsed data only when the signature and time checks pass.
+  This is not a cryptographic audit.
 
-## Usage in CMake
+## Usage from CMake
 
 ```cmake
-find_package(cppgram CONFIG REQUIRED)
+find_package(cppgram 0.1 CONFIG REQUIRED)
 target_link_libraries(your_bot PRIVATE cppgram::cppgram)
 ```
 
@@ -101,31 +111,40 @@ Or add the repository with `add_subdirectory`.
 
 ## Live tests
 
-`cppgram_live_check` runs a real connection: TCP, auth key handshake, `initConnection`, `login_bot` and `get_me`.
+`cppgram_live_check` runs a real connection: TCP, the auth key handshake, `initConnection`, `login_bot` and `get_me`.
 `cppgram_live_tests` runs six tests: reconnect, flood_wait, socks5, session_restore, mtproto_proxy and padded_framing.
-Credentials come only from environment variables. Details: [LIVE_CHECK.md](LIVE_CHECK.md) and
-[guides/LIVE_TESTS.md](guides/LIVE_TESTS.md).
+Credentials come only from environment variables. The live workflow is manual and secret-gated; it is never run
+automatically. See [`guides/LIVE_TESTS.md`](guides/LIVE_TESTS.md) and [`VPS_TESTING_GUIDE.md`](VPS_TESTING_GUIDE.md).
 
 ## Layout
 
 - `include/cppgram/client.h`: MTProto client API
 - `include/cppgram/types.h`: typed wrappers (User, Chat, Message, Poll, Sticker, ...)
 - `include/cppgram/bot.h`, `include/cppgram/bot/`: Bot API layer
-- `include/cppgram/mtproto/`: crypto, TL, transports, auth, connection, session, SRP
-- `src/`: client implementation, one file per area (for example `send.cpp`, `chats.cpp`, `stickers.cpp`)
-- `src/mtproto/schema/`: generated schema code
+- `include/cppgram/mtproto/`: crypto, TL, transports, auth, connection, session
+- `src/`: client implementation, one file per area
+- `src/mtproto/schema/`: generated schema code (19 `api_impl` files), reproducible with `make schema-check`
+- `schema/`: TL input files and `README.md` on provenance
 - `tests/`: `mtproto/` suites for the client, `bot/` suites for the Bot API layer
 - `examples/`: example programs
+- `tools/`: checks, schema generator, packaging and verification scripts
 
-## Docs
+## Documentation
 
-- [guides/](guides/README.md): installation, authentication, sessions, architecture, API matrix, threat model
-- [guides/PRODUCTION_READINESS.md](guides/PRODUCTION_READINESS.md): what is tested and what is verified live
-- [guides/RECONNECT_AND_FLOOD_WAIT.md](guides/RECONNECT_AND_FLOOD_WAIT.md), [guides/PROXIES.md](guides/PROXIES.md),
-  [guides/SESSION_ENCRYPTION.md](guides/SESSION_ENCRYPTION.md)
-- [HOW_TO_UPDATE_TELEGRAM_API.md](HOW_TO_UPDATE_TELEGRAM_API.md): updating the schema
+- [`FINAL_REPORT.md`](FINAL_REPORT.md): the release report
+- [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md): status by area
+- [`KNOWN_LIMITATIONS.md`](KNOWN_LIMITATIONS.md), [`PARITY_MATRIX.md`](PARITY_MATRIX.md),
+  [`TEST_RESULTS.md`](TEST_RESULTS.md), [`BUILD_RESULTS.md`](BUILD_RESULTS.md)
+- [`docs/API.md`](docs/API.md) and [`docs/API_INDEX.md`](docs/API_INDEX.md): the public API
+- [`docs/PORTABILITY.md`](docs/PORTABILITY.md): platform notes
+- [`VPS_TESTING_GUIDE.md`](VPS_TESTING_GUIDE.md): the owner's VPS and live test plan
+- [`CHANGELOG.md`](CHANGELOG.md), [`RELEASE_NOTES.md`](RELEASE_NOTES.md), [`HOW_TO_RELEASE.md`](HOW_TO_RELEASE.md)
+- [`HOW_TO_UPDATE_TELEGRAM_API.md`](HOW_TO_UPDATE_TELEGRAM_API.md): updating the schema
+- [`guides/`](guides/README.md): installation, authentication, sessions, architecture, proxies, threat model
+- [`docs/historical/`](docs/historical/): superseded reports, kept for the record. Each has a HISTORICAL banner
 
 ## Licence
 
-MIT for the tgbot-cpp-derived parts, see [LICENSE](LICENSE). The MTProto schema derives from Kurigram (LGPL-3.0). See
-[NOTICE](NOTICE).
+MIT for the tgbot-cpp-derived parts, see [LICENSE](LICENSE). The MTProto schema header cites Kurigram (LGPL-3.0), and
+the schema sources conflict on provenance. See [NOTICE](NOTICE) and `schema/README.md`. Licence review is an open item
+for the owner.

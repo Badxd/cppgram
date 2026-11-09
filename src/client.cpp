@@ -35,8 +35,9 @@ namespace tl = mtproto::tl;
 
 namespace {
 
-constexpr std::int32_t kLayer = 232;
+constexpr std::int32_t kLayer = 233;
 constexpr std::int32_t kDownloadChunk = 1024 * 1024;
+constexpr int kMaxCdnReuploadsPerChunk = 3;
 
 // Adapts a raw packet connection to the handshake's plain-message channel.
 void debug_log(bool enabled, const std::string& message) {
@@ -1610,6 +1611,7 @@ std::int64_t Client::download_via_cdn(const ty::upload_fileCdnRedirect& redirect
     };
 
     std::int64_t offset = 0;
+    int reuploads_for_chunk = 0;
     for (;;) {
         fn::upload_getCdnFile req;
         req.file_token = redirect.file_token;
@@ -1618,8 +1620,25 @@ std::int64_t Client::download_via_cdn(const ty::upload_fileCdnRedirect& redirect
         const tl::upload_CdnFile chunk = cdn.call(req);
         const auto* cf = std::get_if<ty::upload_cdnFile>(&chunk.value);
         if (cf == nullptr) {
-            throw std::runtime_error("CDN asked for a reupload; reupload is not supported yet");
+            // The CDN no longer holds this file and asks for it to be reuploaded. upload.reuploadCdnFile is sent on
+            // the main DC connection. The hashes it returns replace the old ones, then the same chunk is requested again.
+            const auto* need = std::get_if<ty::upload_cdnFileReuploadNeeded>(&chunk.value);
+            if (need == nullptr || reuploads_for_chunk >= kMaxCdnReuploadsPerChunk) {
+                throw std::runtime_error("CDN file at offset " + std::to_string(offset) + " could not be recovered after "
+                                         + std::to_string(reuploads_for_chunk) + " reupload request(s)");
+            }
+            ++reuploads_for_chunk;
+            fn::upload_reuploadCdnFile reupload;
+            reupload.file_token = redirect.file_token;
+            reupload.request_token = need->request_token;
+            const std::vector<std::shared_ptr<tl::FileHash>> fresh = call_rpc(reupload);
+            for (const auto& h : fresh) {
+                if (h) if (const auto* fh = std::get_if<ty::fileHash>(&h->value)) hashes[fh->offset] = {fh->limit, fh->hash};
+            }
+            debug_log(options_.debug, "cdn: reuploaded file hashes at offset " + std::to_string(offset));
+            continue;
         }
+        reuploads_for_chunk = 0;
         if (options_.verify_cdn_hashes) verify_chunk(offset, cf->bytes);
         const Bytes plain_bytes = mtproto::aes_ctr_crypt(cf->bytes, redirect.encryption_key,
                                                          mtproto::cdn_counter_iv(redirect.encryption_iv, offset));

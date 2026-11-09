@@ -1,6 +1,6 @@
 # Reconnect and FLOOD_WAIT
 
-Status labels: see [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).
+Status labels: see [FINAL_REPORT.md](../FINAL_REPORT.md) and [KNOWN_LIMITATIONS.md](../KNOWN_LIMITATIONS.md).
 
 ## Reconnect
 

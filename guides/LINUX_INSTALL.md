@@ -105,4 +105,5 @@ unverified until you have built a downstream project against it.
 
 - `tools/check_examples.sh`: every example is syntax-checked against the public headers (no link, no network).
 - `tools/check_schema.sh`: the generated TL code is byte-identical when regenerated.
-- `ctest` in the Release tree: all tests pass (see `AUDIT.md` for the count and date).
+- `ctest` in the Release tree: the offline suites are listed with their counts in `TEST_RESULTS.md` at the top of the
+  release archive. Those counts come from one run in one environment, not from every machine.

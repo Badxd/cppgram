@@ -3,5267 +3,3397 @@
 
 namespace cppgram::mtproto::tl {
 
-void InputStarGiftAuction::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::outboxReadDate::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(date);
 }
 
-InputStarGiftAuction InputStarGiftAuction::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x02e16c98u: return InputStarGiftAuction{types::inputStarGiftAuction::read_body(r)};
-        case 0x7ab58308u: return InputStarGiftAuction{types::inputStarGiftAuctionSlug::read_body(r)};
-        default: throw TlError("unknown constructor id in InputStarGiftAuction");
-    }
+types::outboxReadDate types::outboxReadDate::read_body(TlReader& rv) {
+    types::outboxReadDate out;
+    out.date = rv.read_int32();
+    return out;
 }
 
 
-void InputStarsTransaction::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::smsjobs_eligibleToJoin::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(terms_url);
+    tlw.write_int32(monthly_sent_sms);
 }
 
-InputStarsTransaction InputStarsTransaction::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x206ae6d1u: return InputStarsTransaction{types::inputStarsTransaction::read_body(r)};
-        default: throw TlError("unknown constructor id in InputStarsTransaction");
-    }
+types::smsjobs_eligibleToJoin types::smsjobs_eligibleToJoin::read_body(TlReader& rv) {
+    types::smsjobs_eligibleToJoin out;
+    out.terms_url = rv.read_string();
+    out.monthly_sent_sms = rv.read_int32();
+    return out;
 }
 
-
-void InputStickerSet::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
 
-InputStickerSet InputStickerSet::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xffb62b95u: return InputStickerSet{types::inputStickerSetEmpty::read_body(r)};
-        case 0x9de7a269u: return InputStickerSet{types::inputStickerSetID::read_body(r)};
-        case 0x861cc8a0u: return InputStickerSet{types::inputStickerSetShortName::read_body(r)};
-        case 0x028703c8u: return InputStickerSet{types::inputStickerSetAnimatedEmoji::read_body(r)};
-        case 0xe67f520eu: return InputStickerSet{types::inputStickerSetDice::read_body(r)};
-        case 0x0cde3739u: return InputStickerSet{types::inputStickerSetAnimatedEmojiAnimations::read_body(r)};
-        case 0xc88b3b02u: return InputStickerSet{types::inputStickerSetPremiumGifts::read_body(r)};
-        case 0x04c4d4ceu: return InputStickerSet{types::inputStickerSetEmojiGenericAnimations::read_body(r)};
-        case 0x29d0f5eeu: return InputStickerSet{types::inputStickerSetEmojiDefaultStatuses::read_body(r)};
-        case 0x44c1f8e9u: return InputStickerSet{types::inputStickerSetEmojiDefaultTopicIcons::read_body(r)};
-        case 0x49748553u: return InputStickerSet{types::inputStickerSetEmojiChannelDefaultStatuses::read_body(r)};
-        case 0x1cf671a0u: return InputStickerSet{types::inputStickerSetTonGifts::read_body(r)};
-        default: throw TlError("unknown constructor id in InputStickerSet");
+void types::smsjobs_status::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (allow_international) flags_v |= (1u << 0);
+        if (last_gift_slug.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
     }
+    tlw.write_int32(recent_sent);
+    tlw.write_int32(recent_since);
+    tlw.write_int32(recent_remains);
+    tlw.write_int32(total_sent);
+    tlw.write_int32(total_since);
+    if (last_gift_slug.has_value()) { tlw.write_string(last_gift_slug.value()); }
+    tlw.write_string(terms_url);
 }
 
-
-void InputStickerSetItem::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-InputStickerSetItem InputStickerSetItem::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x32da9e9cu: return InputStickerSetItem{types::inputStickerSetItem::read_body(r)};
-        default: throw TlError("unknown constructor id in InputStickerSetItem");
-    }
+types::smsjobs_status types::smsjobs_status::read_body(TlReader& rv) {
+    types::smsjobs_status out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.allow_international = (fl_flags & (1u << 0)) != 0;
+    out.recent_sent = rv.read_int32();
+    out.recent_since = rv.read_int32();
+    out.recent_remains = rv.read_int32();
+    out.total_sent = rv.read_int32();
+    out.total_since = rv.read_int32();
+    if ((fl_flags & (1u << 1)) != 0) { out.last_gift_slug = rv.read_string(); }
+    out.terms_url = rv.read_string();
+    return out;
 }
 
 
-void InputStickeredMedia::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::smsJob::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(job_id);
+    tlw.write_string(phone_number);
+    tlw.write_string(text);
 }
 
-InputStickeredMedia InputStickeredMedia::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x4a992157u: return InputStickeredMedia{types::inputStickeredMediaPhoto::read_body(r)};
-        case 0x0438865bu: return InputStickeredMedia{types::inputStickeredMediaDocument::read_body(r)};
-        default: throw TlError("unknown constructor id in InputStickeredMedia");
-    }
+types::smsJob types::smsJob::read_body(TlReader& rv) {
+    types::smsJob out;
+    out.job_id = rv.read_string();
+    out.phone_number = rv.read_string();
+    out.text = rv.read_string();
+    return out;
 }
 
 
-void InputStorePaymentPurpose::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::businessWeeklyOpen::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(start_minute);
+    tlw.write_int32(end_minute);
 }
 
-InputStorePaymentPurpose InputStorePaymentPurpose::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xa6751e66u: return InputStorePaymentPurpose{types::inputStorePaymentPremiumSubscription::read_body(r)};
-        case 0x616f7fe8u: return InputStorePaymentPurpose{types::inputStorePaymentGiftPremium::read_body(r)};
-        case 0xfb790393u: return InputStorePaymentPurpose{types::inputStorePaymentPremiumGiftCode::read_body(r)};
-        case 0x160544cau: return InputStorePaymentPurpose{types::inputStorePaymentPremiumGiveaway::read_body(r)};
-        case 0xf9a2a6cbu: return InputStorePaymentPurpose{types::inputStorePaymentStarsTopup::read_body(r)};
-        case 0x1d741ef7u: return InputStorePaymentPurpose{types::inputStorePaymentStarsGift::read_body(r)};
-        case 0x751f08fau: return InputStorePaymentPurpose{types::inputStorePaymentStarsGiveaway::read_body(r)};
-        case 0x3fc18057u: return InputStorePaymentPurpose{types::inputStorePaymentAuthCode::read_body(r)};
-        default: throw TlError("unknown constructor id in InputStorePaymentPurpose");
-    }
+types::businessWeeklyOpen types::businessWeeklyOpen::read_body(TlReader& rv) {
+    types::businessWeeklyOpen out;
+    out.start_minute = rv.read_int32();
+    out.end_minute = rv.read_int32();
+    return out;
 }
 
-
-void InputTheme::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
 
-InputTheme InputTheme::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x3c5693e9u: return InputTheme{types::inputTheme::read_body(r)};
-        case 0xf5890df1u: return InputTheme{types::inputThemeSlug::read_body(r)};
-        default: throw TlError("unknown constructor id in InputTheme");
+void types::businessWorkHours::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (open_now) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
     }
+    tlw.write_string(timezone_id);
+    tl::write_vector(tlw, weekly_open, [&](TlWriter& tlw985, const auto& e985) { e985->serialize(tlw985); });
 }
 
-
-void InputThemeSettings::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-InputThemeSettings InputThemeSettings::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x8fde504fu: return InputThemeSettings{types::inputThemeSettings::read_body(r)};
-        default: throw TlError("unknown constructor id in InputThemeSettings");
-    }
+types::businessWorkHours types::businessWorkHours::read_body(TlReader& rv) {
+    types::businessWorkHours out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.open_now = (fl_flags & (1u << 0)) != 0;
+    out.timezone_id = rv.read_string();
+    out.weekly_open = tl::read_vector<std::shared_ptr<tl::BusinessWeeklyOpen>>(rv, [&](TlReader& r984) -> std::shared_ptr<tl::BusinessWeeklyOpen> { return tl::read_boxed<tl::BusinessWeeklyOpen>(r984); });
+    return out;
 }
 
 
-void InputTonConnectOauthSession::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-InputTonConnectOauthSession InputTonConnectOauthSession::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x629f66ceu: return InputTonConnectOauthSession{types::inputTonConnectOauthSession::read_body(r)};
-        default: throw TlError("unknown constructor id in InputTonConnectOauthSession");
+void types::businessLocation::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (geo_point.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
     }
-}
-
-
-void InputUser::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+    if (geo_point.has_value()) { geo_point.value()->serialize(tlw); }
+    tlw.write_string(address);
 }
 
-InputUser InputUser::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb98886cfu: return InputUser{types::inputUserEmpty::read_body(r)};
-        case 0xf7c1b13fu: return InputUser{types::inputUserSelf::read_body(r)};
-        case 0xf21158c6u: return InputUser{types::inputUser::read_body(r)};
-        case 0x1da448e2u: return InputUser{types::inputUserFromMessage::read_body(r)};
-        default: throw TlError("unknown constructor id in InputUser");
-    }
+types::businessLocation types::businessLocation::read_body(TlReader& rv) {
+    types::businessLocation out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    if ((fl_flags & (1u << 0)) != 0) { out.geo_point = tl::read_boxed<tl::GeoPoint>(rv); }
+    out.address = rv.read_string();
+    return out;
 }
 
-
-void InputWallPaper::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
 
-InputWallPaper InputWallPaper::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe630b979u: return InputWallPaper{types::inputWallPaper::read_body(r)};
-        case 0x72091c80u: return InputWallPaper{types::inputWallPaperSlug::read_body(r)};
-        case 0x967a462eu: return InputWallPaper{types::inputWallPaperNoFile::read_body(r)};
-        default: throw TlError("unknown constructor id in InputWallPaper");
+void types::inputBusinessRecipients::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (existing_chats) flags_v |= (1u << 0);
+        if (new_chats) flags_v |= (1u << 1);
+        if (contacts) flags_v |= (1u << 2);
+        if (non_contacts) flags_v |= (1u << 3);
+        if (exclude_selected) flags_v |= (1u << 5);
+        if (users.has_value()) flags_v |= (1u << 4);
+        tlw.write_uint32(flags_v);
     }
+    if (users.has_value()) { tl::write_vector(tlw, users.value(), [&](TlWriter& tlw987, const auto& e987) { e987->serialize(tlw987); }); }
 }
 
-
-void InputWalletCardSticker::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-InputWalletCardSticker InputWalletCardSticker::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x57df45a7u: return InputWalletCardSticker{types::inputWalletCardSticker::read_body(r)};
-        default: throw TlError("unknown constructor id in InputWalletCardSticker");
-    }
+types::inputBusinessRecipients types::inputBusinessRecipients::read_body(TlReader& rv) {
+    types::inputBusinessRecipients out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.existing_chats = (fl_flags & (1u << 0)) != 0;
+    out.new_chats = (fl_flags & (1u << 1)) != 0;
+    out.contacts = (fl_flags & (1u << 2)) != 0;
+    out.non_contacts = (fl_flags & (1u << 3)) != 0;
+    out.exclude_selected = (fl_flags & (1u << 5)) != 0;
+    if ((fl_flags & (1u << 4)) != 0) { out.users = tl::read_vector<std::shared_ptr<tl::InputUser>>(rv, [&](TlReader& r986) -> std::shared_ptr<tl::InputUser> { return tl::read_boxed<tl::InputUser>(r986); }); }
+    return out;
 }
 
 
-void InputWalletReplacement::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::businessRecipients::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (existing_chats) flags_v |= (1u << 0);
+        if (new_chats) flags_v |= (1u << 1);
+        if (contacts) flags_v |= (1u << 2);
+        if (non_contacts) flags_v |= (1u << 3);
+        if (exclude_selected) flags_v |= (1u << 5);
+        if (users.has_value()) flags_v |= (1u << 4);
+        tlw.write_uint32(flags_v);
+    }
+    if (users.has_value()) { tl::write_vector(tlw, users.value(), [&](TlWriter& tlw989, const auto& e989) { tlw989.write_int64(e989); }); }
 }
 
-InputWalletReplacement InputWalletReplacement::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x63a440dcu: return InputWalletReplacement{types::inputWalletNew::read_body(r)};
-        case 0x66a66a3bu: return InputWalletReplacement{types::inputWalletImported::read_body(r)};
-        default: throw TlError("unknown constructor id in InputWalletReplacement");
-    }
+types::businessRecipients types::businessRecipients::read_body(TlReader& rv) {
+    types::businessRecipients out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.existing_chats = (fl_flags & (1u << 0)) != 0;
+    out.new_chats = (fl_flags & (1u << 1)) != 0;
+    out.contacts = (fl_flags & (1u << 2)) != 0;
+    out.non_contacts = (fl_flags & (1u << 3)) != 0;
+    out.exclude_selected = (fl_flags & (1u << 5)) != 0;
+    if ((fl_flags & (1u << 4)) != 0) { out.users = tl::read_vector<std::int64_t>(rv, [&](TlReader& r988) -> std::int64_t { return r988.read_int64(); }); }
+    return out;
 }
 
 
-void InputWebDocument::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::businessAwayMessageScheduleAlways::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-InputWebDocument InputWebDocument::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x9bed434du: return InputWebDocument{types::inputWebDocument::read_body(r)};
-        default: throw TlError("unknown constructor id in InputWebDocument");
-    }
+types::businessAwayMessageScheduleAlways types::businessAwayMessageScheduleAlways::read_body(TlReader& rv) {
+    types::businessAwayMessageScheduleAlways out;
+    return out;
 }
 
 
-void InputWebFileLocation::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::businessAwayMessageScheduleOutsideWorkHours::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-InputWebFileLocation InputWebFileLocation::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xc239d686u: return InputWebFileLocation{types::inputWebFileLocation::read_body(r)};
-        case 0x9f2221c9u: return InputWebFileLocation{types::inputWebFileGeoPointLocation::read_body(r)};
-        case 0xf46fe924u: return InputWebFileLocation{types::inputWebFileAudioAlbumThumbLocation::read_body(r)};
-        default: throw TlError("unknown constructor id in InputWebFileLocation");
-    }
+types::businessAwayMessageScheduleOutsideWorkHours types::businessAwayMessageScheduleOutsideWorkHours::read_body(TlReader& rv) {
+    types::businessAwayMessageScheduleOutsideWorkHours out;
+    return out;
 }
 
 
-void Invoice::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::businessAwayMessageScheduleCustom::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(start_date);
+    tlw.write_int32(end_date);
 }
 
-Invoice Invoice::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x049ee584u: return Invoice{types::invoice::read_body(r)};
-        default: throw TlError("unknown constructor id in Invoice");
-    }
+types::businessAwayMessageScheduleCustom types::businessAwayMessageScheduleCustom::read_body(TlReader& rv) {
+    types::businessAwayMessageScheduleCustom out;
+    out.start_date = rv.read_int32();
+    out.end_date = rv.read_int32();
+    return out;
 }
 
 
-void IpPort::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::inputBusinessGreetingMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(shortcut_id);
+    recipients->serialize(tlw);
+    tlw.write_int32(no_activity_days);
 }
 
-IpPort IpPort::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xd433ad73u: return IpPort{types::ipPort::read_body(r)};
-        case 0x37982646u: return IpPort{types::ipPortSecret::read_body(r)};
-        default: throw TlError("unknown constructor id in IpPort");
-    }
+types::inputBusinessGreetingMessage types::inputBusinessGreetingMessage::read_body(TlReader& rv) {
+    types::inputBusinessGreetingMessage out;
+    out.shortcut_id = rv.read_int32();
+    out.recipients = tl::read_boxed<tl::InputBusinessRecipients>(rv);
+    out.no_activity_days = rv.read_int32();
+    return out;
 }
 
 
-void JSONObjectValue::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::businessGreetingMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(shortcut_id);
+    recipients->serialize(tlw);
+    tlw.write_int32(no_activity_days);
 }
 
-JSONObjectValue JSONObjectValue::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xc0de1bd9u: return JSONObjectValue{types::jsonObjectValue::read_body(r)};
-        default: throw TlError("unknown constructor id in JSONObjectValue");
-    }
+types::businessGreetingMessage types::businessGreetingMessage::read_body(TlReader& rv) {
+    types::businessGreetingMessage out;
+    out.shortcut_id = rv.read_int32();
+    out.recipients = tl::read_boxed<tl::BusinessRecipients>(rv);
+    out.no_activity_days = rv.read_int32();
+    return out;
 }
 
 
-void JSONValue::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::inputBusinessAwayMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (offline_only) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int32(shortcut_id);
+    schedule->serialize(tlw);
+    recipients->serialize(tlw);
 }
 
-JSONValue JSONValue::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x3f6d7b68u: return JSONValue{types::jsonNull::read_body(r)};
-        case 0xc7345e6au: return JSONValue{types::jsonBool::read_body(r)};
-        case 0x2be0dfa4u: return JSONValue{types::jsonNumber::read_body(r)};
-        case 0xb71e767au: return JSONValue{types::jsonString::read_body(r)};
-        case 0xf7444763u: return JSONValue{types::jsonArray::read_body(r)};
-        case 0x99c1d49du: return JSONValue{types::jsonObject::read_body(r)};
-        default: throw TlError("unknown constructor id in JSONValue");
-    }
+types::inputBusinessAwayMessage types::inputBusinessAwayMessage::read_body(TlReader& rv) {
+    types::inputBusinessAwayMessage out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.offline_only = (fl_flags & (1u << 0)) != 0;
+    out.shortcut_id = rv.read_int32();
+    out.schedule = tl::read_boxed<tl::BusinessAwayMessageSchedule>(rv);
+    out.recipients = tl::read_boxed<tl::InputBusinessRecipients>(rv);
+    return out;
 }
 
 
-void JoinChatBotResult::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::businessAwayMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (offline_only) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int32(shortcut_id);
+    schedule->serialize(tlw);
+    recipients->serialize(tlw);
 }
 
-JoinChatBotResult JoinChatBotResult::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xae152a69u: return JoinChatBotResult{types::joinChatBotResultApproved::read_body(r)};
-        case 0x0efa0194u: return JoinChatBotResult{types::joinChatBotResultDeclined::read_body(r)};
-        case 0x98a3a840u: return JoinChatBotResult{types::joinChatBotResultQueued::read_body(r)};
-        case 0xd6e3b813u: return JoinChatBotResult{types::joinChatBotResultWebView::read_body(r)};
-        default: throw TlError("unknown constructor id in JoinChatBotResult");
-    }
+types::businessAwayMessage types::businessAwayMessage::read_body(TlReader& rv) {
+    types::businessAwayMessage out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.offline_only = (fl_flags & (1u << 0)) != 0;
+    out.shortcut_id = rv.read_int32();
+    out.schedule = tl::read_boxed<tl::BusinessAwayMessageSchedule>(rv);
+    out.recipients = tl::read_boxed<tl::BusinessRecipients>(rv);
+    return out;
 }
 
 
-void KeyboardButton::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::timezone::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(id);
+    tlw.write_string(name);
+    tlw.write_int32(utc_offset);
 }
 
-KeyboardButton KeyboardButton::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x2f67a72fu: return KeyboardButton{types::keyboardButton::read_body(r)};
-        default: throw TlError("unknown constructor id in KeyboardButton");
-    }
+types::timezone types::timezone::read_body(TlReader& rv) {
+    types::timezone out;
+    out.id = rv.read_string();
+    out.name = rv.read_string();
+    out.utc_offset = rv.read_int32();
+    return out;
 }
 
 
-void KeyboardButtonRow::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::help_timezonesListNotModified::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-KeyboardButtonRow KeyboardButtonRow::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x77608b83u: return KeyboardButtonRow{types::keyboardButtonRow::read_body(r)};
-        default: throw TlError("unknown constructor id in KeyboardButtonRow");
-    }
+types::help_timezonesListNotModified types::help_timezonesListNotModified::read_body(TlReader& rv) {
+    types::help_timezonesListNotModified out;
+    return out;
 }
 
 
-void KeyboardButtonStyle::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::help_timezonesList::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, timezones, [&](TlWriter& tlw991, const auto& e991) { e991->serialize(tlw991); });
+    tlw.write_int32(hash);
 }
 
-KeyboardButtonStyle KeyboardButtonStyle::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x4fdd3430u: return KeyboardButtonStyle{types::keyboardButtonStyle::read_body(r)};
-        default: throw TlError("unknown constructor id in KeyboardButtonStyle");
-    }
+types::help_timezonesList types::help_timezonesList::read_body(TlReader& rv) {
+    types::help_timezonesList out;
+    out.timezones = tl::read_vector<std::shared_ptr<tl::Timezone>>(rv, [&](TlReader& r990) -> std::shared_ptr<tl::Timezone> { return tl::read_boxed<tl::Timezone>(r990); });
+    out.hash = rv.read_int32();
+    return out;
 }
 
 
-void KeyboardInlineButton::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::quickReply::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(shortcut_id);
+    tlw.write_string(shortcut);
+    tlw.write_int32(top_message);
+    tlw.write_int32(count);
 }
 
-KeyboardInlineButton KeyboardInlineButton::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x11c1a322u: return KeyboardInlineButton{types::keyboardInlineButton::read_body(r)};
-        default: throw TlError("unknown constructor id in KeyboardInlineButton");
-    }
+types::quickReply types::quickReply::read_body(TlReader& rv) {
+    types::quickReply out;
+    out.shortcut_id = rv.read_int32();
+    out.shortcut = rv.read_string();
+    out.top_message = rv.read_int32();
+    out.count = rv.read_int32();
+    return out;
 }
 
 
-void KeyboardInlineButtonRow::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::inputQuickReplyShortcut::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(shortcut);
 }
 
-KeyboardInlineButtonRow KeyboardInlineButtonRow::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x19420af6u: return KeyboardInlineButtonRow{types::keyboardInlineButtonRow::read_body(r)};
-        default: throw TlError("unknown constructor id in KeyboardInlineButtonRow");
-    }
+types::inputQuickReplyShortcut types::inputQuickReplyShortcut::read_body(TlReader& rv) {
+    types::inputQuickReplyShortcut out;
+    out.shortcut = rv.read_string();
+    return out;
 }
 
 
-void LabeledPrice::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::inputQuickReplyShortcutId::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(shortcut_id);
 }
 
-LabeledPrice LabeledPrice::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xcb296bf8u: return LabeledPrice{types::labeledPrice::read_body(r)};
-        default: throw TlError("unknown constructor id in LabeledPrice");
-    }
+types::inputQuickReplyShortcutId types::inputQuickReplyShortcutId::read_body(TlReader& rv) {
+    types::inputQuickReplyShortcutId out;
+    out.shortcut_id = rv.read_int32();
+    return out;
 }
 
 
-void LangPackDifference::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::messages_quickReplies::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, quick_replies, [&](TlWriter& tlw996, const auto& e996) { e996->serialize(tlw996); });
+    tl::write_vector(tlw, messages, [&](TlWriter& tlw997, const auto& e997) { e997->serialize(tlw997); });
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw998, const auto& e998) { e998->serialize(tlw998); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw999, const auto& e999) { e999->serialize(tlw999); });
 }
 
-LangPackDifference LangPackDifference::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xf385c1f6u: return LangPackDifference{types::langPackDifference::read_body(r)};
-        default: throw TlError("unknown constructor id in LangPackDifference");
-    }
+types::messages_quickReplies types::messages_quickReplies::read_body(TlReader& rv) {
+    types::messages_quickReplies out;
+    out.quick_replies = tl::read_vector<std::shared_ptr<tl::QuickReply>>(rv, [&](TlReader& r992) -> std::shared_ptr<tl::QuickReply> { return tl::read_boxed<tl::QuickReply>(r992); });
+    out.messages = tl::read_vector<std::shared_ptr<tl::Message>>(rv, [&](TlReader& r993) -> std::shared_ptr<tl::Message> { return tl::read_boxed<tl::Message>(r993); });
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r994) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r994); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r995) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r995); });
+    return out;
 }
 
 
-void LangPackLanguage::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::messages_quickRepliesNotModified::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-LangPackLanguage LangPackLanguage::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xeeca5ce3u: return LangPackLanguage{types::langPackLanguage::read_body(r)};
-        default: throw TlError("unknown constructor id in LangPackLanguage");
-    }
+types::messages_quickRepliesNotModified types::messages_quickRepliesNotModified::read_body(TlReader& rv) {
+    types::messages_quickRepliesNotModified out;
+    return out;
 }
 
 
-void LangPackString::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::connectedBot::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (device.has_value()) flags_v |= (1u << 0);
+        if (date.has_value()) flags_v |= (1u << 1);
+        if (location.has_value()) flags_v |= (1u << 2);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(bot_id);
+    recipients->serialize(tlw);
+    rights->serialize(tlw);
+    if (device.has_value()) { tlw.write_string(device.value()); }
+    if (date.has_value()) { tlw.write_int32(date.value()); }
+    if (location.has_value()) { tlw.write_string(location.value()); }
 }
 
-LangPackString LangPackString::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xcad181f6u: return LangPackString{types::langPackString::read_body(r)};
-        case 0x6c47ac9fu: return LangPackString{types::langPackStringPluralized::read_body(r)};
-        case 0x2979eeb2u: return LangPackString{types::langPackStringDeleted::read_body(r)};
-        default: throw TlError("unknown constructor id in LangPackString");
-    }
+types::connectedBot types::connectedBot::read_body(TlReader& rv) {
+    types::connectedBot out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.bot_id = rv.read_int64();
+    out.recipients = tl::read_boxed<tl::BusinessBotRecipients>(rv);
+    out.rights = tl::read_boxed<tl::BusinessBotRights>(rv);
+    if ((fl_flags & (1u << 0)) != 0) { out.device = rv.read_string(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.date = rv.read_int32(); }
+    if ((fl_flags & (1u << 2)) != 0) { out.location = rv.read_string(); }
+    return out;
 }
 
 
-void MaskCoords::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::account_connectedBots::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, connected_bots, [&](TlWriter& tlw1002, const auto& e1002) { e1002->serialize(tlw1002); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1003, const auto& e1003) { e1003->serialize(tlw1003); });
 }
 
-MaskCoords MaskCoords::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xaed6dbb2u: return MaskCoords{types::maskCoords::read_body(r)};
-        default: throw TlError("unknown constructor id in MaskCoords");
-    }
+types::account_connectedBots types::account_connectedBots::read_body(TlReader& rv) {
+    types::account_connectedBots out;
+    out.connected_bots = tl::read_vector<std::shared_ptr<tl::ConnectedBot>>(rv, [&](TlReader& r1000) -> std::shared_ptr<tl::ConnectedBot> { return tl::read_boxed<tl::ConnectedBot>(r1000); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1001) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1001); });
+    return out;
 }
 
 
-void MediaArea::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::messages_dialogFilters::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (tags_enabled) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tl::write_vector(tlw, filters, [&](TlWriter& tlw1005, const auto& e1005) { e1005->serialize(tlw1005); });
 }
 
-MediaArea MediaArea::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xbe82db9cu: return MediaArea{types::mediaAreaVenue::read_body(r)};
-        case 0xb282217fu: return MediaArea{types::inputMediaAreaVenue::read_body(r)};
-        case 0xcad5452du: return MediaArea{types::mediaAreaGeoPoint::read_body(r)};
-        case 0x14455871u: return MediaArea{types::mediaAreaSuggestedReaction::read_body(r)};
-        case 0x770416afu: return MediaArea{types::mediaAreaChannelPost::read_body(r)};
-        case 0x2271f2bfu: return MediaArea{types::inputMediaAreaChannelPost::read_body(r)};
-        case 0x37381085u: return MediaArea{types::mediaAreaUrl::read_body(r)};
-        case 0x49a6549cu: return MediaArea{types::mediaAreaWeather::read_body(r)};
-        case 0x5787686du: return MediaArea{types::mediaAreaStarGift::read_body(r)};
-        default: throw TlError("unknown constructor id in MediaArea");
-    }
+types::messages_dialogFilters types::messages_dialogFilters::read_body(TlReader& rv) {
+    types::messages_dialogFilters out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.tags_enabled = (fl_flags & (1u << 0)) != 0;
+    out.filters = tl::read_vector<std::shared_ptr<tl::DialogFilter>>(rv, [&](TlReader& r1004) -> std::shared_ptr<tl::DialogFilter> { return tl::read_boxed<tl::DialogFilter>(r1004); });
+    return out;
 }
 
 
-void MediaAreaCoordinates::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::birthday::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (year.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int32(day);
+    tlw.write_int32(month);
+    if (year.has_value()) { tlw.write_int32(year.value()); }
 }
 
-MediaAreaCoordinates MediaAreaCoordinates::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xcfc9e002u: return MediaAreaCoordinates{types::mediaAreaCoordinates::read_body(r)};
-        default: throw TlError("unknown constructor id in MediaAreaCoordinates");
-    }
+types::birthday types::birthday::read_body(TlReader& rv) {
+    types::birthday out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.day = rv.read_int32();
+    out.month = rv.read_int32();
+    if ((fl_flags & (1u << 0)) != 0) { out.year = rv.read_int32(); }
+    return out;
 }
 
 
-void Message::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::botBusinessConnection::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (disabled) flags_v |= (1u << 1);
+        if (rights.has_value()) flags_v |= (1u << 2);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(connection_id);
+    tlw.write_int64(user_id);
+    tlw.write_int32(dc_id);
+    tlw.write_int32(date);
+    if (rights.has_value()) { rights.value()->serialize(tlw); }
 }
 
-Message Message::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x90a6ca84u: return Message{types::messageEmpty::read_body(r)};
-        case 0x7600b9d3u: return Message{types::message::read_body(r)};
-        case 0x7a800e0au: return Message{types::messageService::read_body(r)};
-        default: throw TlError("unknown constructor id in Message");
-    }
+types::botBusinessConnection types::botBusinessConnection::read_body(TlReader& rv) {
+    types::botBusinessConnection out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.disabled = (fl_flags & (1u << 1)) != 0;
+    out.connection_id = rv.read_string();
+    out.user_id = rv.read_int64();
+    out.dc_id = rv.read_int32();
+    out.date = rv.read_int32();
+    if ((fl_flags & (1u << 2)) != 0) { out.rights = tl::read_boxed<tl::BusinessBotRights>(rv); }
+    return out;
 }
 
 
-void MessageAction::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::inputBusinessIntro::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (sticker.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(title);
+    tlw.write_string(description);
+    if (sticker.has_value()) { sticker.value()->serialize(tlw); }
 }
 
-MessageAction MessageAction::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb6aef7b0u: return MessageAction{types::messageActionEmpty::read_body(r)};
-        case 0xbd47cbadu: return MessageAction{types::messageActionChatCreate::read_body(r)};
-        case 0xb5a1ce5au: return MessageAction{types::messageActionChatEditTitle::read_body(r)};
-        case 0x7fcb13a8u: return MessageAction{types::messageActionChatEditPhoto::read_body(r)};
-        case 0x95e3fbefu: return MessageAction{types::messageActionChatDeletePhoto::read_body(r)};
-        case 0x15cefd00u: return MessageAction{types::messageActionChatAddUser::read_body(r)};
-        case 0xa43f30ccu: return MessageAction{types::messageActionChatDeleteUser::read_body(r)};
-        case 0x031224c3u: return MessageAction{types::messageActionChatJoinedByLink::read_body(r)};
-        case 0x95d2ac92u: return MessageAction{types::messageActionChannelCreate::read_body(r)};
-        case 0xe1037f92u: return MessageAction{types::messageActionChatMigrateTo::read_body(r)};
-        case 0xea3948e9u: return MessageAction{types::messageActionChannelMigrateFrom::read_body(r)};
-        case 0x94bd38edu: return MessageAction{types::messageActionPinMessage::read_body(r)};
-        case 0x9fbab604u: return MessageAction{types::messageActionHistoryClear::read_body(r)};
-        case 0x92a72876u: return MessageAction{types::messageActionGameScore::read_body(r)};
-        case 0xffa00cccu: return MessageAction{types::messageActionPaymentSentMe::read_body(r)};
-        case 0xc624b16eu: return MessageAction{types::messageActionPaymentSent::read_body(r)};
-        case 0x80e11a7fu: return MessageAction{types::messageActionPhoneCall::read_body(r)};
-        case 0x4792929bu: return MessageAction{types::messageActionScreenshotTaken::read_body(r)};
-        case 0xfae69f56u: return MessageAction{types::messageActionCustomAction::read_body(r)};
-        case 0xc516d679u: return MessageAction{types::messageActionBotAllowed::read_body(r)};
-        case 0x1b287353u: return MessageAction{types::messageActionSecureValuesSentMe::read_body(r)};
-        case 0xd95c6154u: return MessageAction{types::messageActionSecureValuesSent::read_body(r)};
-        case 0xf3f25f76u: return MessageAction{types::messageActionContactSignUp::read_body(r)};
-        case 0x98e0d697u: return MessageAction{types::messageActionGeoProximityReached::read_body(r)};
-        case 0x7a0d7f42u: return MessageAction{types::messageActionGroupCall::read_body(r)};
-        case 0x502f92f7u: return MessageAction{types::messageActionInviteToGroupCall::read_body(r)};
-        case 0x3c134d7bu: return MessageAction{types::messageActionSetMessagesTTL::read_body(r)};
-        case 0xb3a07661u: return MessageAction{types::messageActionGroupCallScheduled::read_body(r)};
-        case 0xb91bbd3au: return MessageAction{types::messageActionSetChatTheme::read_body(r)};
-        case 0xebbca3cbu: return MessageAction{types::messageActionChatJoinedByRequest::read_body(r)};
-        case 0x47dd8079u: return MessageAction{types::messageActionWebViewDataSentMe::read_body(r)};
-        case 0xb4c38cb5u: return MessageAction{types::messageActionWebViewDataSent::read_body(r)};
-        case 0x48e91302u: return MessageAction{types::messageActionGiftPremium::read_body(r)};
-        case 0x0d999256u: return MessageAction{types::messageActionTopicCreate::read_body(r)};
-        case 0xc0944820u: return MessageAction{types::messageActionTopicEdit::read_body(r)};
-        case 0x57de635eu: return MessageAction{types::messageActionSuggestProfilePhoto::read_body(r)};
-        case 0x31518e9bu: return MessageAction{types::messageActionRequestedPeer::read_body(r)};
-        case 0x5060a3f4u: return MessageAction{types::messageActionSetChatWallPaper::read_body(r)};
-        case 0x31c48347u: return MessageAction{types::messageActionGiftCode::read_body(r)};
-        case 0xa80f51e4u: return MessageAction{types::messageActionGiveawayLaunch::read_body(r)};
-        case 0x87e2f155u: return MessageAction{types::messageActionGiveawayResults::read_body(r)};
-        case 0xcc02aa6du: return MessageAction{types::messageActionBoostApply::read_body(r)};
-        case 0x93b31848u: return MessageAction{types::messageActionRequestedPeerSentMe::read_body(r)};
-        case 0x41b3e202u: return MessageAction{types::messageActionPaymentRefunded::read_body(r)};
-        case 0x45d5b021u: return MessageAction{types::messageActionGiftStars::read_body(r)};
-        case 0xb00c47a2u: return MessageAction{types::messageActionPrizeStars::read_body(r)};
-        case 0xea2c31d3u: return MessageAction{types::messageActionStarGift::read_body(r)};
-        case 0x7e1c1187u: return MessageAction{types::messageActionStarGiftUnique::read_body(r)};
-        case 0xac1f1fcdu: return MessageAction{types::messageActionPaidMessagesRefunded::read_body(r)};
-        case 0x84b88578u: return MessageAction{types::messageActionPaidMessagesPrice::read_body(r)};
-        case 0x2ffe2f7au: return MessageAction{types::messageActionConferenceCall::read_body(r)};
-        case 0xcc7c5c89u: return MessageAction{types::messageActionTodoCompletions::read_body(r)};
-        case 0xc7edbc83u: return MessageAction{types::messageActionTodoAppendTasks::read_body(r)};
-        case 0xee7a1596u: return MessageAction{types::messageActionSuggestedPostApproval::read_body(r)};
-        case 0x95ddcf69u: return MessageAction{types::messageActionSuggestedPostSuccess::read_body(r)};
-        case 0x69f916f8u: return MessageAction{types::messageActionSuggestedPostRefund::read_body(r)};
-        case 0xa8a3c699u: return MessageAction{types::messageActionGiftTon::read_body(r)};
-        case 0x2c8f2a25u: return MessageAction{types::messageActionSuggestBirthday::read_body(r)};
-        case 0x774278d4u: return MessageAction{types::messageActionStarGiftPurchaseOffer::read_body(r)};
-        case 0x73ada76bu: return MessageAction{types::messageActionStarGiftPurchaseOfferDeclined::read_body(r)};
-        case 0xb07ed085u: return MessageAction{types::messageActionNewCreatorPending::read_body(r)};
-        case 0xe188503bu: return MessageAction{types::messageActionChangeCreator::read_body(r)};
-        case 0xbf7d6572u: return MessageAction{types::messageActionNoForwardsToggle::read_body(r)};
-        case 0x3e2793bau: return MessageAction{types::messageActionNoForwardsRequest::read_body(r)};
-        case 0x9da1cd6cu: return MessageAction{types::messageActionPollAppendAnswer::read_body(r)};
-        case 0x399674dcu: return MessageAction{types::messageActionPollDeleteAnswer::read_body(r)};
-        case 0x16605e3eu: return MessageAction{types::messageActionManagedBotCreated::read_body(r)};
-        case 0x5d20bae8u: return MessageAction{types::messageActionChangeCommunity::read_body(r)};
-        case 0x4a8bfe80u: return MessageAction{types::messageActionChatJoinedViaCommunity::read_body(r)};
-        case 0x9329ea33u: return MessageAction{types::messageActionGramTransfer::read_body(r)};
-        case 0x69b8c4bfu: return MessageAction{types::messageActionWalletTonConnectRequest::read_body(r)};
-        case 0xc1d2f1c6u: return MessageAction{types::messageActionNoPaidMessagesTokenUsed::read_body(r)};
-        default: throw TlError("unknown constructor id in MessageAction");
-    }
+types::inputBusinessIntro types::inputBusinessIntro::read_body(TlReader& rv) {
+    types::inputBusinessIntro out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.title = rv.read_string();
+    out.description = rv.read_string();
+    if ((fl_flags & (1u << 0)) != 0) { out.sticker = tl::read_boxed<tl::InputDocument>(rv); }
+    return out;
 }
 
 
-void MessageEntity::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::businessIntro::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (sticker.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(title);
+    tlw.write_string(description);
+    if (sticker.has_value()) { sticker.value()->serialize(tlw); }
 }
 
-MessageEntity MessageEntity::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xbb92ba95u: return MessageEntity{types::messageEntityUnknown::read_body(r)};
-        case 0xfa04579du: return MessageEntity{types::messageEntityMention::read_body(r)};
-        case 0x6f635b0du: return MessageEntity{types::messageEntityHashtag::read_body(r)};
-        case 0x6cef8ac7u: return MessageEntity{types::messageEntityBotCommand::read_body(r)};
-        case 0x6ed02538u: return MessageEntity{types::messageEntityUrl::read_body(r)};
-        case 0x64e475c2u: return MessageEntity{types::messageEntityEmail::read_body(r)};
-        case 0xbd610bc9u: return MessageEntity{types::messageEntityBold::read_body(r)};
-        case 0x826f8b60u: return MessageEntity{types::messageEntityItalic::read_body(r)};
-        case 0x28a20571u: return MessageEntity{types::messageEntityCode::read_body(r)};
-        case 0x73924be0u: return MessageEntity{types::messageEntityPre::read_body(r)};
-        case 0x76a6d327u: return MessageEntity{types::messageEntityTextUrl::read_body(r)};
-        case 0xdc7b1140u: return MessageEntity{types::messageEntityMentionName::read_body(r)};
-        case 0x208e68c9u: return MessageEntity{types::inputMessageEntityMentionName::read_body(r)};
-        case 0x9b69e34bu: return MessageEntity{types::messageEntityPhone::read_body(r)};
-        case 0x4c4e743fu: return MessageEntity{types::messageEntityCashtag::read_body(r)};
-        case 0x9c4e7e8bu: return MessageEntity{types::messageEntityUnderline::read_body(r)};
-        case 0xbf0693d4u: return MessageEntity{types::messageEntityStrike::read_body(r)};
-        case 0x761e6af4u: return MessageEntity{types::messageEntityBankCard::read_body(r)};
-        case 0x32ca960fu: return MessageEntity{types::messageEntitySpoiler::read_body(r)};
-        case 0xc8cf05f8u: return MessageEntity{types::messageEntityCustomEmoji::read_body(r)};
-        case 0xf1ccaaacu: return MessageEntity{types::messageEntityBlockquote::read_body(r)};
-        case 0x904ac7c7u: return MessageEntity{types::messageEntityFormattedDate::read_body(r)};
-        case 0x71777116u: return MessageEntity{types::messageEntityDiffInsert::read_body(r)};
-        case 0xc6c1e5a7u: return MessageEntity{types::messageEntityDiffReplace::read_body(r)};
-        case 0x0652c1c5u: return MessageEntity{types::messageEntityDiffDelete::read_body(r)};
-        case 0xfdabbfcdu: return MessageEntity{types::messageEntityTonAddress::read_body(r)};
-        default: throw TlError("unknown constructor id in MessageEntity");
-    }
+types::businessIntro types::businessIntro::read_body(TlReader& rv) {
+    types::businessIntro out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.title = rv.read_string();
+    out.description = rv.read_string();
+    if ((fl_flags & (1u << 0)) != 0) { out.sticker = tl::read_boxed<tl::Document>(rv); }
+    return out;
 }
 
 
-void MessageExtendedMedia::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::messages_myStickers::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(count);
+    tl::write_vector(tlw, sets, [&](TlWriter& tlw1007, const auto& e1007) { e1007->serialize(tlw1007); });
 }
 
-MessageExtendedMedia MessageExtendedMedia::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xad628cc8u: return MessageExtendedMedia{types::messageExtendedMediaPreview::read_body(r)};
-        case 0xee479c64u: return MessageExtendedMedia{types::messageExtendedMedia::read_body(r)};
-        default: throw TlError("unknown constructor id in MessageExtendedMedia");
-    }
+types::messages_myStickers types::messages_myStickers::read_body(TlReader& rv) {
+    types::messages_myStickers out;
+    out.count = rv.read_int32();
+    out.sets = tl::read_vector<std::shared_ptr<tl::StickerSetCovered>>(rv, [&](TlReader& r1006) -> std::shared_ptr<tl::StickerSetCovered> { return tl::read_boxed<tl::StickerSetCovered>(r1006); });
+    return out;
 }
 
 
-void MessageFwdHeader::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::inputCollectibleUsername::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(username);
 }
 
-MessageFwdHeader MessageFwdHeader::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x4e4df4bbu: return MessageFwdHeader{types::messageFwdHeader::read_body(r)};
-        default: throw TlError("unknown constructor id in MessageFwdHeader");
-    }
+types::inputCollectibleUsername types::inputCollectibleUsername::read_body(TlReader& rv) {
+    types::inputCollectibleUsername out;
+    out.username = rv.read_string();
+    return out;
 }
 
 
-void MessageMedia::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::inputCollectiblePhone::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(phone);
 }
 
-MessageMedia MessageMedia::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x3ded6320u: return MessageMedia{types::messageMediaEmpty::read_body(r)};
-        case 0xe216eb63u: return MessageMedia{types::messageMediaPhoto::read_body(r)};
-        case 0x56e0d474u: return MessageMedia{types::messageMediaGeo::read_body(r)};
-        case 0x70322949u: return MessageMedia{types::messageMediaContact::read_body(r)};
-        case 0x9f84f49eu: return MessageMedia{types::messageMediaUnsupported::read_body(r)};
-        case 0x52d8ccd9u: return MessageMedia{types::messageMediaDocument::read_body(r)};
-        case 0xddf10c3bu: return MessageMedia{types::messageMediaWebPage::read_body(r)};
-        case 0x2ec0533fu: return MessageMedia{types::messageMediaVenue::read_body(r)};
-        case 0xfdb19008u: return MessageMedia{types::messageMediaGame::read_body(r)};
-        case 0xf6a548d3u: return MessageMedia{types::messageMediaInvoice::read_body(r)};
-        case 0xb940c666u: return MessageMedia{types::messageMediaGeoLive::read_body(r)};
-        case 0x773f4e66u: return MessageMedia{types::messageMediaPoll::read_body(r)};
-        case 0x08cbec07u: return MessageMedia{types::messageMediaDice::read_body(r)};
-        case 0x68cb6283u: return MessageMedia{types::messageMediaStory::read_body(r)};
-        case 0xaa073bebu: return MessageMedia{types::messageMediaGiveaway::read_body(r)};
-        case 0xceaa3ea1u: return MessageMedia{types::messageMediaGiveawayResults::read_body(r)};
-        case 0xa8852491u: return MessageMedia{types::messageMediaPaidMedia::read_body(r)};
-        case 0x8a53b014u: return MessageMedia{types::messageMediaToDo::read_body(r)};
-        case 0xca5cab89u: return MessageMedia{types::messageMediaVideoStream::read_body(r)};
-        default: throw TlError("unknown constructor id in MessageMedia");
-    }
+types::inputCollectiblePhone types::inputCollectiblePhone::read_body(TlReader& rv) {
+    types::inputCollectiblePhone out;
+    out.phone = rv.read_string();
+    return out;
 }
 
 
-void MessagePeerReaction::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::fragment_collectibleInfo::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(purchase_date);
+    tlw.write_string(currency);
+    tlw.write_int64(amount);
+    tlw.write_string(crypto_currency);
+    tlw.write_int64(crypto_amount);
+    tlw.write_string(url);
 }
 
-MessagePeerReaction MessagePeerReaction::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x8c79b63cu: return MessagePeerReaction{types::messagePeerReaction::read_body(r)};
-        default: throw TlError("unknown constructor id in MessagePeerReaction");
-    }
+types::fragment_collectibleInfo types::fragment_collectibleInfo::read_body(TlReader& rv) {
+    types::fragment_collectibleInfo out;
+    out.purchase_date = rv.read_int32();
+    out.currency = rv.read_string();
+    out.amount = rv.read_int64();
+    out.crypto_currency = rv.read_string();
+    out.crypto_amount = rv.read_int64();
+    out.url = rv.read_string();
+    return out;
 }
 
 
-void MessagePeerVote::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::inputBusinessBotRecipients::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (existing_chats) flags_v |= (1u << 0);
+        if (new_chats) flags_v |= (1u << 1);
+        if (contacts) flags_v |= (1u << 2);
+        if (non_contacts) flags_v |= (1u << 3);
+        if (exclude_selected) flags_v |= (1u << 5);
+        if (users.has_value()) flags_v |= (1u << 4);
+        if (exclude_users.has_value()) flags_v |= (1u << 6);
+        tlw.write_uint32(flags_v);
+    }
+    if (users.has_value()) { tl::write_vector(tlw, users.value(), [&](TlWriter& tlw1010, const auto& e1010) { e1010->serialize(tlw1010); }); }
+    if (exclude_users.has_value()) { tl::write_vector(tlw, exclude_users.value(), [&](TlWriter& tlw1011, const auto& e1011) { e1011->serialize(tlw1011); }); }
 }
 
-MessagePeerVote MessagePeerVote::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb6cc2d5cu: return MessagePeerVote{types::messagePeerVote::read_body(r)};
-        case 0x74cda504u: return MessagePeerVote{types::messagePeerVoteInputOption::read_body(r)};
-        case 0x4628f6e6u: return MessagePeerVote{types::messagePeerVoteMultiple::read_body(r)};
-        default: throw TlError("unknown constructor id in MessagePeerVote");
-    }
+types::inputBusinessBotRecipients types::inputBusinessBotRecipients::read_body(TlReader& rv) {
+    types::inputBusinessBotRecipients out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.existing_chats = (fl_flags & (1u << 0)) != 0;
+    out.new_chats = (fl_flags & (1u << 1)) != 0;
+    out.contacts = (fl_flags & (1u << 2)) != 0;
+    out.non_contacts = (fl_flags & (1u << 3)) != 0;
+    out.exclude_selected = (fl_flags & (1u << 5)) != 0;
+    if ((fl_flags & (1u << 4)) != 0) { out.users = tl::read_vector<std::shared_ptr<tl::InputUser>>(rv, [&](TlReader& r1008) -> std::shared_ptr<tl::InputUser> { return tl::read_boxed<tl::InputUser>(r1008); }); }
+    if ((fl_flags & (1u << 6)) != 0) { out.exclude_users = tl::read_vector<std::shared_ptr<tl::InputUser>>(rv, [&](TlReader& r1009) -> std::shared_ptr<tl::InputUser> { return tl::read_boxed<tl::InputUser>(r1009); }); }
+    return out;
 }
 
 
-void MessageRange::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::businessBotRecipients::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (existing_chats) flags_v |= (1u << 0);
+        if (new_chats) flags_v |= (1u << 1);
+        if (contacts) flags_v |= (1u << 2);
+        if (non_contacts) flags_v |= (1u << 3);
+        if (exclude_selected) flags_v |= (1u << 5);
+        if (users.has_value()) flags_v |= (1u << 4);
+        if (exclude_users.has_value()) flags_v |= (1u << 6);
+        tlw.write_uint32(flags_v);
+    }
+    if (users.has_value()) { tl::write_vector(tlw, users.value(), [&](TlWriter& tlw1014, const auto& e1014) { tlw1014.write_int64(e1014); }); }
+    if (exclude_users.has_value()) { tl::write_vector(tlw, exclude_users.value(), [&](TlWriter& tlw1015, const auto& e1015) { tlw1015.write_int64(e1015); }); }
 }
 
-MessageRange MessageRange::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x0ae30253u: return MessageRange{types::messageRange::read_body(r)};
-        default: throw TlError("unknown constructor id in MessageRange");
-    }
+types::businessBotRecipients types::businessBotRecipients::read_body(TlReader& rv) {
+    types::businessBotRecipients out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.existing_chats = (fl_flags & (1u << 0)) != 0;
+    out.new_chats = (fl_flags & (1u << 1)) != 0;
+    out.contacts = (fl_flags & (1u << 2)) != 0;
+    out.non_contacts = (fl_flags & (1u << 3)) != 0;
+    out.exclude_selected = (fl_flags & (1u << 5)) != 0;
+    if ((fl_flags & (1u << 4)) != 0) { out.users = tl::read_vector<std::int64_t>(rv, [&](TlReader& r1012) -> std::int64_t { return r1012.read_int64(); }); }
+    if ((fl_flags & (1u << 6)) != 0) { out.exclude_users = tl::read_vector<std::int64_t>(rv, [&](TlReader& r1013) -> std::int64_t { return r1013.read_int64(); }); }
+    return out;
 }
 
 
-void MessageReactions::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::contactBirthday::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(contact_id);
+    birthday->serialize(tlw);
 }
 
-MessageReactions MessageReactions::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x0a339f0bu: return MessageReactions{types::messageReactions::read_body(r)};
-        default: throw TlError("unknown constructor id in MessageReactions");
-    }
+types::contactBirthday types::contactBirthday::read_body(TlReader& rv) {
+    types::contactBirthday out;
+    out.contact_id = rv.read_int64();
+    out.birthday = tl::read_boxed<tl::Birthday>(rv);
+    return out;
 }
 
 
-void MessageReactor::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::contacts_contactBirthdays::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, contacts, [&](TlWriter& tlw1018, const auto& e1018) { e1018->serialize(tlw1018); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1019, const auto& e1019) { e1019->serialize(tlw1019); });
 }
 
-MessageReactor MessageReactor::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x4ba3a95au: return MessageReactor{types::messageReactor::read_body(r)};
-        default: throw TlError("unknown constructor id in MessageReactor");
-    }
+types::contacts_contactBirthdays types::contacts_contactBirthdays::read_body(TlReader& rv) {
+    types::contacts_contactBirthdays out;
+    out.contacts = tl::read_vector<std::shared_ptr<tl::ContactBirthday>>(rv, [&](TlReader& r1016) -> std::shared_ptr<tl::ContactBirthday> { return tl::read_boxed<tl::ContactBirthday>(r1016); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1017) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1017); });
+    return out;
 }
 
 
-void MessageReplies::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::missingInvitee::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (premium_would_allow_invite) flags_v |= (1u << 0);
+        if (premium_required_for_pm) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(user_id);
 }
 
-MessageReplies MessageReplies::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x83d60fc2u: return MessageReplies{types::messageReplies::read_body(r)};
-        default: throw TlError("unknown constructor id in MessageReplies");
-    }
+types::missingInvitee types::missingInvitee::read_body(TlReader& rv) {
+    types::missingInvitee out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.premium_would_allow_invite = (fl_flags & (1u << 0)) != 0;
+    out.premium_required_for_pm = (fl_flags & (1u << 1)) != 0;
+    out.user_id = rv.read_int64();
+    return out;
 }
 
 
-void MessageReplyHeader::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::messages_invitedUsers::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    updates->serialize(tlw);
+    tl::write_vector(tlw, missing_invitees, [&](TlWriter& tlw1021, const auto& e1021) { e1021->serialize(tlw1021); });
 }
 
-MessageReplyHeader MessageReplyHeader::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xddb5ab75u: return MessageReplyHeader{types::messageReplyHeader::read_body(r)};
-        case 0x0e5af939u: return MessageReplyHeader{types::messageReplyStoryHeader::read_body(r)};
-        default: throw TlError("unknown constructor id in MessageReplyHeader");
-    }
+types::messages_invitedUsers types::messages_invitedUsers::read_body(TlReader& rv) {
+    types::messages_invitedUsers out;
+    out.updates = tl::read_boxed<tl::Updates>(rv);
+    out.missing_invitees = tl::read_vector<std::shared_ptr<tl::MissingInvitee>>(rv, [&](TlReader& r1020) -> std::shared_ptr<tl::MissingInvitee> { return tl::read_boxed<tl::MissingInvitee>(r1020); });
+    return out;
 }
 
 
-void MessageReportOption::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::inputBusinessChatLink::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (entities.has_value()) flags_v |= (1u << 0);
+        if (title.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(message);
+    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw1023, const auto& e1023) { e1023->serialize(tlw1023); }); }
+    if (title.has_value()) { tlw.write_string(title.value()); }
 }
 
-MessageReportOption MessageReportOption::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x7903e3d9u: return MessageReportOption{types::messageReportOption::read_body(r)};
-        default: throw TlError("unknown constructor id in MessageReportOption");
-    }
+types::inputBusinessChatLink types::inputBusinessChatLink::read_body(TlReader& rv) {
+    types::inputBusinessChatLink out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.message = rv.read_string();
+    if ((fl_flags & (1u << 0)) != 0) { out.entities = tl::read_vector<std::shared_ptr<tl::MessageEntity>>(rv, [&](TlReader& r1022) -> std::shared_ptr<tl::MessageEntity> { return tl::read_boxed<tl::MessageEntity>(r1022); }); }
+    if ((fl_flags & (1u << 1)) != 0) { out.title = rv.read_string(); }
+    return out;
 }
 
 
-void MessageViews::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::businessChatLink::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (entities.has_value()) flags_v |= (1u << 0);
+        if (title.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(link);
+    tlw.write_string(message);
+    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw1025, const auto& e1025) { e1025->serialize(tlw1025); }); }
+    if (title.has_value()) { tlw.write_string(title.value()); }
+    tlw.write_int32(views);
 }
 
-MessageViews MessageViews::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x455b853du: return MessageViews{types::messageViews::read_body(r)};
-        default: throw TlError("unknown constructor id in MessageViews");
-    }
+types::businessChatLink types::businessChatLink::read_body(TlReader& rv) {
+    types::businessChatLink out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.link = rv.read_string();
+    out.message = rv.read_string();
+    if ((fl_flags & (1u << 0)) != 0) { out.entities = tl::read_vector<std::shared_ptr<tl::MessageEntity>>(rv, [&](TlReader& r1024) -> std::shared_ptr<tl::MessageEntity> { return tl::read_boxed<tl::MessageEntity>(r1024); }); }
+    if ((fl_flags & (1u << 1)) != 0) { out.title = rv.read_string(); }
+    out.views = rv.read_int32();
+    return out;
 }
 
 
-void MessagesFilter::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::account_businessChatLinks::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, links, [&](TlWriter& tlw1029, const auto& e1029) { e1029->serialize(tlw1029); });
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw1030, const auto& e1030) { e1030->serialize(tlw1030); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1031, const auto& e1031) { e1031->serialize(tlw1031); });
 }
 
-MessagesFilter MessagesFilter::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x57e2f66cu: return MessagesFilter{types::inputMessagesFilterEmpty::read_body(r)};
-        case 0x9609a51cu: return MessagesFilter{types::inputMessagesFilterPhotos::read_body(r)};
-        case 0x9fc00e65u: return MessagesFilter{types::inputMessagesFilterVideo::read_body(r)};
-        case 0x56e9f0e4u: return MessagesFilter{types::inputMessagesFilterPhotoVideo::read_body(r)};
-        case 0x9eddf188u: return MessagesFilter{types::inputMessagesFilterDocument::read_body(r)};
-        case 0x7ef0dd87u: return MessagesFilter{types::inputMessagesFilterUrl::read_body(r)};
-        case 0xffc86587u: return MessagesFilter{types::inputMessagesFilterGif::read_body(r)};
-        case 0x50f5c392u: return MessagesFilter{types::inputMessagesFilterVoice::read_body(r)};
-        case 0x3751b49eu: return MessagesFilter{types::inputMessagesFilterMusic::read_body(r)};
-        case 0x3a20ecb8u: return MessagesFilter{types::inputMessagesFilterChatPhotos::read_body(r)};
-        case 0x80c99768u: return MessagesFilter{types::inputMessagesFilterPhoneCalls::read_body(r)};
-        case 0x7a7c17a4u: return MessagesFilter{types::inputMessagesFilterRoundVoice::read_body(r)};
-        case 0xb549da53u: return MessagesFilter{types::inputMessagesFilterRoundVideo::read_body(r)};
-        case 0xc1f8e69au: return MessagesFilter{types::inputMessagesFilterMyMentions::read_body(r)};
-        case 0xe7026d0du: return MessagesFilter{types::inputMessagesFilterGeo::read_body(r)};
-        case 0xe062db83u: return MessagesFilter{types::inputMessagesFilterContacts::read_body(r)};
-        case 0x1bb00451u: return MessagesFilter{types::inputMessagesFilterPinned::read_body(r)};
-        case 0xfa2bc90au: return MessagesFilter{types::inputMessagesFilterPoll::read_body(r)};
-        default: throw TlError("unknown constructor id in MessagesFilter");
-    }
+types::account_businessChatLinks types::account_businessChatLinks::read_body(TlReader& rv) {
+    types::account_businessChatLinks out;
+    out.links = tl::read_vector<std::shared_ptr<tl::BusinessChatLink>>(rv, [&](TlReader& r1026) -> std::shared_ptr<tl::BusinessChatLink> { return tl::read_boxed<tl::BusinessChatLink>(r1026); });
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r1027) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r1027); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1028) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1028); });
+    return out;
 }
 
 
-void MissingInvitee::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::account_resolvedBusinessChatLinks::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (entities.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    peer->serialize(tlw);
+    tlw.write_string(message);
+    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw1035, const auto& e1035) { e1035->serialize(tlw1035); }); }
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw1036, const auto& e1036) { e1036->serialize(tlw1036); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1037, const auto& e1037) { e1037->serialize(tlw1037); });
 }
 
-MissingInvitee MissingInvitee::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x628c9224u: return MissingInvitee{types::missingInvitee::read_body(r)};
-        default: throw TlError("unknown constructor id in MissingInvitee");
-    }
+types::account_resolvedBusinessChatLinks types::account_resolvedBusinessChatLinks::read_body(TlReader& rv) {
+    types::account_resolvedBusinessChatLinks out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.message = rv.read_string();
+    if ((fl_flags & (1u << 0)) != 0) { out.entities = tl::read_vector<std::shared_ptr<tl::MessageEntity>>(rv, [&](TlReader& r1032) -> std::shared_ptr<tl::MessageEntity> { return tl::read_boxed<tl::MessageEntity>(r1032); }); }
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r1033) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r1033); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1034) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1034); });
+    return out;
 }
 
 
-void MsgDetailedInfo::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::requestedPeerUser::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (first_name.has_value()) flags_v |= (1u << 0);
+        if (last_name.has_value()) flags_v |= (1u << 0);
+        if (username.has_value()) flags_v |= (1u << 1);
+        if (photo.has_value()) flags_v |= (1u << 2);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(user_id);
+    if (first_name.has_value()) { tlw.write_string(first_name.value()); }
+    if (last_name.has_value()) { tlw.write_string(last_name.value()); }
+    if (username.has_value()) { tlw.write_string(username.value()); }
+    if (photo.has_value()) { photo.value()->serialize(tlw); }
 }
 
-MsgDetailedInfo MsgDetailedInfo::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x276d3ec6u: return MsgDetailedInfo{types::msg_detailed_info::read_body(r)};
-        case 0x809db6dfu: return MsgDetailedInfo{types::msg_new_detailed_info::read_body(r)};
-        default: throw TlError("unknown constructor id in MsgDetailedInfo");
-    }
+types::requestedPeerUser types::requestedPeerUser::read_body(TlReader& rv) {
+    types::requestedPeerUser out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.user_id = rv.read_int64();
+    if ((fl_flags & (1u << 0)) != 0) { out.first_name = rv.read_string(); }
+    if ((fl_flags & (1u << 0)) != 0) { out.last_name = rv.read_string(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.username = rv.read_string(); }
+    if ((fl_flags & (1u << 2)) != 0) { out.photo = tl::read_boxed<tl::Photo>(rv); }
+    return out;
 }
 
 
-void MsgResendReq::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::requestedPeerChat::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (title.has_value()) flags_v |= (1u << 0);
+        if (photo.has_value()) flags_v |= (1u << 2);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(chat_id);
+    if (title.has_value()) { tlw.write_string(title.value()); }
+    if (photo.has_value()) { photo.value()->serialize(tlw); }
 }
 
-MsgResendReq MsgResendReq::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x7d861a08u: return MsgResendReq{types::msg_resend_req::read_body(r)};
-        case 0x8610baebu: return MsgResendReq{types::msg_resend_ans_req::read_body(r)};
-        default: throw TlError("unknown constructor id in MsgResendReq");
-    }
+types::requestedPeerChat types::requestedPeerChat::read_body(TlReader& rv) {
+    types::requestedPeerChat out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.chat_id = rv.read_int64();
+    if ((fl_flags & (1u << 0)) != 0) { out.title = rv.read_string(); }
+    if ((fl_flags & (1u << 2)) != 0) { out.photo = tl::read_boxed<tl::Photo>(rv); }
+    return out;
 }
 
 
-void MsgsAck::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::requestedPeerChannel::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (title.has_value()) flags_v |= (1u << 0);
+        if (username.has_value()) flags_v |= (1u << 1);
+        if (photo.has_value()) flags_v |= (1u << 2);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(channel_id);
+    if (title.has_value()) { tlw.write_string(title.value()); }
+    if (username.has_value()) { tlw.write_string(username.value()); }
+    if (photo.has_value()) { photo.value()->serialize(tlw); }
 }
 
-MsgsAck MsgsAck::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x62d6b459u: return MsgsAck{types::msgs_ack::read_body(r)};
-        default: throw TlError("unknown constructor id in MsgsAck");
-    }
+types::requestedPeerChannel types::requestedPeerChannel::read_body(TlReader& rv) {
+    types::requestedPeerChannel out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.channel_id = rv.read_int64();
+    if ((fl_flags & (1u << 0)) != 0) { out.title = rv.read_string(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.username = rv.read_string(); }
+    if ((fl_flags & (1u << 2)) != 0) { out.photo = tl::read_boxed<tl::Photo>(rv); }
+    return out;
 }
 
 
-void MsgsAllInfo::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::sponsoredMessageReportOption::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(text);
+    tlw.write_bytes(option);
 }
 
-MsgsAllInfo MsgsAllInfo::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x8cc0d131u: return MsgsAllInfo{types::msgs_all_info::read_body(r)};
-        default: throw TlError("unknown constructor id in MsgsAllInfo");
-    }
+types::sponsoredMessageReportOption types::sponsoredMessageReportOption::read_body(TlReader& rv) {
+    types::sponsoredMessageReportOption out;
+    out.text = rv.read_string();
+    out.option = rv.read_bytes();
+    return out;
 }
 
 
-void MsgsStateInfo::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::channels_sponsoredMessageReportResultChooseOption::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(title);
+    tl::write_vector(tlw, options, [&](TlWriter& tlw1039, const auto& e1039) { e1039->serialize(tlw1039); });
 }
 
-MsgsStateInfo MsgsStateInfo::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x04deb57du: return MsgsStateInfo{types::msgs_state_info::read_body(r)};
-        default: throw TlError("unknown constructor id in MsgsStateInfo");
-    }
+types::channels_sponsoredMessageReportResultChooseOption types::channels_sponsoredMessageReportResultChooseOption::read_body(TlReader& rv) {
+    types::channels_sponsoredMessageReportResultChooseOption out;
+    out.title = rv.read_string();
+    out.options = tl::read_vector<std::shared_ptr<tl::SponsoredMessageReportOption>>(rv, [&](TlReader& r1038) -> std::shared_ptr<tl::SponsoredMessageReportOption> { return tl::read_boxed<tl::SponsoredMessageReportOption>(r1038); });
+    return out;
 }
 
 
-void MsgsStateReq::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::channels_sponsoredMessageReportResultAdsHidden::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-MsgsStateReq MsgsStateReq::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xda69fb52u: return MsgsStateReq{types::msgs_state_req::read_body(r)};
-        default: throw TlError("unknown constructor id in MsgsStateReq");
-    }
+types::channels_sponsoredMessageReportResultAdsHidden types::channels_sponsoredMessageReportResultAdsHidden::read_body(TlReader& rv) {
+    types::channels_sponsoredMessageReportResultAdsHidden out;
+    return out;
 }
 
 
-void MyBoost::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::channels_sponsoredMessageReportResultReported::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-MyBoost MyBoost::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xc448415cu: return MyBoost{types::myBoost::read_body(r)};
-        default: throw TlError("unknown constructor id in MyBoost");
-    }
+types::channels_sponsoredMessageReportResultReported types::channels_sponsoredMessageReportResultReported::read_body(TlReader& rv) {
+    types::channels_sponsoredMessageReportResultReported out;
+    return out;
 }
 
 
-void NearestDc::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::reactionNotificationsFromContacts::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-NearestDc NearestDc::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x8e1a1775u: return NearestDc{types::nearestDc::read_body(r)};
-        default: throw TlError("unknown constructor id in NearestDc");
-    }
+types::reactionNotificationsFromContacts types::reactionNotificationsFromContacts::read_body(TlReader& rv) {
+    types::reactionNotificationsFromContacts out;
+    return out;
 }
 
 
-void NewSession::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::reactionNotificationsFromAll::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-NewSession NewSession::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x9ec20908u: return NewSession{types::new_session_created::read_body(r)};
-        default: throw TlError("unknown constructor id in NewSession");
-    }
+types::reactionNotificationsFromAll types::reactionNotificationsFromAll::read_body(TlReader& rv) {
+    types::reactionNotificationsFromAll out;
+    return out;
 }
 
 
-void NotificationSound::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::reactionsNotifySettings::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (messages_notify_from.has_value()) flags_v |= (1u << 0);
+        if (stories_notify_from.has_value()) flags_v |= (1u << 1);
+        if (poll_votes_notify_from.has_value()) flags_v |= (1u << 2);
+        tlw.write_uint32(flags_v);
+    }
+    if (messages_notify_from.has_value()) { messages_notify_from.value()->serialize(tlw); }
+    if (stories_notify_from.has_value()) { stories_notify_from.value()->serialize(tlw); }
+    if (poll_votes_notify_from.has_value()) { poll_votes_notify_from.value()->serialize(tlw); }
+    sound->serialize(tlw);
+    tlw.write_bool(show_previews);
 }
 
-NotificationSound NotificationSound::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x97e8bebeu: return NotificationSound{types::notificationSoundDefault::read_body(r)};
-        case 0x6f0c34dfu: return NotificationSound{types::notificationSoundNone::read_body(r)};
-        case 0x830b9ae4u: return NotificationSound{types::notificationSoundLocal::read_body(r)};
-        case 0xff6c8049u: return NotificationSound{types::notificationSoundRingtone::read_body(r)};
-        default: throw TlError("unknown constructor id in NotificationSound");
-    }
+types::reactionsNotifySettings types::reactionsNotifySettings::read_body(TlReader& rv) {
+    types::reactionsNotifySettings out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    if ((fl_flags & (1u << 0)) != 0) { out.messages_notify_from = tl::read_boxed<tl::ReactionNotificationsFrom>(rv); }
+    if ((fl_flags & (1u << 1)) != 0) { out.stories_notify_from = tl::read_boxed<tl::ReactionNotificationsFrom>(rv); }
+    if ((fl_flags & (1u << 2)) != 0) { out.poll_votes_notify_from = tl::read_boxed<tl::ReactionNotificationsFrom>(rv); }
+    out.sound = tl::read_boxed<tl::NotificationSound>(rv);
+    out.show_previews = rv.read_bool();
+    return out;
 }
 
 
-void NotifyPeer::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::availableEffect::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (premium_required) flags_v |= (1u << 2);
+        if (static_icon_id.has_value()) flags_v |= (1u << 0);
+        if (effect_animation_id.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(id);
+    tlw.write_string(emoticon);
+    if (static_icon_id.has_value()) { tlw.write_int64(static_icon_id.value()); }
+    tlw.write_int64(effect_sticker_id);
+    if (effect_animation_id.has_value()) { tlw.write_int64(effect_animation_id.value()); }
 }
 
-NotifyPeer NotifyPeer::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x9fd40bd8u: return NotifyPeer{types::notifyPeer::read_body(r)};
-        case 0xb4c83b4cu: return NotifyPeer{types::notifyUsers::read_body(r)};
-        case 0xc007cec3u: return NotifyPeer{types::notifyChats::read_body(r)};
-        case 0xd612e8efu: return NotifyPeer{types::notifyBroadcasts::read_body(r)};
-        case 0x226e6308u: return NotifyPeer{types::notifyForumTopic::read_body(r)};
-        case 0xbe376999u: return NotifyPeer{types::notifyCommunity::read_body(r)};
-        default: throw TlError("unknown constructor id in NotifyPeer");
-    }
+types::availableEffect types::availableEffect::read_body(TlReader& rv) {
+    types::availableEffect out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.premium_required = (fl_flags & (1u << 2)) != 0;
+    out.id = rv.read_int64();
+    out.emoticon = rv.read_string();
+    if ((fl_flags & (1u << 0)) != 0) { out.static_icon_id = rv.read_int64(); }
+    out.effect_sticker_id = rv.read_int64();
+    if ((fl_flags & (1u << 1)) != 0) { out.effect_animation_id = rv.read_int64(); }
+    return out;
 }
 
 
-void OnrampAvailability::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::messages_availableEffectsNotModified::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-OnrampAvailability OnrampAvailability::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xf9c84973u: return OnrampAvailability{types::onrampAvailability::read_body(r)};
-        default: throw TlError("unknown constructor id in OnrampAvailability");
-    }
+types::messages_availableEffectsNotModified types::messages_availableEffectsNotModified::read_body(TlReader& rv) {
+    types::messages_availableEffectsNotModified out;
+    return out;
 }
 
 
-void OnrampLimits::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::messages_availableEffects::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(hash);
+    tl::write_vector(tlw, effects, [&](TlWriter& tlw1042, const auto& e1042) { e1042->serialize(tlw1042); });
+    tl::write_vector(tlw, documents, [&](TlWriter& tlw1043, const auto& e1043) { e1043->serialize(tlw1043); });
 }
 
-OnrampLimits OnrampLimits::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x7be2677eu: return OnrampLimits{types::onrampLimits::read_body(r)};
-        default: throw TlError("unknown constructor id in OnrampLimits");
-    }
+types::messages_availableEffects types::messages_availableEffects::read_body(TlReader& rv) {
+    types::messages_availableEffects out;
+    out.hash = rv.read_int32();
+    out.effects = tl::read_vector<std::shared_ptr<tl::AvailableEffect>>(rv, [&](TlReader& r1040) -> std::shared_ptr<tl::AvailableEffect> { return tl::read_boxed<tl::AvailableEffect>(r1040); });
+    out.documents = tl::read_vector<std::shared_ptr<tl::Document>>(rv, [&](TlReader& r1041) -> std::shared_ptr<tl::Document> { return tl::read_boxed<tl::Document>(r1041); });
+    return out;
 }
 
 
-void OnrampMethodAvailability::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::factCheck::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (need_check) flags_v |= (1u << 0);
+        if (country.has_value()) flags_v |= (1u << 1);
+        if (text.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    if (country.has_value()) { tlw.write_string(country.value()); }
+    if (text.has_value()) { text.value()->serialize(tlw); }
+    tlw.write_int64(hash);
 }
 
-OnrampMethodAvailability OnrampMethodAvailability::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x9ec8c6a8u: return OnrampMethodAvailability{types::onrampMethodAvailability::read_body(r)};
-        default: throw TlError("unknown constructor id in OnrampMethodAvailability");
-    }
+types::factCheck types::factCheck::read_body(TlReader& rv) {
+    types::factCheck out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.need_check = (fl_flags & (1u << 0)) != 0;
+    if ((fl_flags & (1u << 1)) != 0) { out.country = rv.read_string(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.text = tl::read_boxed<tl::TextWithEntities>(rv); }
+    out.hash = rv.read_int64();
+    return out;
 }
 
 
-void OnrampProviderInfo::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsTransactionPeerUnsupported::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-OnrampProviderInfo OnrampProviderInfo::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x0dc27582u: return OnrampProviderInfo{types::onrampProviderInfo::read_body(r)};
-        default: throw TlError("unknown constructor id in OnrampProviderInfo");
-    }
+types::starsTransactionPeerUnsupported types::starsTransactionPeerUnsupported::read_body(TlReader& rv) {
+    types::starsTransactionPeerUnsupported out;
+    return out;
 }
 
 
-void OnrampQuote::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsTransactionPeerAppStore::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-OnrampQuote OnrampQuote::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x7a8011e9u: return OnrampQuote{types::onrampQuote::read_body(r)};
-        default: throw TlError("unknown constructor id in OnrampQuote");
-    }
+types::starsTransactionPeerAppStore types::starsTransactionPeerAppStore::read_body(TlReader& rv) {
+    types::starsTransactionPeerAppStore out;
+    return out;
 }
 
 
-void OnrampSession::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsTransactionPeerPlayMarket::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-OnrampSession OnrampSession::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xd1e42e24u: return OnrampSession{types::onrampSession::read_body(r)};
-        default: throw TlError("unknown constructor id in OnrampSession");
-    }
+types::starsTransactionPeerPlayMarket types::starsTransactionPeerPlayMarket::read_body(TlReader& rv) {
+    types::starsTransactionPeerPlayMarket out;
+    return out;
 }
 
 
-void OutboxReadDate::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsTransactionPeerPremiumBot::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-OutboxReadDate OutboxReadDate::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x3bb842acu: return OutboxReadDate{types::outboxReadDate::read_body(r)};
-        default: throw TlError("unknown constructor id in OutboxReadDate");
-    }
+types::starsTransactionPeerPremiumBot types::starsTransactionPeerPremiumBot::read_body(TlReader& rv) {
+    types::starsTransactionPeerPremiumBot out;
+    return out;
 }
 
 
-void P_Q_inner_data::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsTransactionPeerFragment::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-P_Q_inner_data P_Q_inner_data::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x83c95aecu: return P_Q_inner_data{types::p_q_inner_data::read_body(r)};
-        case 0xa9f55f95u: return P_Q_inner_data{types::p_q_inner_data_dc::read_body(r)};
-        case 0x3c6a84d4u: return P_Q_inner_data{types::p_q_inner_data_temp::read_body(r)};
-        case 0x56fddf88u: return P_Q_inner_data{types::p_q_inner_data_temp_dc::read_body(r)};
-        default: throw TlError("unknown constructor id in P_Q_inner_data");
-    }
+types::starsTransactionPeerFragment types::starsTransactionPeerFragment::read_body(TlReader& rv) {
+    types::starsTransactionPeerFragment out;
+    return out;
 }
 
 
-void Page::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsTransactionPeer::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
 }
 
-Page Page::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x98657f0du: return Page{types::page::read_body(r)};
-        default: throw TlError("unknown constructor id in Page");
-    }
+types::starsTransactionPeer types::starsTransactionPeer::read_body(TlReader& rv) {
+    types::starsTransactionPeer out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    return out;
 }
 
 
-void PageBlock::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsTransactionPeerAds::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-PageBlock PageBlock::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x13567e8au: return PageBlock{types::pageBlockUnsupported::read_body(r)};
-        case 0x70abc3fdu: return PageBlock{types::pageBlockTitle::read_body(r)};
-        case 0x8ffa9a1fu: return PageBlock{types::pageBlockSubtitle::read_body(r)};
-        case 0xbaafe5e0u: return PageBlock{types::pageBlockAuthorDate::read_body(r)};
-        case 0xbfd064ecu: return PageBlock{types::pageBlockHeader::read_body(r)};
-        case 0xf12bb6e1u: return PageBlock{types::pageBlockSubheader::read_body(r)};
-        case 0x467a0766u: return PageBlock{types::pageBlockParagraph::read_body(r)};
-        case 0xc070d93eu: return PageBlock{types::pageBlockPreformatted::read_body(r)};
-        case 0x48870999u: return PageBlock{types::pageBlockFooter::read_body(r)};
-        case 0xdb20b188u: return PageBlock{types::pageBlockDivider::read_body(r)};
-        case 0xce0d37b0u: return PageBlock{types::pageBlockAnchor::read_body(r)};
-        case 0xe4e88011u: return PageBlock{types::pageBlockList::read_body(r)};
-        case 0x66d1670bu: return PageBlock{types::pageBlockBlockquote::read_body(r)};
-        case 0x4f4456d3u: return PageBlock{types::pageBlockPullquote::read_body(r)};
-        case 0x1759c560u: return PageBlock{types::pageBlockPhoto::read_body(r)};
-        case 0x7c8fe7b6u: return PageBlock{types::pageBlockVideo::read_body(r)};
-        case 0x39f23300u: return PageBlock{types::pageBlockCover::read_body(r)};
-        case 0xa8718dc5u: return PageBlock{types::pageBlockEmbed::read_body(r)};
-        case 0xf259a80bu: return PageBlock{types::pageBlockEmbedPost::read_body(r)};
-        case 0x65a0fa4du: return PageBlock{types::pageBlockCollage::read_body(r)};
-        case 0x031f9590u: return PageBlock{types::pageBlockSlideshow::read_body(r)};
-        case 0xef1751b5u: return PageBlock{types::pageBlockChannel::read_body(r)};
-        case 0x804361eau: return PageBlock{types::pageBlockAudio::read_body(r)};
-        case 0x1e148390u: return PageBlock{types::pageBlockKicker::read_body(r)};
-        case 0xbf4dea82u: return PageBlock{types::pageBlockTable::read_body(r)};
-        case 0x1fd6f6c1u: return PageBlock{types::pageBlockOrderedList::read_body(r)};
-        case 0x76768bedu: return PageBlock{types::pageBlockDetails::read_body(r)};
-        case 0x16115a96u: return PageBlock{types::pageBlockRelatedArticles::read_body(r)};
-        case 0xa44f3ef6u: return PageBlock{types::pageBlockMap::read_body(r)};
-        case 0xbaff072fu: return PageBlock{types::pageBlockHeading1::read_body(r)};
-        case 0x096b2aecu: return PageBlock{types::pageBlockHeading2::read_body(r)};
-        case 0x67e731adu: return PageBlock{types::pageBlockHeading3::read_body(r)};
-        case 0xb532772bu: return PageBlock{types::pageBlockHeading4::read_body(r)};
-        case 0xdbbe6c6au: return PageBlock{types::pageBlockHeading5::read_body(r)};
-        case 0x682a41a9u: return PageBlock{types::pageBlockHeading6::read_body(r)};
-        case 0x59080c20u: return PageBlock{types::pageBlockMath::read_body(r)};
-        case 0x3c29a3e2u: return PageBlock{types::pageBlockThinking::read_body(r)};
-        case 0x574b617fu: return PageBlock{types::inputPageBlockMap::read_body(r)};
-        case 0x0e6e47c4u: return PageBlock{types::pageBlockBlockquoteBlocks::read_body(r)};
-        case 0x6d640318u: return PageBlock{types::pageBlockButtonRow::read_body(r)};
-        case 0x38fa3ba3u: return PageBlock{types::pageBlockDocument::read_body(r)};
-        default: throw TlError("unknown constructor id in PageBlock");
-    }
+types::starsTransactionPeerAds types::starsTransactionPeerAds::read_body(TlReader& rv) {
+    types::starsTransactionPeerAds out;
+    return out;
 }
 
 
-void PageButton::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsTransactionPeerAPI::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-PageButton PageButton::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x692a5488u: return PageButton{types::pageButton::read_body(r)};
-        default: throw TlError("unknown constructor id in PageButton");
-    }
+types::starsTransactionPeerAPI types::starsTransactionPeerAPI::read_body(TlReader& rv) {
+    types::starsTransactionPeerAPI out;
+    return out;
 }
 
 
-void PageCaption::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsTopupOption::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (extended) flags_v |= (1u << 1);
+        if (store_product.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(stars);
+    if (store_product.has_value()) { tlw.write_string(store_product.value()); }
+    tlw.write_string(currency);
+    tlw.write_int64(amount);
 }
 
-PageCaption PageCaption::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x6f747657u: return PageCaption{types::pageCaption::read_body(r)};
-        default: throw TlError("unknown constructor id in PageCaption");
-    }
+types::starsTopupOption types::starsTopupOption::read_body(TlReader& rv) {
+    types::starsTopupOption out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.extended = (fl_flags & (1u << 1)) != 0;
+    out.stars = rv.read_int64();
+    if ((fl_flags & (1u << 0)) != 0) { out.store_product = rv.read_string(); }
+    out.currency = rv.read_string();
+    out.amount = rv.read_int64();
+    return out;
 }
 
 
-void PageListItem::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsTransaction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (refund) flags_v |= (1u << 3);
+        if (pending) flags_v |= (1u << 4);
+        if (failed) flags_v |= (1u << 6);
+        if (gift) flags_v |= (1u << 10);
+        if (reaction) flags_v |= (1u << 11);
+        if (stargift_upgrade) flags_v |= (1u << 18);
+        if (business_transfer) flags_v |= (1u << 21);
+        if (stargift_resale) flags_v |= (1u << 22);
+        if (posts_search) flags_v |= (1u << 24);
+        if (stargift_prepaid_upgrade) flags_v |= (1u << 25);
+        if (stargift_drop_original_details) flags_v |= (1u << 26);
+        if (phonegroup_message) flags_v |= (1u << 27);
+        if (stargift_auction_bid) flags_v |= (1u << 28);
+        if (offer) flags_v |= (1u << 29);
+        if (title.has_value()) flags_v |= (1u << 0);
+        if (description.has_value()) flags_v |= (1u << 1);
+        if (photo.has_value()) flags_v |= (1u << 2);
+        if (transaction_date.has_value()) flags_v |= (1u << 5);
+        if (transaction_url.has_value()) flags_v |= (1u << 5);
+        if (bot_payload.has_value()) flags_v |= (1u << 7);
+        if (msg_id.has_value()) flags_v |= (1u << 8);
+        if (extended_media.has_value()) flags_v |= (1u << 9);
+        if (subscription_period.has_value()) flags_v |= (1u << 12);
+        if (giveaway_post_id.has_value()) flags_v |= (1u << 13);
+        if (stargift.has_value()) flags_v |= (1u << 14);
+        if (floodskip_number.has_value()) flags_v |= (1u << 15);
+        if (starref_commission_permille.has_value()) flags_v |= (1u << 16);
+        if (starref_peer.has_value()) flags_v |= (1u << 17);
+        if (starref_amount.has_value()) flags_v |= (1u << 17);
+        if (paid_messages.has_value()) flags_v |= (1u << 19);
+        if (premium_gift_months.has_value()) flags_v |= (1u << 20);
+        if (ads_proceeds_from_date.has_value()) flags_v |= (1u << 23);
+        if (ads_proceeds_to_date.has_value()) flags_v |= (1u << 23);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(id);
+    amount->serialize(tlw);
+    tlw.write_int32(date);
+    peer->serialize(tlw);
+    if (title.has_value()) { tlw.write_string(title.value()); }
+    if (description.has_value()) { tlw.write_string(description.value()); }
+    if (photo.has_value()) { photo.value()->serialize(tlw); }
+    if (transaction_date.has_value()) { tlw.write_int32(transaction_date.value()); }
+    if (transaction_url.has_value()) { tlw.write_string(transaction_url.value()); }
+    if (bot_payload.has_value()) { tlw.write_bytes(bot_payload.value()); }
+    if (msg_id.has_value()) { tlw.write_int32(msg_id.value()); }
+    if (extended_media.has_value()) { tl::write_vector(tlw, extended_media.value(), [&](TlWriter& tlw1045, const auto& e1045) { e1045->serialize(tlw1045); }); }
+    if (subscription_period.has_value()) { tlw.write_int32(subscription_period.value()); }
+    if (giveaway_post_id.has_value()) { tlw.write_int32(giveaway_post_id.value()); }
+    if (stargift.has_value()) { stargift.value()->serialize(tlw); }
+    if (floodskip_number.has_value()) { tlw.write_int32(floodskip_number.value()); }
+    if (starref_commission_permille.has_value()) { tlw.write_int32(starref_commission_permille.value()); }
+    if (starref_peer.has_value()) { starref_peer.value()->serialize(tlw); }
+    if (starref_amount.has_value()) { starref_amount.value()->serialize(tlw); }
+    if (paid_messages.has_value()) { tlw.write_int32(paid_messages.value()); }
+    if (premium_gift_months.has_value()) { tlw.write_int32(premium_gift_months.value()); }
+    if (ads_proceeds_from_date.has_value()) { tlw.write_int32(ads_proceeds_from_date.value()); }
+    if (ads_proceeds_to_date.has_value()) { tlw.write_int32(ads_proceeds_to_date.value()); }
 }
 
-PageListItem PageListItem::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x2f58683cu: return PageListItem{types::pageListItemText::read_body(r)};
-        case 0x63ca67aau: return PageListItem{types::pageListItemBlocks::read_body(r)};
-        default: throw TlError("unknown constructor id in PageListItem");
-    }
+types::starsTransaction types::starsTransaction::read_body(TlReader& rv) {
+    types::starsTransaction out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.refund = (fl_flags & (1u << 3)) != 0;
+    out.pending = (fl_flags & (1u << 4)) != 0;
+    out.failed = (fl_flags & (1u << 6)) != 0;
+    out.gift = (fl_flags & (1u << 10)) != 0;
+    out.reaction = (fl_flags & (1u << 11)) != 0;
+    out.stargift_upgrade = (fl_flags & (1u << 18)) != 0;
+    out.business_transfer = (fl_flags & (1u << 21)) != 0;
+    out.stargift_resale = (fl_flags & (1u << 22)) != 0;
+    out.posts_search = (fl_flags & (1u << 24)) != 0;
+    out.stargift_prepaid_upgrade = (fl_flags & (1u << 25)) != 0;
+    out.stargift_drop_original_details = (fl_flags & (1u << 26)) != 0;
+    out.phonegroup_message = (fl_flags & (1u << 27)) != 0;
+    out.stargift_auction_bid = (fl_flags & (1u << 28)) != 0;
+    out.offer = (fl_flags & (1u << 29)) != 0;
+    out.id = rv.read_string();
+    out.amount = tl::read_boxed<tl::StarsAmount>(rv);
+    out.date = rv.read_int32();
+    out.peer = tl::read_boxed<tl::StarsTransactionPeer>(rv);
+    if ((fl_flags & (1u << 0)) != 0) { out.title = rv.read_string(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.description = rv.read_string(); }
+    if ((fl_flags & (1u << 2)) != 0) { out.photo = tl::read_boxed<tl::WebDocument>(rv); }
+    if ((fl_flags & (1u << 5)) != 0) { out.transaction_date = rv.read_int32(); }
+    if ((fl_flags & (1u << 5)) != 0) { out.transaction_url = rv.read_string(); }
+    if ((fl_flags & (1u << 7)) != 0) { out.bot_payload = rv.read_bytes(); }
+    if ((fl_flags & (1u << 8)) != 0) { out.msg_id = rv.read_int32(); }
+    if ((fl_flags & (1u << 9)) != 0) { out.extended_media = tl::read_vector<std::shared_ptr<tl::MessageMedia>>(rv, [&](TlReader& r1044) -> std::shared_ptr<tl::MessageMedia> { return tl::read_boxed<tl::MessageMedia>(r1044); }); }
+    if ((fl_flags & (1u << 12)) != 0) { out.subscription_period = rv.read_int32(); }
+    if ((fl_flags & (1u << 13)) != 0) { out.giveaway_post_id = rv.read_int32(); }
+    if ((fl_flags & (1u << 14)) != 0) { out.stargift = tl::read_boxed<tl::StarGift>(rv); }
+    if ((fl_flags & (1u << 15)) != 0) { out.floodskip_number = rv.read_int32(); }
+    if ((fl_flags & (1u << 16)) != 0) { out.starref_commission_permille = rv.read_int32(); }
+    if ((fl_flags & (1u << 17)) != 0) { out.starref_peer = tl::read_boxed<tl::Peer>(rv); }
+    if ((fl_flags & (1u << 17)) != 0) { out.starref_amount = tl::read_boxed<tl::StarsAmount>(rv); }
+    if ((fl_flags & (1u << 19)) != 0) { out.paid_messages = rv.read_int32(); }
+    if ((fl_flags & (1u << 20)) != 0) { out.premium_gift_months = rv.read_int32(); }
+    if ((fl_flags & (1u << 23)) != 0) { out.ads_proceeds_from_date = rv.read_int32(); }
+    if ((fl_flags & (1u << 23)) != 0) { out.ads_proceeds_to_date = rv.read_int32(); }
+    return out;
 }
 
 
-void PageListOrderedItem::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_starsStatus::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (subscriptions.has_value()) flags_v |= (1u << 1);
+        if (subscriptions_next_offset.has_value()) flags_v |= (1u << 2);
+        if (subscriptions_missing_balance.has_value()) flags_v |= (1u << 4);
+        if (history.has_value()) flags_v |= (1u << 3);
+        if (next_offset.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    balance->serialize(tlw);
+    if (subscriptions.has_value()) { tl::write_vector(tlw, subscriptions.value(), [&](TlWriter& tlw1050, const auto& e1050) { e1050->serialize(tlw1050); }); }
+    if (subscriptions_next_offset.has_value()) { tlw.write_string(subscriptions_next_offset.value()); }
+    if (subscriptions_missing_balance.has_value()) { tlw.write_int64(subscriptions_missing_balance.value()); }
+    if (history.has_value()) { tl::write_vector(tlw, history.value(), [&](TlWriter& tlw1051, const auto& e1051) { e1051->serialize(tlw1051); }); }
+    if (next_offset.has_value()) { tlw.write_string(next_offset.value()); }
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw1052, const auto& e1052) { e1052->serialize(tlw1052); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1053, const auto& e1053) { e1053->serialize(tlw1053); });
 }
 
-PageListOrderedItem PageListOrderedItem::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x15031189u: return PageListOrderedItem{types::pageListOrderedItemText::read_body(r)};
-        case 0x8ff2d5f0u: return PageListOrderedItem{types::pageListOrderedItemBlocks::read_body(r)};
-        default: throw TlError("unknown constructor id in PageListOrderedItem");
-    }
+types::payments_starsStatus types::payments_starsStatus::read_body(TlReader& rv) {
+    types::payments_starsStatus out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.balance = tl::read_boxed<tl::StarsAmount>(rv);
+    if ((fl_flags & (1u << 1)) != 0) { out.subscriptions = tl::read_vector<std::shared_ptr<tl::StarsSubscription>>(rv, [&](TlReader& r1046) -> std::shared_ptr<tl::StarsSubscription> { return tl::read_boxed<tl::StarsSubscription>(r1046); }); }
+    if ((fl_flags & (1u << 2)) != 0) { out.subscriptions_next_offset = rv.read_string(); }
+    if ((fl_flags & (1u << 4)) != 0) { out.subscriptions_missing_balance = rv.read_int64(); }
+    if ((fl_flags & (1u << 3)) != 0) { out.history = tl::read_vector<std::shared_ptr<tl::StarsTransaction>>(rv, [&](TlReader& r1047) -> std::shared_ptr<tl::StarsTransaction> { return tl::read_boxed<tl::StarsTransaction>(r1047); }); }
+    if ((fl_flags & (1u << 0)) != 0) { out.next_offset = rv.read_string(); }
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r1048) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r1048); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1049) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1049); });
+    return out;
 }
 
 
-void PageRelatedArticle::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::foundStory::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+    story->serialize(tlw);
 }
 
-PageRelatedArticle PageRelatedArticle::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb390dc08u: return PageRelatedArticle{types::pageRelatedArticle::read_body(r)};
-        default: throw TlError("unknown constructor id in PageRelatedArticle");
-    }
+types::foundStory types::foundStory::read_body(TlReader& rv) {
+    types::foundStory out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.story = tl::read_boxed<tl::StoryItem>(rv);
+    return out;
 }
 
 
-void PageTableCell::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::stories_foundStories::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (next_offset.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int32(count);
+    tl::write_vector(tlw, stories, [&](TlWriter& tlw1057, const auto& e1057) { e1057->serialize(tlw1057); });
+    if (next_offset.has_value()) { tlw.write_string(next_offset.value()); }
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw1058, const auto& e1058) { e1058->serialize(tlw1058); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1059, const auto& e1059) { e1059->serialize(tlw1059); });
 }
 
-PageTableCell PageTableCell::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x34566b6au: return PageTableCell{types::pageTableCell::read_body(r)};
-        default: throw TlError("unknown constructor id in PageTableCell");
-    }
+types::stories_foundStories types::stories_foundStories::read_body(TlReader& rv) {
+    types::stories_foundStories out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.count = rv.read_int32();
+    out.stories = tl::read_vector<std::shared_ptr<tl::FoundStory>>(rv, [&](TlReader& r1054) -> std::shared_ptr<tl::FoundStory> { return tl::read_boxed<tl::FoundStory>(r1054); });
+    if ((fl_flags & (1u << 0)) != 0) { out.next_offset = rv.read_string(); }
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r1055) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r1055); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1056) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1056); });
+    return out;
 }
 
 
-void PageTableRow::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::geoPointAddress::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (state.has_value()) flags_v |= (1u << 0);
+        if (city.has_value()) flags_v |= (1u << 1);
+        if (street.has_value()) flags_v |= (1u << 2);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(country_iso2);
+    if (state.has_value()) { tlw.write_string(state.value()); }
+    if (city.has_value()) { tlw.write_string(city.value()); }
+    if (street.has_value()) { tlw.write_string(street.value()); }
 }
 
-PageTableRow PageTableRow::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe0c0c5e5u: return PageTableRow{types::pageTableRow::read_body(r)};
-        default: throw TlError("unknown constructor id in PageTableRow");
-    }
+types::geoPointAddress types::geoPointAddress::read_body(TlReader& rv) {
+    types::geoPointAddress out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.country_iso2 = rv.read_string();
+    if ((fl_flags & (1u << 0)) != 0) { out.state = rv.read_string(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.city = rv.read_string(); }
+    if ((fl_flags & (1u << 2)) != 0) { out.street = rv.read_string(); }
+    return out;
 }
 
 
-void PaidReactionPrivacy::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsRevenueStatus::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (withdrawal_enabled) flags_v |= (1u << 0);
+        if (next_withdrawal_at.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    current_balance->serialize(tlw);
+    available_balance->serialize(tlw);
+    overall_revenue->serialize(tlw);
+    if (next_withdrawal_at.has_value()) { tlw.write_int32(next_withdrawal_at.value()); }
 }
 
-PaidReactionPrivacy PaidReactionPrivacy::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x206ad49eu: return PaidReactionPrivacy{types::paidReactionPrivacyDefault::read_body(r)};
-        case 0x1f0c1ad9u: return PaidReactionPrivacy{types::paidReactionPrivacyAnonymous::read_body(r)};
-        case 0xdc6cfcf0u: return PaidReactionPrivacy{types::paidReactionPrivacyPeer::read_body(r)};
-        default: throw TlError("unknown constructor id in PaidReactionPrivacy");
-    }
+types::starsRevenueStatus types::starsRevenueStatus::read_body(TlReader& rv) {
+    types::starsRevenueStatus out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.withdrawal_enabled = (fl_flags & (1u << 0)) != 0;
+    out.current_balance = tl::read_boxed<tl::StarsAmount>(rv);
+    out.available_balance = tl::read_boxed<tl::StarsAmount>(rv);
+    out.overall_revenue = tl::read_boxed<tl::StarsAmount>(rv);
+    if ((fl_flags & (1u << 1)) != 0) { out.next_withdrawal_at = rv.read_int32(); }
+    return out;
 }
 
 
-void Passkey::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_starsRevenueStats::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (top_hours_graph.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    if (top_hours_graph.has_value()) { top_hours_graph.value()->serialize(tlw); }
+    revenue_graph->serialize(tlw);
+    status->serialize(tlw);
+    tlw.write_double(usd_rate);
 }
 
-Passkey Passkey::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x98613ebfu: return Passkey{types::passkey::read_body(r)};
-        default: throw TlError("unknown constructor id in Passkey");
-    }
+types::payments_starsRevenueStats types::payments_starsRevenueStats::read_body(TlReader& rv) {
+    types::payments_starsRevenueStats out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    if ((fl_flags & (1u << 0)) != 0) { out.top_hours_graph = tl::read_boxed<tl::StatsGraph>(rv); }
+    out.revenue_graph = tl::read_boxed<tl::StatsGraph>(rv);
+    out.status = tl::read_boxed<tl::StarsRevenueStatus>(rv);
+    out.usd_rate = rv.read_double();
+    return out;
 }
 
 
-void PasswordKdfAlgo::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_starsRevenueWithdrawalUrl::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(url);
 }
 
-PasswordKdfAlgo PasswordKdfAlgo::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xd45ab096u: return PasswordKdfAlgo{types::passwordKdfAlgoUnknown::read_body(r)};
-        case 0x3a912d4au: return PasswordKdfAlgo{types::passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow::read_body(r)};
-        default: throw TlError("unknown constructor id in PasswordKdfAlgo");
-    }
+types::payments_starsRevenueWithdrawalUrl types::payments_starsRevenueWithdrawalUrl::read_body(TlReader& rv) {
+    types::payments_starsRevenueWithdrawalUrl out;
+    out.url = rv.read_string();
+    return out;
 }
 
 
-void PaymentCharge::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_starsRevenueAdsAccountUrl::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(url);
 }
 
-PaymentCharge PaymentCharge::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xea02c27eu: return PaymentCharge{types::paymentCharge::read_body(r)};
-        default: throw TlError("unknown constructor id in PaymentCharge");
-    }
+types::payments_starsRevenueAdsAccountUrl types::payments_starsRevenueAdsAccountUrl::read_body(TlReader& rv) {
+    types::payments_starsRevenueAdsAccountUrl out;
+    out.url = rv.read_string();
+    return out;
 }
 
 
-void PaymentFormMethod::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::inputStarsTransaction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (refund) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(id);
 }
 
-PaymentFormMethod PaymentFormMethod::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x88f8f21bu: return PaymentFormMethod{types::paymentFormMethod::read_body(r)};
-        default: throw TlError("unknown constructor id in PaymentFormMethod");
-    }
+types::inputStarsTransaction types::inputStarsTransaction::read_body(TlReader& rv) {
+    types::inputStarsTransaction out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.refund = (fl_flags & (1u << 0)) != 0;
+    out.id = rv.read_string();
+    return out;
 }
 
 
-void PaymentRequestedInfo::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsGiftOption::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (extended) flags_v |= (1u << 1);
+        if (store_product.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(stars);
+    if (store_product.has_value()) { tlw.write_string(store_product.value()); }
+    tlw.write_string(currency);
+    tlw.write_int64(amount);
 }
 
-PaymentRequestedInfo PaymentRequestedInfo::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x909c3f94u: return PaymentRequestedInfo{types::paymentRequestedInfo::read_body(r)};
-        default: throw TlError("unknown constructor id in PaymentRequestedInfo");
-    }
+types::starsGiftOption types::starsGiftOption::read_body(TlReader& rv) {
+    types::starsGiftOption out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.extended = (fl_flags & (1u << 1)) != 0;
+    out.stars = rv.read_int64();
+    if ((fl_flags & (1u << 0)) != 0) { out.store_product = rv.read_string(); }
+    out.currency = rv.read_string();
+    out.amount = rv.read_int64();
+    return out;
 }
 
 
-void PaymentSavedCredentials::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::bots_popularAppBots::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (next_offset.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    if (next_offset.has_value()) { tlw.write_string(next_offset.value()); }
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1061, const auto& e1061) { e1061->serialize(tlw1061); });
 }
 
-PaymentSavedCredentials PaymentSavedCredentials::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xcdc27a1fu: return PaymentSavedCredentials{types::paymentSavedCredentialsCard::read_body(r)};
-        default: throw TlError("unknown constructor id in PaymentSavedCredentials");
-    }
+types::bots_popularAppBots types::bots_popularAppBots::read_body(TlReader& rv) {
+    types::bots_popularAppBots out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    if ((fl_flags & (1u << 0)) != 0) { out.next_offset = rv.read_string(); }
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1060) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1060); });
+    return out;
 }
 
 
-void Peer::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::botPreviewMedia::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(date);
+    media->serialize(tlw);
 }
 
-Peer Peer::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x59511722u: return Peer{types::peerUser::read_body(r)};
-        case 0x36c6019au: return Peer{types::peerChat::read_body(r)};
-        case 0xa2a5371eu: return Peer{types::peerChannel::read_body(r)};
-        default: throw TlError("unknown constructor id in Peer");
-    }
+types::botPreviewMedia types::botPreviewMedia::read_body(TlReader& rv) {
+    types::botPreviewMedia out;
+    out.date = rv.read_int32();
+    out.media = tl::read_boxed<tl::MessageMedia>(rv);
+    return out;
 }
 
 
-void PeerBlocked::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::bots_previewInfo::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, media, [&](TlWriter& tlw1064, const auto& e1064) { e1064->serialize(tlw1064); });
+    tl::write_vector(tlw, lang_codes, [&](TlWriter& tlw1065, const auto& e1065) { tlw1065.write_string(e1065); });
 }
 
-PeerBlocked PeerBlocked::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe8fd8014u: return PeerBlocked{types::peerBlocked::read_body(r)};
-        default: throw TlError("unknown constructor id in PeerBlocked");
-    }
+types::bots_previewInfo types::bots_previewInfo::read_body(TlReader& rv) {
+    types::bots_previewInfo out;
+    out.media = tl::read_vector<std::shared_ptr<tl::BotPreviewMedia>>(rv, [&](TlReader& r1062) -> std::shared_ptr<tl::BotPreviewMedia> { return tl::read_boxed<tl::BotPreviewMedia>(r1062); });
+    out.lang_codes = tl::read_vector<std::string>(rv, [&](TlReader& r1063) -> std::string { return r1063.read_string(); });
+    return out;
 }
 
 
-void PeerColor::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsSubscriptionPricing::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(period);
+    tlw.write_int64(amount);
 }
 
-PeerColor PeerColor::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb54b5acfu: return PeerColor{types::peerColor::read_body(r)};
-        case 0xb9c0639au: return PeerColor{types::peerColorCollectible::read_body(r)};
-        case 0xb8ea86a9u: return PeerColor{types::inputPeerColorCollectible::read_body(r)};
-        default: throw TlError("unknown constructor id in PeerColor");
-    }
+types::starsSubscriptionPricing types::starsSubscriptionPricing::read_body(TlReader& rv) {
+    types::starsSubscriptionPricing out;
+    out.period = rv.read_int32();
+    out.amount = rv.read_int64();
+    return out;
 }
 
 
-void PeerLocated::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsSubscription::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (canceled) flags_v |= (1u << 0);
+        if (can_refulfill) flags_v |= (1u << 1);
+        if (missing_balance) flags_v |= (1u << 2);
+        if (bot_canceled) flags_v |= (1u << 7);
+        if (chat_invite_hash.has_value()) flags_v |= (1u << 3);
+        if (title.has_value()) flags_v |= (1u << 4);
+        if (photo.has_value()) flags_v |= (1u << 5);
+        if (invoice_slug.has_value()) flags_v |= (1u << 6);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(id);
+    peer->serialize(tlw);
+    tlw.write_int32(until_date);
+    pricing->serialize(tlw);
+    if (chat_invite_hash.has_value()) { tlw.write_string(chat_invite_hash.value()); }
+    if (title.has_value()) { tlw.write_string(title.value()); }
+    if (photo.has_value()) { photo.value()->serialize(tlw); }
+    if (invoice_slug.has_value()) { tlw.write_string(invoice_slug.value()); }
 }
 
-PeerLocated PeerLocated::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xca461b5du: return PeerLocated{types::peerLocated::read_body(r)};
-        case 0xf8ec284bu: return PeerLocated{types::peerSelfLocated::read_body(r)};
-        default: throw TlError("unknown constructor id in PeerLocated");
-    }
+types::starsSubscription types::starsSubscription::read_body(TlReader& rv) {
+    types::starsSubscription out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.canceled = (fl_flags & (1u << 0)) != 0;
+    out.can_refulfill = (fl_flags & (1u << 1)) != 0;
+    out.missing_balance = (fl_flags & (1u << 2)) != 0;
+    out.bot_canceled = (fl_flags & (1u << 7)) != 0;
+    out.id = rv.read_string();
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.until_date = rv.read_int32();
+    out.pricing = tl::read_boxed<tl::StarsSubscriptionPricing>(rv);
+    if ((fl_flags & (1u << 3)) != 0) { out.chat_invite_hash = rv.read_string(); }
+    if ((fl_flags & (1u << 4)) != 0) { out.title = rv.read_string(); }
+    if ((fl_flags & (1u << 5)) != 0) { out.photo = tl::read_boxed<tl::WebDocument>(rv); }
+    if ((fl_flags & (1u << 6)) != 0) { out.invoice_slug = rv.read_string(); }
+    return out;
 }
 
 
-void PeerNotifySettings::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::messageReactor::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (top) flags_v |= (1u << 0);
+        if (my) flags_v |= (1u << 1);
+        if (anonymous) flags_v |= (1u << 2);
+        if (peer_id.has_value()) flags_v |= (1u << 3);
+        tlw.write_uint32(flags_v);
+    }
+    if (peer_id.has_value()) { peer_id.value()->serialize(tlw); }
+    tlw.write_int32(count);
 }
 
-PeerNotifySettings PeerNotifySettings::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x99622c0cu: return PeerNotifySettings{types::peerNotifySettings::read_body(r)};
-        default: throw TlError("unknown constructor id in PeerNotifySettings");
-    }
+types::messageReactor types::messageReactor::read_body(TlReader& rv) {
+    types::messageReactor out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.top = (fl_flags & (1u << 0)) != 0;
+    out.my = (fl_flags & (1u << 1)) != 0;
+    out.anonymous = (fl_flags & (1u << 2)) != 0;
+    if ((fl_flags & (1u << 3)) != 0) { out.peer_id = tl::read_boxed<tl::Peer>(rv); }
+    out.count = rv.read_int32();
+    return out;
 }
 
 
-void PeerSettings::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsGiveawayOption::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (extended) flags_v |= (1u << 0);
+        if (default_) flags_v |= (1u << 1);
+        if (store_product.has_value()) flags_v |= (1u << 2);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(stars);
+    tlw.write_int32(yearly_boosts);
+    if (store_product.has_value()) { tlw.write_string(store_product.value()); }
+    tlw.write_string(currency);
+    tlw.write_int64(amount);
+    tl::write_vector(tlw, winners, [&](TlWriter& tlw1067, const auto& e1067) { e1067->serialize(tlw1067); });
 }
 
-PeerSettings PeerSettings::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xf47741f7u: return PeerSettings{types::peerSettings::read_body(r)};
-        default: throw TlError("unknown constructor id in PeerSettings");
-    }
+types::starsGiveawayOption types::starsGiveawayOption::read_body(TlReader& rv) {
+    types::starsGiveawayOption out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.extended = (fl_flags & (1u << 0)) != 0;
+    out.default_ = (fl_flags & (1u << 1)) != 0;
+    out.stars = rv.read_int64();
+    out.yearly_boosts = rv.read_int32();
+    if ((fl_flags & (1u << 2)) != 0) { out.store_product = rv.read_string(); }
+    out.currency = rv.read_string();
+    out.amount = rv.read_int64();
+    out.winners = tl::read_vector<std::shared_ptr<tl::StarsGiveawayWinnersOption>>(rv, [&](TlReader& r1066) -> std::shared_ptr<tl::StarsGiveawayWinnersOption> { return tl::read_boxed<tl::StarsGiveawayWinnersOption>(r1066); });
+    return out;
 }
 
 
-void PeerStories::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsGiveawayWinnersOption::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (default_) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int32(users);
+    tlw.write_int64(per_user_stars);
 }
 
-PeerStories PeerStories::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x9a35e999u: return PeerStories{types::peerStories::read_body(r)};
-        default: throw TlError("unknown constructor id in PeerStories");
-    }
+types::starsGiveawayWinnersOption types::starsGiveawayWinnersOption::read_body(TlReader& rv) {
+    types::starsGiveawayWinnersOption out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.default_ = (fl_flags & (1u << 0)) != 0;
+    out.users = rv.read_int32();
+    out.per_user_stars = rv.read_int64();
+    return out;
 }
 
 
-void PendingSuggestion::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starGift::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (limited) flags_v |= (1u << 0);
+        if (sold_out) flags_v |= (1u << 1);
+        if (birthday) flags_v |= (1u << 2);
+        if (require_premium) flags_v |= (1u << 7);
+        if (limited_per_user) flags_v |= (1u << 8);
+        if (peer_color_available) flags_v |= (1u << 10);
+        if (auction) flags_v |= (1u << 11);
+        if (availability_remains.has_value()) flags_v |= (1u << 0);
+        if (availability_total.has_value()) flags_v |= (1u << 0);
+        if (availability_resale.has_value()) flags_v |= (1u << 4);
+        if (first_sale_date.has_value()) flags_v |= (1u << 1);
+        if (last_sale_date.has_value()) flags_v |= (1u << 1);
+        if (upgrade_stars.has_value()) flags_v |= (1u << 3);
+        if (resell_min_stars.has_value()) flags_v |= (1u << 4);
+        if (title.has_value()) flags_v |= (1u << 5);
+        if (released_by.has_value()) flags_v |= (1u << 6);
+        if (per_user_total.has_value()) flags_v |= (1u << 8);
+        if (per_user_remains.has_value()) flags_v |= (1u << 8);
+        if (locked_until_date.has_value()) flags_v |= (1u << 9);
+        if (auction_slug.has_value()) flags_v |= (1u << 11);
+        if (gifts_per_round.has_value()) flags_v |= (1u << 11);
+        if (auction_start_date.has_value()) flags_v |= (1u << 11);
+        if (upgrade_variants.has_value()) flags_v |= (1u << 12);
+        if (background.has_value()) flags_v |= (1u << 13);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(id);
+    sticker->serialize(tlw);
+    tlw.write_int64(stars);
+    if (availability_remains.has_value()) { tlw.write_int32(availability_remains.value()); }
+    if (availability_total.has_value()) { tlw.write_int32(availability_total.value()); }
+    if (availability_resale.has_value()) { tlw.write_int64(availability_resale.value()); }
+    tlw.write_int64(convert_stars);
+    if (first_sale_date.has_value()) { tlw.write_int32(first_sale_date.value()); }
+    if (last_sale_date.has_value()) { tlw.write_int32(last_sale_date.value()); }
+    if (upgrade_stars.has_value()) { tlw.write_int64(upgrade_stars.value()); }
+    if (resell_min_stars.has_value()) { tlw.write_int64(resell_min_stars.value()); }
+    if (title.has_value()) { tlw.write_string(title.value()); }
+    if (released_by.has_value()) { released_by.value()->serialize(tlw); }
+    if (per_user_total.has_value()) { tlw.write_int32(per_user_total.value()); }
+    if (per_user_remains.has_value()) { tlw.write_int32(per_user_remains.value()); }
+    if (locked_until_date.has_value()) { tlw.write_int32(locked_until_date.value()); }
+    if (auction_slug.has_value()) { tlw.write_string(auction_slug.value()); }
+    if (gifts_per_round.has_value()) { tlw.write_int32(gifts_per_round.value()); }
+    if (auction_start_date.has_value()) { tlw.write_int32(auction_start_date.value()); }
+    if (upgrade_variants.has_value()) { tlw.write_int32(upgrade_variants.value()); }
+    if (background.has_value()) { background.value()->serialize(tlw); }
 }
 
-PendingSuggestion PendingSuggestion::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe7e82e12u: return PendingSuggestion{types::pendingSuggestion::read_body(r)};
-        default: throw TlError("unknown constructor id in PendingSuggestion");
-    }
+types::starGift types::starGift::read_body(TlReader& rv) {
+    types::starGift out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.limited = (fl_flags & (1u << 0)) != 0;
+    out.sold_out = (fl_flags & (1u << 1)) != 0;
+    out.birthday = (fl_flags & (1u << 2)) != 0;
+    out.require_premium = (fl_flags & (1u << 7)) != 0;
+    out.limited_per_user = (fl_flags & (1u << 8)) != 0;
+    out.peer_color_available = (fl_flags & (1u << 10)) != 0;
+    out.auction = (fl_flags & (1u << 11)) != 0;
+    out.id = rv.read_int64();
+    out.sticker = tl::read_boxed<tl::Document>(rv);
+    out.stars = rv.read_int64();
+    if ((fl_flags & (1u << 0)) != 0) { out.availability_remains = rv.read_int32(); }
+    if ((fl_flags & (1u << 0)) != 0) { out.availability_total = rv.read_int32(); }
+    if ((fl_flags & (1u << 4)) != 0) { out.availability_resale = rv.read_int64(); }
+    out.convert_stars = rv.read_int64();
+    if ((fl_flags & (1u << 1)) != 0) { out.first_sale_date = rv.read_int32(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.last_sale_date = rv.read_int32(); }
+    if ((fl_flags & (1u << 3)) != 0) { out.upgrade_stars = rv.read_int64(); }
+    if ((fl_flags & (1u << 4)) != 0) { out.resell_min_stars = rv.read_int64(); }
+    if ((fl_flags & (1u << 5)) != 0) { out.title = rv.read_string(); }
+    if ((fl_flags & (1u << 6)) != 0) { out.released_by = tl::read_boxed<tl::Peer>(rv); }
+    if ((fl_flags & (1u << 8)) != 0) { out.per_user_total = rv.read_int32(); }
+    if ((fl_flags & (1u << 8)) != 0) { out.per_user_remains = rv.read_int32(); }
+    if ((fl_flags & (1u << 9)) != 0) { out.locked_until_date = rv.read_int32(); }
+    if ((fl_flags & (1u << 11)) != 0) { out.auction_slug = rv.read_string(); }
+    if ((fl_flags & (1u << 11)) != 0) { out.gifts_per_round = rv.read_int32(); }
+    if ((fl_flags & (1u << 11)) != 0) { out.auction_start_date = rv.read_int32(); }
+    if ((fl_flags & (1u << 12)) != 0) { out.upgrade_variants = rv.read_int32(); }
+    if ((fl_flags & (1u << 13)) != 0) { out.background = tl::read_boxed<tl::StarGiftBackground>(rv); }
+    return out;
 }
 
 
-void PhoneCall::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starGiftUnique::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (require_premium) flags_v |= (1u << 6);
+        if (resale_ton_only) flags_v |= (1u << 7);
+        if (theme_available) flags_v |= (1u << 9);
+        if (burned) flags_v |= (1u << 14);
+        if (crafted) flags_v |= (1u << 15);
+        if (owner_id.has_value()) flags_v |= (1u << 0);
+        if (owner_name.has_value()) flags_v |= (1u << 1);
+        if (owner_address.has_value()) flags_v |= (1u << 2);
+        if (gift_address.has_value()) flags_v |= (1u << 3);
+        if (resell_amount.has_value()) flags_v |= (1u << 4);
+        if (released_by.has_value()) flags_v |= (1u << 5);
+        if (value_amount.has_value()) flags_v |= (1u << 8);
+        if (value_currency.has_value()) flags_v |= (1u << 8);
+        if (value_usd_amount.has_value()) flags_v |= (1u << 8);
+        if (theme_peer.has_value()) flags_v |= (1u << 10);
+        if (peer_color.has_value()) flags_v |= (1u << 11);
+        if (host_id.has_value()) flags_v |= (1u << 12);
+        if (offer_min_stars.has_value()) flags_v |= (1u << 13);
+        if (craft_chance_permille.has_value()) flags_v |= (1u << 16);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(id);
+    tlw.write_int64(gift_id);
+    tlw.write_string(title);
+    tlw.write_string(slug);
+    tlw.write_int32(num);
+    if (owner_id.has_value()) { owner_id.value()->serialize(tlw); }
+    if (owner_name.has_value()) { tlw.write_string(owner_name.value()); }
+    if (owner_address.has_value()) { tlw.write_string(owner_address.value()); }
+    tl::write_vector(tlw, attributes, [&](TlWriter& tlw1070, const auto& e1070) { e1070->serialize(tlw1070); });
+    tlw.write_int32(availability_issued);
+    tlw.write_int32(availability_total);
+    if (gift_address.has_value()) { tlw.write_string(gift_address.value()); }
+    if (resell_amount.has_value()) { tl::write_vector(tlw, resell_amount.value(), [&](TlWriter& tlw1071, const auto& e1071) { e1071->serialize(tlw1071); }); }
+    if (released_by.has_value()) { released_by.value()->serialize(tlw); }
+    if (value_amount.has_value()) { tlw.write_int64(value_amount.value()); }
+    if (value_currency.has_value()) { tlw.write_string(value_currency.value()); }
+    if (value_usd_amount.has_value()) { tlw.write_int64(value_usd_amount.value()); }
+    if (theme_peer.has_value()) { theme_peer.value()->serialize(tlw); }
+    if (peer_color.has_value()) { peer_color.value()->serialize(tlw); }
+    if (host_id.has_value()) { host_id.value()->serialize(tlw); }
+    if (offer_min_stars.has_value()) { tlw.write_int32(offer_min_stars.value()); }
+    if (craft_chance_permille.has_value()) { tlw.write_int32(craft_chance_permille.value()); }
 }
 
-PhoneCall PhoneCall::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x5366c915u: return PhoneCall{types::phoneCallEmpty::read_body(r)};
-        case 0xc5226f17u: return PhoneCall{types::phoneCallWaiting::read_body(r)};
-        case 0x14b0ed0cu: return PhoneCall{types::phoneCallRequested::read_body(r)};
-        case 0x3660c311u: return PhoneCall{types::phoneCallAccepted::read_body(r)};
-        case 0x30535af5u: return PhoneCall{types::phoneCall::read_body(r)};
-        case 0x50ca4de1u: return PhoneCall{types::phoneCallDiscarded::read_body(r)};
-        default: throw TlError("unknown constructor id in PhoneCall");
-    }
+types::starGiftUnique types::starGiftUnique::read_body(TlReader& rv) {
+    types::starGiftUnique out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.require_premium = (fl_flags & (1u << 6)) != 0;
+    out.resale_ton_only = (fl_flags & (1u << 7)) != 0;
+    out.theme_available = (fl_flags & (1u << 9)) != 0;
+    out.burned = (fl_flags & (1u << 14)) != 0;
+    out.crafted = (fl_flags & (1u << 15)) != 0;
+    out.id = rv.read_int64();
+    out.gift_id = rv.read_int64();
+    out.title = rv.read_string();
+    out.slug = rv.read_string();
+    out.num = rv.read_int32();
+    if ((fl_flags & (1u << 0)) != 0) { out.owner_id = tl::read_boxed<tl::Peer>(rv); }
+    if ((fl_flags & (1u << 1)) != 0) { out.owner_name = rv.read_string(); }
+    if ((fl_flags & (1u << 2)) != 0) { out.owner_address = rv.read_string(); }
+    out.attributes = tl::read_vector<std::shared_ptr<tl::StarGiftAttribute>>(rv, [&](TlReader& r1068) -> std::shared_ptr<tl::StarGiftAttribute> { return tl::read_boxed<tl::StarGiftAttribute>(r1068); });
+    out.availability_issued = rv.read_int32();
+    out.availability_total = rv.read_int32();
+    if ((fl_flags & (1u << 3)) != 0) { out.gift_address = rv.read_string(); }
+    if ((fl_flags & (1u << 4)) != 0) { out.resell_amount = tl::read_vector<std::shared_ptr<tl::StarsAmount>>(rv, [&](TlReader& r1069) -> std::shared_ptr<tl::StarsAmount> { return tl::read_boxed<tl::StarsAmount>(r1069); }); }
+    if ((fl_flags & (1u << 5)) != 0) { out.released_by = tl::read_boxed<tl::Peer>(rv); }
+    if ((fl_flags & (1u << 8)) != 0) { out.value_amount = rv.read_int64(); }
+    if ((fl_flags & (1u << 8)) != 0) { out.value_currency = rv.read_string(); }
+    if ((fl_flags & (1u << 8)) != 0) { out.value_usd_amount = rv.read_int64(); }
+    if ((fl_flags & (1u << 10)) != 0) { out.theme_peer = tl::read_boxed<tl::Peer>(rv); }
+    if ((fl_flags & (1u << 11)) != 0) { out.peer_color = tl::read_boxed<tl::PeerColor>(rv); }
+    if ((fl_flags & (1u << 12)) != 0) { out.host_id = tl::read_boxed<tl::Peer>(rv); }
+    if ((fl_flags & (1u << 13)) != 0) { out.offer_min_stars = rv.read_int32(); }
+    if ((fl_flags & (1u << 16)) != 0) { out.craft_chance_permille = rv.read_int32(); }
+    return out;
 }
 
 
-void PhoneCallDiscardReason::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_starGiftsNotModified::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-PhoneCallDiscardReason PhoneCallDiscardReason::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x85e42301u: return PhoneCallDiscardReason{types::phoneCallDiscardReasonMissed::read_body(r)};
-        case 0xe095c1a0u: return PhoneCallDiscardReason{types::phoneCallDiscardReasonDisconnect::read_body(r)};
-        case 0x57adc690u: return PhoneCallDiscardReason{types::phoneCallDiscardReasonHangup::read_body(r)};
-        case 0xfaf7e8c9u: return PhoneCallDiscardReason{types::phoneCallDiscardReasonBusy::read_body(r)};
-        case 0x9fbbf1f7u: return PhoneCallDiscardReason{types::phoneCallDiscardReasonMigrateConferenceCall::read_body(r)};
-        default: throw TlError("unknown constructor id in PhoneCallDiscardReason");
-    }
+types::payments_starGiftsNotModified types::payments_starGiftsNotModified::read_body(TlReader& rv) {
+    types::payments_starGiftsNotModified out;
+    return out;
 }
 
 
-void PhoneCallProtocol::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_starGifts::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(hash);
+    tl::write_vector(tlw, gifts, [&](TlWriter& tlw1075, const auto& e1075) { e1075->serialize(tlw1075); });
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw1076, const auto& e1076) { e1076->serialize(tlw1076); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1077, const auto& e1077) { e1077->serialize(tlw1077); });
 }
 
-PhoneCallProtocol PhoneCallProtocol::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xfc878fc8u: return PhoneCallProtocol{types::phoneCallProtocol::read_body(r)};
-        default: throw TlError("unknown constructor id in PhoneCallProtocol");
-    }
+types::payments_starGifts types::payments_starGifts::read_body(TlReader& rv) {
+    types::payments_starGifts out;
+    out.hash = rv.read_int32();
+    out.gifts = tl::read_vector<std::shared_ptr<tl::StarGift>>(rv, [&](TlReader& r1072) -> std::shared_ptr<tl::StarGift> { return tl::read_boxed<tl::StarGift>(r1072); });
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r1073) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r1073); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1074) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1074); });
+    return out;
 }
 
 
-void PhoneConnection::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::messageReportOption::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(text);
+    tlw.write_bytes(option);
 }
 
-PhoneConnection PhoneConnection::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x9cc123c7u: return PhoneConnection{types::phoneConnection::read_body(r)};
-        case 0x635fe375u: return PhoneConnection{types::phoneConnectionWebrtc::read_body(r)};
-        default: throw TlError("unknown constructor id in PhoneConnection");
-    }
+types::messageReportOption types::messageReportOption::read_body(TlReader& rv) {
+    types::messageReportOption out;
+    out.text = rv.read_string();
+    out.option = rv.read_bytes();
+    return out;
 }
 
 
-void Photo::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::reportResultChooseOption::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(title);
+    tl::write_vector(tlw, options, [&](TlWriter& tlw1079, const auto& e1079) { e1079->serialize(tlw1079); });
 }
 
-Photo Photo::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x2331b22du: return Photo{types::photoEmpty::read_body(r)};
-        case 0xfb197a65u: return Photo{types::photo::read_body(r)};
-        default: throw TlError("unknown constructor id in Photo");
-    }
+types::reportResultChooseOption types::reportResultChooseOption::read_body(TlReader& rv) {
+    types::reportResultChooseOption out;
+    out.title = rv.read_string();
+    out.options = tl::read_vector<std::shared_ptr<tl::MessageReportOption>>(rv, [&](TlReader& r1078) -> std::shared_ptr<tl::MessageReportOption> { return tl::read_boxed<tl::MessageReportOption>(r1078); });
+    return out;
 }
 
 
-void PhotoSize::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::reportResultAddComment::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (optional) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_bytes(option);
 }
 
-PhotoSize PhotoSize::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x0e17e23cu: return PhotoSize{types::photoSizeEmpty::read_body(r)};
-        case 0x75c78e60u: return PhotoSize{types::photoSize::read_body(r)};
-        case 0x021e1ad6u: return PhotoSize{types::photoCachedSize::read_body(r)};
-        case 0xe0b0bc2eu: return PhotoSize{types::photoStrippedSize::read_body(r)};
-        case 0xfa3efb95u: return PhotoSize{types::photoSizeProgressive::read_body(r)};
-        case 0xd8214d41u: return PhotoSize{types::photoPathSize::read_body(r)};
-        default: throw TlError("unknown constructor id in PhotoSize");
-    }
+types::reportResultAddComment types::reportResultAddComment::read_body(TlReader& rv) {
+    types::reportResultAddComment out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.optional = (fl_flags & (1u << 0)) != 0;
+    out.option = rv.read_bytes();
+    return out;
 }
 
 
-void Poll::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::reportResultReported::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-Poll Poll::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x966e2dbfu: return Poll{types::poll::read_body(r)};
-        default: throw TlError("unknown constructor id in Poll");
-    }
+types::reportResultReported types::reportResultReported::read_body(TlReader& rv) {
+    types::reportResultReported out;
+    return out;
 }
 
 
-void PollAnswer::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::messages_botPreparedInlineMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(id);
+    tlw.write_int32(expire_date);
 }
 
-PollAnswer PollAnswer::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x4b7d786au: return PollAnswer{types::pollAnswer::read_body(r)};
-        case 0x199fed96u: return PollAnswer{types::inputPollAnswer::read_body(r)};
-        default: throw TlError("unknown constructor id in PollAnswer");
-    }
+types::messages_botPreparedInlineMessage types::messages_botPreparedInlineMessage::read_body(TlReader& rv) {
+    types::messages_botPreparedInlineMessage out;
+    out.id = rv.read_string();
+    out.expire_date = rv.read_int32();
+    return out;
 }
 
 
-void PollAnswerVoters::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::messages_preparedInlineMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(query_id);
+    result->serialize(tlw);
+    tl::write_vector(tlw, peer_types, [&](TlWriter& tlw1082, const auto& e1082) { e1082->serialize(tlw1082); });
+    tlw.write_int32(cache_time);
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1083, const auto& e1083) { e1083->serialize(tlw1083); });
 }
 
-PollAnswerVoters PollAnswerVoters::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x3645230au: return PollAnswerVoters{types::pollAnswerVoters::read_body(r)};
-        default: throw TlError("unknown constructor id in PollAnswerVoters");
-    }
+types::messages_preparedInlineMessage types::messages_preparedInlineMessage::read_body(TlReader& rv) {
+    types::messages_preparedInlineMessage out;
+    out.query_id = rv.read_int64();
+    out.result = tl::read_boxed<tl::BotInlineResult>(rv);
+    out.peer_types = tl::read_vector<std::shared_ptr<tl::InlineQueryPeerType>>(rv, [&](TlReader& r1080) -> std::shared_ptr<tl::InlineQueryPeerType> { return tl::read_boxed<tl::InlineQueryPeerType>(r1080); });
+    out.cache_time = rv.read_int32();
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1081) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1081); });
+    return out;
 }
 
 
-void PollResults::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::botAppSettings::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (placeholder_path.has_value()) flags_v |= (1u << 0);
+        if (background_color.has_value()) flags_v |= (1u << 1);
+        if (background_dark_color.has_value()) flags_v |= (1u << 2);
+        if (header_color.has_value()) flags_v |= (1u << 3);
+        if (header_dark_color.has_value()) flags_v |= (1u << 4);
+        tlw.write_uint32(flags_v);
+    }
+    if (placeholder_path.has_value()) { tlw.write_bytes(placeholder_path.value()); }
+    if (background_color.has_value()) { tlw.write_int32(background_color.value()); }
+    if (background_dark_color.has_value()) { tlw.write_int32(background_dark_color.value()); }
+    if (header_color.has_value()) { tlw.write_int32(header_color.value()); }
+    if (header_dark_color.has_value()) { tlw.write_int32(header_dark_color.value()); }
 }
 
-PollResults PollResults::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xba7bb15eu: return PollResults{types::pollResults::read_body(r)};
-        default: throw TlError("unknown constructor id in PollResults");
-    }
+types::botAppSettings types::botAppSettings::read_body(TlReader& rv) {
+    types::botAppSettings out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    if ((fl_flags & (1u << 0)) != 0) { out.placeholder_path = rv.read_bytes(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.background_color = rv.read_int32(); }
+    if ((fl_flags & (1u << 2)) != 0) { out.background_dark_color = rv.read_int32(); }
+    if ((fl_flags & (1u << 3)) != 0) { out.header_color = rv.read_int32(); }
+    if ((fl_flags & (1u << 4)) != 0) { out.header_dark_color = rv.read_int32(); }
+    return out;
 }
 
 
-void Pong::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starRefProgram::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (duration_months.has_value()) flags_v |= (1u << 0);
+        if (end_date.has_value()) flags_v |= (1u << 1);
+        if (daily_revenue_per_user.has_value()) flags_v |= (1u << 2);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(bot_id);
+    tlw.write_int32(commission_permille);
+    if (duration_months.has_value()) { tlw.write_int32(duration_months.value()); }
+    if (end_date.has_value()) { tlw.write_int32(end_date.value()); }
+    if (daily_revenue_per_user.has_value()) { daily_revenue_per_user.value()->serialize(tlw); }
 }
 
-Pong Pong::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x347773c5u: return Pong{types::pong::read_body(r)};
-        default: throw TlError("unknown constructor id in Pong");
-    }
+types::starRefProgram types::starRefProgram::read_body(TlReader& rv) {
+    types::starRefProgram out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.bot_id = rv.read_int64();
+    out.commission_permille = rv.read_int32();
+    if ((fl_flags & (1u << 0)) != 0) { out.duration_months = rv.read_int32(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.end_date = rv.read_int32(); }
+    if ((fl_flags & (1u << 2)) != 0) { out.daily_revenue_per_user = tl::read_boxed<tl::StarsAmount>(rv); }
+    return out;
 }
 
 
-void PopularContact::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::connectedBotStarRef::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (revoked) flags_v |= (1u << 1);
+        if (duration_months.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(url);
+    tlw.write_int32(date);
+    tlw.write_int64(bot_id);
+    tlw.write_int32(commission_permille);
+    if (duration_months.has_value()) { tlw.write_int32(duration_months.value()); }
+    tlw.write_int64(participants);
+    tlw.write_int64(revenue);
 }
 
-PopularContact PopularContact::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x5ce14175u: return PopularContact{types::popularContact::read_body(r)};
-        default: throw TlError("unknown constructor id in PopularContact");
-    }
+types::connectedBotStarRef types::connectedBotStarRef::read_body(TlReader& rv) {
+    types::connectedBotStarRef out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.revoked = (fl_flags & (1u << 1)) != 0;
+    out.url = rv.read_string();
+    out.date = rv.read_int32();
+    out.bot_id = rv.read_int64();
+    out.commission_permille = rv.read_int32();
+    if ((fl_flags & (1u << 0)) != 0) { out.duration_months = rv.read_int32(); }
+    out.participants = rv.read_int64();
+    out.revenue = rv.read_int64();
+    return out;
 }
 
 
-void PostAddress::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_connectedStarRefBots::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(count);
+    tl::write_vector(tlw, connected_bots, [&](TlWriter& tlw1086, const auto& e1086) { e1086->serialize(tlw1086); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1087, const auto& e1087) { e1087->serialize(tlw1087); });
 }
 
-PostAddress PostAddress::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x1e8caaebu: return PostAddress{types::postAddress::read_body(r)};
-        default: throw TlError("unknown constructor id in PostAddress");
-    }
+types::payments_connectedStarRefBots types::payments_connectedStarRefBots::read_body(TlReader& rv) {
+    types::payments_connectedStarRefBots out;
+    out.count = rv.read_int32();
+    out.connected_bots = tl::read_vector<std::shared_ptr<tl::ConnectedBotStarRef>>(rv, [&](TlReader& r1084) -> std::shared_ptr<tl::ConnectedBotStarRef> { return tl::read_boxed<tl::ConnectedBotStarRef>(r1084); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1085) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1085); });
+    return out;
 }
 
 
-void PostInteractionCounters::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_suggestedStarRefBots::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (next_offset.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int32(count);
+    tl::write_vector(tlw, suggested_bots, [&](TlWriter& tlw1090, const auto& e1090) { e1090->serialize(tlw1090); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1091, const auto& e1091) { e1091->serialize(tlw1091); });
+    if (next_offset.has_value()) { tlw.write_string(next_offset.value()); }
 }
 
-PostInteractionCounters PostInteractionCounters::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe7058e7fu: return PostInteractionCounters{types::postInteractionCountersMessage::read_body(r)};
-        case 0x8a480e27u: return PostInteractionCounters{types::postInteractionCountersStory::read_body(r)};
-        default: throw TlError("unknown constructor id in PostInteractionCounters");
-    }
+types::payments_suggestedStarRefBots types::payments_suggestedStarRefBots::read_body(TlReader& rv) {
+    types::payments_suggestedStarRefBots out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.count = rv.read_int32();
+    out.suggested_bots = tl::read_vector<std::shared_ptr<tl::StarRefProgram>>(rv, [&](TlReader& r1088) -> std::shared_ptr<tl::StarRefProgram> { return tl::read_boxed<tl::StarRefProgram>(r1088); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1089) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1089); });
+    if ((fl_flags & (1u << 0)) != 0) { out.next_offset = rv.read_string(); }
+    return out;
 }
 
 
-void PremiumGiftCodeOption::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsAmount::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(amount);
+    tlw.write_int32(nanos);
 }
 
-PremiumGiftCodeOption PremiumGiftCodeOption::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x257e962bu: return PremiumGiftCodeOption{types::premiumGiftCodeOption::read_body(r)};
-        default: throw TlError("unknown constructor id in PremiumGiftCodeOption");
-    }
+types::starsAmount types::starsAmount::read_body(TlReader& rv) {
+    types::starsAmount out;
+    out.amount = rv.read_int64();
+    out.nanos = rv.read_int32();
+    return out;
 }
 
 
-void PremiumSubscriptionOption::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsTonAmount::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(amount);
 }
 
-PremiumSubscriptionOption PremiumSubscriptionOption::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x5f2d1df2u: return PremiumSubscriptionOption{types::premiumSubscriptionOption::read_body(r)};
-        default: throw TlError("unknown constructor id in PremiumSubscriptionOption");
-    }
+types::starsTonAmount types::starsTonAmount::read_body(TlReader& rv) {
+    types::starsTonAmount out;
+    out.amount = rv.read_int64();
+    return out;
 }
 
 
-void PrepaidGiveaway::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::messages_foundStickersNotModified::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (next_offset.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    if (next_offset.has_value()) { tlw.write_int32(next_offset.value()); }
 }
 
-PrepaidGiveaway PrepaidGiveaway::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb2539d54u: return PrepaidGiveaway{types::prepaidGiveaway::read_body(r)};
-        case 0x9a9d77e0u: return PrepaidGiveaway{types::prepaidStarsGiveaway::read_body(r)};
-        default: throw TlError("unknown constructor id in PrepaidGiveaway");
-    }
+types::messages_foundStickersNotModified types::messages_foundStickersNotModified::read_body(TlReader& rv) {
+    types::messages_foundStickersNotModified out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    if ((fl_flags & (1u << 0)) != 0) { out.next_offset = rv.read_int32(); }
+    return out;
 }
 
 
-void PrivacyKey::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::messages_foundStickers::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (next_offset.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    if (next_offset.has_value()) { tlw.write_int32(next_offset.value()); }
+    tlw.write_int64(hash);
+    tl::write_vector(tlw, stickers, [&](TlWriter& tlw1093, const auto& e1093) { e1093->serialize(tlw1093); });
 }
 
-PrivacyKey PrivacyKey::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xbc2eab30u: return PrivacyKey{types::privacyKeyStatusTimestamp::read_body(r)};
-        case 0x500e6dfau: return PrivacyKey{types::privacyKeyChatInvite::read_body(r)};
-        case 0x3d662b7bu: return PrivacyKey{types::privacyKeyPhoneCall::read_body(r)};
-        case 0x39491cc8u: return PrivacyKey{types::privacyKeyPhoneP2P::read_body(r)};
-        case 0x69ec56a3u: return PrivacyKey{types::privacyKeyForwards::read_body(r)};
-        case 0x96151fedu: return PrivacyKey{types::privacyKeyProfilePhoto::read_body(r)};
-        case 0xd19ae46du: return PrivacyKey{types::privacyKeyPhoneNumber::read_body(r)};
-        case 0x42ffd42bu: return PrivacyKey{types::privacyKeyAddedByPhone::read_body(r)};
-        case 0x0697f414u: return PrivacyKey{types::privacyKeyVoiceMessages::read_body(r)};
-        case 0xa486b761u: return PrivacyKey{types::privacyKeyAbout::read_body(r)};
-        case 0x2000a518u: return PrivacyKey{types::privacyKeyBirthday::read_body(r)};
-        case 0x2ca4fdf8u: return PrivacyKey{types::privacyKeyStarGiftsAutoSave::read_body(r)};
-        case 0x17d348d2u: return PrivacyKey{types::privacyKeyNoPaidMessages::read_body(r)};
-        case 0xff7a571bu: return PrivacyKey{types::privacyKeySavedMusic::read_body(r)};
-        default: throw TlError("unknown constructor id in PrivacyKey");
-    }
+types::messages_foundStickers types::messages_foundStickers::read_body(TlReader& rv) {
+    types::messages_foundStickers out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    if ((fl_flags & (1u << 0)) != 0) { out.next_offset = rv.read_int32(); }
+    out.hash = rv.read_int64();
+    out.stickers = tl::read_vector<std::shared_ptr<tl::Document>>(rv, [&](TlReader& r1092) -> std::shared_ptr<tl::Document> { return tl::read_boxed<tl::Document>(r1092); });
+    return out;
 }
 
 
-void PrivacyRule::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::botVerifierSettings::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (can_modify_custom_description) flags_v |= (1u << 1);
+        if (custom_description.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(icon);
+    tlw.write_string(company);
+    if (custom_description.has_value()) { custom_description.value()->serialize(tlw); }
 }
 
-PrivacyRule PrivacyRule::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xfffe1bacu: return PrivacyRule{types::privacyValueAllowContacts::read_body(r)};
-        case 0x65427b82u: return PrivacyRule{types::privacyValueAllowAll::read_body(r)};
-        case 0xb8905fb2u: return PrivacyRule{types::privacyValueAllowUsers::read_body(r)};
-        case 0xf888fa1au: return PrivacyRule{types::privacyValueDisallowContacts::read_body(r)};
-        case 0x8b73e763u: return PrivacyRule{types::privacyValueDisallowAll::read_body(r)};
-        case 0xe4621141u: return PrivacyRule{types::privacyValueDisallowUsers::read_body(r)};
-        case 0x6b134e8eu: return PrivacyRule{types::privacyValueAllowChatParticipants::read_body(r)};
-        case 0x41c87565u: return PrivacyRule{types::privacyValueDisallowChatParticipants::read_body(r)};
-        case 0xf7e8d89bu: return PrivacyRule{types::privacyValueAllowCloseFriends::read_body(r)};
-        case 0xece9814bu: return PrivacyRule{types::privacyValueAllowPremium::read_body(r)};
-        case 0x21461b5du: return PrivacyRule{types::privacyValueAllowBots::read_body(r)};
-        case 0xf6a5f82fu: return PrivacyRule{types::privacyValueDisallowBots::read_body(r)};
-        default: throw TlError("unknown constructor id in PrivacyRule");
-    }
+types::botVerifierSettings types::botVerifierSettings::read_body(TlReader& rv) {
+    types::botVerifierSettings out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.can_modify_custom_description = (fl_flags & (1u << 1)) != 0;
+    out.icon = rv.read_int64();
+    out.company = rv.read_string();
+    if ((fl_flags & (1u << 0)) != 0) { out.custom_description = tl::read_boxed<tl::TextWithEntities>(rv); }
+    return out;
 }
 
 
-void ProfileTab::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::botVerification::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(bot_id);
+    tlw.write_int64(icon);
+    description->serialize(tlw);
 }
 
-ProfileTab ProfileTab::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb98cd696u: return ProfileTab{types::profileTabPosts::read_body(r)};
-        case 0x4d4bd46au: return ProfileTab{types::profileTabGifts::read_body(r)};
-        case 0x72c64955u: return ProfileTab{types::profileTabMedia::read_body(r)};
-        case 0xab339c00u: return ProfileTab{types::profileTabFiles::read_body(r)};
-        case 0x9f27d26eu: return ProfileTab{types::profileTabMusic::read_body(r)};
-        case 0xe477092eu: return ProfileTab{types::profileTabVoice::read_body(r)};
-        case 0xd3656499u: return ProfileTab{types::profileTabLinks::read_body(r)};
-        case 0xa2c0f695u: return ProfileTab{types::profileTabGifs::read_body(r)};
-        default: throw TlError("unknown constructor id in ProfileTab");
-    }
+types::botVerification types::botVerification::read_body(TlReader& rv) {
+    types::botVerification out;
+    out.bot_id = rv.read_int64();
+    out.icon = rv.read_int64();
+    out.description = tl::read_boxed<tl::TextWithEntities>(rv);
+    return out;
 }
 
 
-void PublicForward::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starGiftAttributeModel::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (crafted) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(name);
+    document->serialize(tlw);
+    rarity->serialize(tlw);
 }
 
-PublicForward PublicForward::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x01f2bf4au: return PublicForward{types::publicForwardMessage::read_body(r)};
-        case 0xedf3add0u: return PublicForward{types::publicForwardStory::read_body(r)};
-        default: throw TlError("unknown constructor id in PublicForward");
-    }
+types::starGiftAttributeModel types::starGiftAttributeModel::read_body(TlReader& rv) {
+    types::starGiftAttributeModel out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.crafted = (fl_flags & (1u << 0)) != 0;
+    out.name = rv.read_string();
+    out.document = tl::read_boxed<tl::Document>(rv);
+    out.rarity = tl::read_boxed<tl::StarGiftAttributeRarity>(rv);
+    return out;
 }
 
 
-void QuickReply::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starGiftAttributePattern::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(name);
+    document->serialize(tlw);
+    rarity->serialize(tlw);
 }
 
-QuickReply QuickReply::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x0697102bu: return QuickReply{types::quickReply::read_body(r)};
-        default: throw TlError("unknown constructor id in QuickReply");
-    }
+types::starGiftAttributePattern types::starGiftAttributePattern::read_body(TlReader& rv) {
+    types::starGiftAttributePattern out;
+    out.name = rv.read_string();
+    out.document = tl::read_boxed<tl::Document>(rv);
+    out.rarity = tl::read_boxed<tl::StarGiftAttributeRarity>(rv);
+    return out;
 }
 
 
-void Reaction::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starGiftAttributeBackdrop::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(name);
+    tlw.write_int32(backdrop_id);
+    tlw.write_int32(center_color);
+    tlw.write_int32(edge_color);
+    tlw.write_int32(pattern_color);
+    tlw.write_int32(text_color);
+    rarity->serialize(tlw);
 }
 
-Reaction Reaction::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x79f5d419u: return Reaction{types::reactionEmpty::read_body(r)};
-        case 0x1b2286b8u: return Reaction{types::reactionEmoji::read_body(r)};
-        case 0x8935fc73u: return Reaction{types::reactionCustomEmoji::read_body(r)};
-        case 0x523da4ebu: return Reaction{types::reactionPaid::read_body(r)};
-        default: throw TlError("unknown constructor id in Reaction");
-    }
+types::starGiftAttributeBackdrop types::starGiftAttributeBackdrop::read_body(TlReader& rv) {
+    types::starGiftAttributeBackdrop out;
+    out.name = rv.read_string();
+    out.backdrop_id = rv.read_int32();
+    out.center_color = rv.read_int32();
+    out.edge_color = rv.read_int32();
+    out.pattern_color = rv.read_int32();
+    out.text_color = rv.read_int32();
+    out.rarity = tl::read_boxed<tl::StarGiftAttributeRarity>(rv);
+    return out;
 }
 
 
-void ReactionCount::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starGiftAttributeOriginalDetails::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (sender_id.has_value()) flags_v |= (1u << 0);
+        if (message.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    if (sender_id.has_value()) { sender_id.value()->serialize(tlw); }
+    recipient_id->serialize(tlw);
+    tlw.write_int32(date);
+    if (message.has_value()) { message.value()->serialize(tlw); }
 }
 
-ReactionCount ReactionCount::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xa3d1cb80u: return ReactionCount{types::reactionCount::read_body(r)};
-        default: throw TlError("unknown constructor id in ReactionCount");
-    }
+types::starGiftAttributeOriginalDetails types::starGiftAttributeOriginalDetails::read_body(TlReader& rv) {
+    types::starGiftAttributeOriginalDetails out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    if ((fl_flags & (1u << 0)) != 0) { out.sender_id = tl::read_boxed<tl::Peer>(rv); }
+    out.recipient_id = tl::read_boxed<tl::Peer>(rv);
+    out.date = rv.read_int32();
+    if ((fl_flags & (1u << 1)) != 0) { out.message = tl::read_boxed<tl::TextWithEntities>(rv); }
+    return out;
 }
 
 
-void ReactionNotificationsFrom::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_starGiftUpgradePreview::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, sample_attributes, [&](TlWriter& tlw1097, const auto& e1097) { e1097->serialize(tlw1097); });
+    tl::write_vector(tlw, prices, [&](TlWriter& tlw1098, const auto& e1098) { e1098->serialize(tlw1098); });
+    tl::write_vector(tlw, next_prices, [&](TlWriter& tlw1099, const auto& e1099) { e1099->serialize(tlw1099); });
 }
 
-ReactionNotificationsFrom ReactionNotificationsFrom::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xbac3a61au: return ReactionNotificationsFrom{types::reactionNotificationsFromContacts::read_body(r)};
-        case 0x4b9e22a0u: return ReactionNotificationsFrom{types::reactionNotificationsFromAll::read_body(r)};
-        default: throw TlError("unknown constructor id in ReactionNotificationsFrom");
-    }
+types::payments_starGiftUpgradePreview types::payments_starGiftUpgradePreview::read_body(TlReader& rv) {
+    types::payments_starGiftUpgradePreview out;
+    out.sample_attributes = tl::read_vector<std::shared_ptr<tl::StarGiftAttribute>>(rv, [&](TlReader& r1094) -> std::shared_ptr<tl::StarGiftAttribute> { return tl::read_boxed<tl::StarGiftAttribute>(r1094); });
+    out.prices = tl::read_vector<std::shared_ptr<tl::StarGiftUpgradePrice>>(rv, [&](TlReader& r1095) -> std::shared_ptr<tl::StarGiftUpgradePrice> { return tl::read_boxed<tl::StarGiftUpgradePrice>(r1095); });
+    out.next_prices = tl::read_vector<std::shared_ptr<tl::StarGiftUpgradePrice>>(rv, [&](TlReader& r1096) -> std::shared_ptr<tl::StarGiftUpgradePrice> { return tl::read_boxed<tl::StarGiftUpgradePrice>(r1096); });
+    return out;
 }
 
 
-void ReactionsNotifySettings::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::users_users::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1101, const auto& e1101) { e1101->serialize(tlw1101); });
 }
 
-ReactionsNotifySettings ReactionsNotifySettings::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x71e4ea58u: return ReactionsNotifySettings{types::reactionsNotifySettings::read_body(r)};
-        default: throw TlError("unknown constructor id in ReactionsNotifySettings");
-    }
+types::users_users types::users_users::read_body(TlReader& rv) {
+    types::users_users out;
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1100) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1100); });
+    return out;
 }
 
 
-void ReadParticipantDate::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::users_usersSlice::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(count);
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1103, const auto& e1103) { e1103->serialize(tlw1103); });
 }
 
-ReadParticipantDate ReadParticipantDate::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x4a4ff172u: return ReadParticipantDate{types::readParticipantDate::read_body(r)};
-        default: throw TlError("unknown constructor id in ReadParticipantDate");
-    }
+types::users_usersSlice types::users_usersSlice::read_body(TlReader& rv) {
+    types::users_usersSlice out;
+    out.count = rv.read_int32();
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1102) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1102); });
+    return out;
 }
 
 
-void ReceivedNotifyMessage::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_uniqueStarGift::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    gift->serialize(tlw);
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw1106, const auto& e1106) { e1106->serialize(tlw1106); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1107, const auto& e1107) { e1107->serialize(tlw1107); });
 }
 
-ReceivedNotifyMessage ReceivedNotifyMessage::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xa384b779u: return ReceivedNotifyMessage{types::receivedNotifyMessage::read_body(r)};
-        default: throw TlError("unknown constructor id in ReceivedNotifyMessage");
-    }
+types::payments_uniqueStarGift types::payments_uniqueStarGift::read_body(TlReader& rv) {
+    types::payments_uniqueStarGift out;
+    out.gift = tl::read_boxed<tl::StarGift>(rv);
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r1104) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r1104); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1105) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1105); });
+    return out;
 }
 
 
-void RecentMeUrl::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::messages_webPagePreview::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    media->serialize(tlw);
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw1110, const auto& e1110) { e1110->serialize(tlw1110); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1111, const auto& e1111) { e1111->serialize(tlw1111); });
 }
 
-RecentMeUrl RecentMeUrl::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x46e1d13du: return RecentMeUrl{types::recentMeUrlUnknown::read_body(r)};
-        case 0xb92c09e2u: return RecentMeUrl{types::recentMeUrlUser::read_body(r)};
-        case 0xb2da71d2u: return RecentMeUrl{types::recentMeUrlChat::read_body(r)};
-        case 0xeb49081du: return RecentMeUrl{types::recentMeUrlChatInvite::read_body(r)};
-        case 0xbc0a57dcu: return RecentMeUrl{types::recentMeUrlStickerSet::read_body(r)};
-        default: throw TlError("unknown constructor id in RecentMeUrl");
-    }
+types::messages_webPagePreview types::messages_webPagePreview::read_body(TlReader& rv) {
+    types::messages_webPagePreview out;
+    out.media = tl::read_boxed<tl::MessageMedia>(rv);
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r1108) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r1108); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1109) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1109); });
+    return out;
 }
 
 
-void RecentStory::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::savedStarGift::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (name_hidden) flags_v |= (1u << 0);
+        if (unsaved) flags_v |= (1u << 5);
+        if (refunded) flags_v |= (1u << 9);
+        if (can_upgrade) flags_v |= (1u << 10);
+        if (pinned_to_top) flags_v |= (1u << 12);
+        if (upgrade_separate) flags_v |= (1u << 17);
+        if (from_id.has_value()) flags_v |= (1u << 1);
+        if (message.has_value()) flags_v |= (1u << 2);
+        if (msg_id.has_value()) flags_v |= (1u << 3);
+        if (saved_id.has_value()) flags_v |= (1u << 11);
+        if (convert_stars.has_value()) flags_v |= (1u << 4);
+        if (upgrade_stars.has_value()) flags_v |= (1u << 6);
+        if (can_export_at.has_value()) flags_v |= (1u << 7);
+        if (transfer_stars.has_value()) flags_v |= (1u << 8);
+        if (can_transfer_at.has_value()) flags_v |= (1u << 13);
+        if (can_resell_at.has_value()) flags_v |= (1u << 14);
+        if (collection_id.has_value()) flags_v |= (1u << 15);
+        if (prepaid_upgrade_hash.has_value()) flags_v |= (1u << 16);
+        if (drop_original_details_stars.has_value()) flags_v |= (1u << 18);
+        if (gift_num.has_value()) flags_v |= (1u << 19);
+        if (can_craft_at.has_value()) flags_v |= (1u << 20);
+        tlw.write_uint32(flags_v);
+    }
+    if (from_id.has_value()) { from_id.value()->serialize(tlw); }
+    tlw.write_int32(date);
+    gift->serialize(tlw);
+    if (message.has_value()) { message.value()->serialize(tlw); }
+    if (msg_id.has_value()) { tlw.write_int32(msg_id.value()); }
+    if (saved_id.has_value()) { tlw.write_int64(saved_id.value()); }
+    if (convert_stars.has_value()) { tlw.write_int64(convert_stars.value()); }
+    if (upgrade_stars.has_value()) { tlw.write_int64(upgrade_stars.value()); }
+    if (can_export_at.has_value()) { tlw.write_int32(can_export_at.value()); }
+    if (transfer_stars.has_value()) { tlw.write_int64(transfer_stars.value()); }
+    if (can_transfer_at.has_value()) { tlw.write_int32(can_transfer_at.value()); }
+    if (can_resell_at.has_value()) { tlw.write_int32(can_resell_at.value()); }
+    if (collection_id.has_value()) { tl::write_vector(tlw, collection_id.value(), [&](TlWriter& tlw1113, const auto& e1113) { tlw1113.write_int32(e1113); }); }
+    if (prepaid_upgrade_hash.has_value()) { tlw.write_string(prepaid_upgrade_hash.value()); }
+    if (drop_original_details_stars.has_value()) { tlw.write_int64(drop_original_details_stars.value()); }
+    if (gift_num.has_value()) { tlw.write_int32(gift_num.value()); }
+    if (can_craft_at.has_value()) { tlw.write_int32(can_craft_at.value()); }
 }
 
-RecentStory RecentStory::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x711d692du: return RecentStory{types::recentStory::read_body(r)};
-        default: throw TlError("unknown constructor id in RecentStory");
-    }
+types::savedStarGift types::savedStarGift::read_body(TlReader& rv) {
+    types::savedStarGift out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.name_hidden = (fl_flags & (1u << 0)) != 0;
+    out.unsaved = (fl_flags & (1u << 5)) != 0;
+    out.refunded = (fl_flags & (1u << 9)) != 0;
+    out.can_upgrade = (fl_flags & (1u << 10)) != 0;
+    out.pinned_to_top = (fl_flags & (1u << 12)) != 0;
+    out.upgrade_separate = (fl_flags & (1u << 17)) != 0;
+    if ((fl_flags & (1u << 1)) != 0) { out.from_id = tl::read_boxed<tl::Peer>(rv); }
+    out.date = rv.read_int32();
+    out.gift = tl::read_boxed<tl::StarGift>(rv);
+    if ((fl_flags & (1u << 2)) != 0) { out.message = tl::read_boxed<tl::TextWithEntities>(rv); }
+    if ((fl_flags & (1u << 3)) != 0) { out.msg_id = rv.read_int32(); }
+    if ((fl_flags & (1u << 11)) != 0) { out.saved_id = rv.read_int64(); }
+    if ((fl_flags & (1u << 4)) != 0) { out.convert_stars = rv.read_int64(); }
+    if ((fl_flags & (1u << 6)) != 0) { out.upgrade_stars = rv.read_int64(); }
+    if ((fl_flags & (1u << 7)) != 0) { out.can_export_at = rv.read_int32(); }
+    if ((fl_flags & (1u << 8)) != 0) { out.transfer_stars = rv.read_int64(); }
+    if ((fl_flags & (1u << 13)) != 0) { out.can_transfer_at = rv.read_int32(); }
+    if ((fl_flags & (1u << 14)) != 0) { out.can_resell_at = rv.read_int32(); }
+    if ((fl_flags & (1u << 15)) != 0) { out.collection_id = tl::read_vector<std::int32_t>(rv, [&](TlReader& r1112) -> std::int32_t { return r1112.read_int32(); }); }
+    if ((fl_flags & (1u << 16)) != 0) { out.prepaid_upgrade_hash = rv.read_string(); }
+    if ((fl_flags & (1u << 18)) != 0) { out.drop_original_details_stars = rv.read_int64(); }
+    if ((fl_flags & (1u << 19)) != 0) { out.gift_num = rv.read_int32(); }
+    if ((fl_flags & (1u << 20)) != 0) { out.can_craft_at = rv.read_int32(); }
+    return out;
 }
 
 
-void ReplyMarkup::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_savedStarGifts::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (chat_notifications_enabled.has_value()) flags_v |= (1u << 1);
+        if (next_offset.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int32(count);
+    if (chat_notifications_enabled.has_value()) { tlw.write_bool(chat_notifications_enabled.value()); }
+    tl::write_vector(tlw, gifts, [&](TlWriter& tlw1117, const auto& e1117) { e1117->serialize(tlw1117); });
+    if (next_offset.has_value()) { tlw.write_string(next_offset.value()); }
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw1118, const auto& e1118) { e1118->serialize(tlw1118); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1119, const auto& e1119) { e1119->serialize(tlw1119); });
 }
 
-ReplyMarkup ReplyMarkup::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xa03e5b85u: return ReplyMarkup{types::replyKeyboardHide::read_body(r)};
-        case 0x86b40b08u: return ReplyMarkup{types::replyKeyboardForceReply::read_body(r)};
-        case 0x85dd99d1u: return ReplyMarkup{types::replyKeyboardMarkup::read_body(r)};
-        case 0xb2b15770u: return ReplyMarkup{types::replyInlineMarkup::read_body(r)};
-        default: throw TlError("unknown constructor id in ReplyMarkup");
-    }
+types::payments_savedStarGifts types::payments_savedStarGifts::read_body(TlReader& rv) {
+    types::payments_savedStarGifts out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.count = rv.read_int32();
+    if ((fl_flags & (1u << 1)) != 0) { out.chat_notifications_enabled = rv.read_bool(); }
+    out.gifts = tl::read_vector<std::shared_ptr<tl::SavedStarGift>>(rv, [&](TlReader& r1114) -> std::shared_ptr<tl::SavedStarGift> { return tl::read_boxed<tl::SavedStarGift>(r1114); });
+    if ((fl_flags & (1u << 0)) != 0) { out.next_offset = rv.read_string(); }
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r1115) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r1115); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1116) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1116); });
+    return out;
 }
 
 
-void ReportReason::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::inputSavedStarGiftUser::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(msg_id);
 }
 
-ReportReason ReportReason::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x58dbcab8u: return ReportReason{types::inputReportReasonSpam::read_body(r)};
-        case 0x1e22c78du: return ReportReason{types::inputReportReasonViolence::read_body(r)};
-        case 0x2e59d922u: return ReportReason{types::inputReportReasonPornography::read_body(r)};
-        case 0xadf44ee3u: return ReportReason{types::inputReportReasonChildAbuse::read_body(r)};
-        case 0xc1e4a2b1u: return ReportReason{types::inputReportReasonOther::read_body(r)};
-        case 0x9b89f93au: return ReportReason{types::inputReportReasonCopyright::read_body(r)};
-        case 0xdbd4feedu: return ReportReason{types::inputReportReasonGeoIrrelevant::read_body(r)};
-        case 0xf5ddd6e7u: return ReportReason{types::inputReportReasonFake::read_body(r)};
-        case 0x0a8eb2beu: return ReportReason{types::inputReportReasonIllegalDrugs::read_body(r)};
-        case 0x9ec7863du: return ReportReason{types::inputReportReasonPersonalDetails::read_body(r)};
-        default: throw TlError("unknown constructor id in ReportReason");
-    }
+types::inputSavedStarGiftUser types::inputSavedStarGiftUser::read_body(TlReader& rv) {
+    types::inputSavedStarGiftUser out;
+    out.msg_id = rv.read_int32();
+    return out;
 }
 
 
-void ReportResult::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::inputSavedStarGiftChat::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+    tlw.write_int64(saved_id);
 }
 
-ReportResult ReportResult::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xf0e4e0b6u: return ReportResult{types::reportResultChooseOption::read_body(r)};
-        case 0x6f09ac31u: return ReportResult{types::reportResultAddComment::read_body(r)};
-        case 0x8db33c4bu: return ReportResult{types::reportResultReported::read_body(r)};
-        default: throw TlError("unknown constructor id in ReportResult");
-    }
+types::inputSavedStarGiftChat types::inputSavedStarGiftChat::read_body(TlReader& rv) {
+    types::inputSavedStarGiftChat out;
+    out.peer = tl::read_boxed<tl::InputPeer>(rv);
+    out.saved_id = rv.read_int64();
+    return out;
 }
 
 
-void RequestPeerType::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::inputSavedStarGiftSlug::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(slug);
 }
 
-RequestPeerType RequestPeerType::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x5f3b8a00u: return RequestPeerType{types::requestPeerTypeUser::read_body(r)};
-        case 0xc9f06e1bu: return RequestPeerType{types::requestPeerTypeChat::read_body(r)};
-        case 0x339bef6cu: return RequestPeerType{types::requestPeerTypeBroadcast::read_body(r)};
-        case 0x3e81e078u: return RequestPeerType{types::requestPeerTypeCreateBot::read_body(r)};
-        default: throw TlError("unknown constructor id in RequestPeerType");
-    }
+types::inputSavedStarGiftSlug types::inputSavedStarGiftSlug::read_body(TlReader& rv) {
+    types::inputSavedStarGiftSlug out;
+    out.slug = rv.read_string();
+    return out;
 }
 
 
-void RequestedPeer::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_starGiftWithdrawalUrl::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(url);
 }
 
-RequestedPeer RequestedPeer::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xd62ff46au: return RequestedPeer{types::requestedPeerUser::read_body(r)};
-        case 0x7307544fu: return RequestedPeer{types::requestedPeerChat::read_body(r)};
-        case 0x8ba403e4u: return RequestedPeer{types::requestedPeerChannel::read_body(r)};
-        default: throw TlError("unknown constructor id in RequestedPeer");
-    }
+types::payments_starGiftWithdrawalUrl types::payments_starGiftWithdrawalUrl::read_body(TlReader& rv) {
+    types::payments_starGiftWithdrawalUrl out;
+    out.url = rv.read_string();
+    return out;
 }
 
 
-void RequirementToContact::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::paidReactionPrivacyDefault::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-RequirementToContact RequirementToContact::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x050a9839u: return RequirementToContact{types::requirementToContactEmpty::read_body(r)};
-        case 0xe581e4e9u: return RequirementToContact{types::requirementToContactPremium::read_body(r)};
-        case 0xb4f67e93u: return RequirementToContact{types::requirementToContactPaidMessages::read_body(r)};
-        default: throw TlError("unknown constructor id in RequirementToContact");
-    }
+types::paidReactionPrivacyDefault types::paidReactionPrivacyDefault::read_body(TlReader& rv) {
+    types::paidReactionPrivacyDefault out;
+    return out;
 }
 
 
-void ResPQ::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::paidReactionPrivacyAnonymous::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-ResPQ ResPQ::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x05162463u: return ResPQ{types::resPQ::read_body(r)};
-        default: throw TlError("unknown constructor id in ResPQ");
-    }
+types::paidReactionPrivacyAnonymous types::paidReactionPrivacyAnonymous::read_body(TlReader& rv) {
+    types::paidReactionPrivacyAnonymous out;
+    return out;
 }
 
 
-void RestrictionReason::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::paidReactionPrivacyPeer::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
 }
 
-RestrictionReason RestrictionReason::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xd072acb4u: return RestrictionReason{types::restrictionReason::read_body(r)};
-        default: throw TlError("unknown constructor id in RestrictionReason");
-    }
+types::paidReactionPrivacyPeer types::paidReactionPrivacyPeer::read_body(TlReader& rv) {
+    types::paidReactionPrivacyPeer out;
+    out.peer = tl::read_boxed<tl::InputPeer>(rv);
+    return out;
 }
 
 
-void RichButtonStyle::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::account_paidMessagesRevenue::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(stars_amount);
 }
 
-RichButtonStyle RichButtonStyle::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x03c610bdu: return RichButtonStyle{types::richButtonStyle::read_body(r)};
-        default: throw TlError("unknown constructor id in RichButtonStyle");
-    }
+types::account_paidMessagesRevenue types::account_paidMessagesRevenue::read_body(TlReader& rv) {
+    types::account_paidMessagesRevenue out;
+    out.stars_amount = rv.read_int64();
+    return out;
 }
 
 
-void RichMessage::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::requirementToContactEmpty::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-RichMessage RichMessage::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xbaf39d8bu: return RichMessage{types::richMessage::read_body(r)};
-        default: throw TlError("unknown constructor id in RichMessage");
-    }
+types::requirementToContactEmpty types::requirementToContactEmpty::read_body(TlReader& rv) {
+    types::requirementToContactEmpty out;
+    return out;
 }
 
 
-void RichText::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::requirementToContactPremium::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-RichText RichText::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xdc3d824fu: return RichText{types::textEmpty::read_body(r)};
-        case 0x744694e0u: return RichText{types::textPlain::read_body(r)};
-        case 0x6724abc4u: return RichText{types::textBold::read_body(r)};
-        case 0xd912a59cu: return RichText{types::textItalic::read_body(r)};
-        case 0xc12622c4u: return RichText{types::textUnderline::read_body(r)};
-        case 0x9bf8bb95u: return RichText{types::textStrike::read_body(r)};
-        case 0x6c3f19b9u: return RichText{types::textFixed::read_body(r)};
-        case 0x3c2884c1u: return RichText{types::textUrl::read_body(r)};
-        case 0xde5a0dd6u: return RichText{types::textEmail::read_body(r)};
-        case 0x7e6260d7u: return RichText{types::textConcat::read_body(r)};
-        case 0xed6a8504u: return RichText{types::textSubscript::read_body(r)};
-        case 0xc7fb5e01u: return RichText{types::textSuperscript::read_body(r)};
-        case 0x034b8621u: return RichText{types::textMarked::read_body(r)};
-        case 0x1ccb966au: return RichText{types::textPhone::read_body(r)};
-        case 0x081ccf4fu: return RichText{types::textImage::read_body(r)};
-        case 0x35553762u: return RichText{types::textAnchor::read_body(r)};
-        case 0x9d2eac97u: return RichText{types::textMath::read_body(r)};
-        case 0xa26156c0u: return RichText{types::textCustomEmoji::read_body(r)};
-        case 0x4c2a5d62u: return RichText{types::textSpoiler::read_body(r)};
-        case 0xcd24cf44u: return RichText{types::textMention::read_body(r)};
-        case 0x519524eau: return RichText{types::textHashtag::read_body(r)};
-        case 0x02ff29d3u: return RichText{types::textBotCommand::read_body(r)};
-        case 0x7b9e1801u: return RichText{types::textCashtag::read_body(r)};
-        case 0xac6a83aau: return RichText{types::textAutoUrl::read_body(r)};
-        case 0xc556a45du: return RichText{types::textAutoEmail::read_body(r)};
-        case 0x24c26789u: return RichText{types::textAutoPhone::read_body(r)};
-        case 0xb956812du: return RichText{types::textBankCard::read_body(r)};
-        case 0x01a9fbfcu: return RichText{types::textMentionName::read_body(r)};
-        case 0xa5b45e2bu: return RichText{types::textDate::read_body(r)};
-        case 0x9686cb50u: return RichText{types::textDiff::read_body(r)};
-        case 0xafc79cd6u: return RichText{types::textButton::read_body(r)};
-        case 0x3cd2a36au: return RichText{types::textTonAddress::read_body(r)};
-        default: throw TlError("unknown constructor id in RichText");
-    }
+types::requirementToContactPremium types::requirementToContactPremium::read_body(TlReader& rv) {
+    types::requirementToContactPremium out;
+    return out;
 }
 
 
-void RpcDropAnswer::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::requirementToContactPaidMessages::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(stars_amount);
 }
 
-RpcDropAnswer RpcDropAnswer::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x5e2ad36eu: return RpcDropAnswer{types::rpc_answer_unknown::read_body(r)};
-        case 0xcd78e586u: return RpcDropAnswer{types::rpc_answer_dropped_running::read_body(r)};
-        case 0xa43ad8b7u: return RpcDropAnswer{types::rpc_answer_dropped::read_body(r)};
-        default: throw TlError("unknown constructor id in RpcDropAnswer");
-    }
+types::requirementToContactPaidMessages types::requirementToContactPaidMessages::read_body(TlReader& rv) {
+    types::requirementToContactPaidMessages out;
+    out.stars_amount = rv.read_int64();
+    return out;
 }
 
 
-void RpcError::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::businessBotRights::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (reply) flags_v |= (1u << 0);
+        if (read_messages) flags_v |= (1u << 1);
+        if (delete_sent_messages) flags_v |= (1u << 2);
+        if (delete_received_messages) flags_v |= (1u << 3);
+        if (edit_name) flags_v |= (1u << 4);
+        if (edit_bio) flags_v |= (1u << 5);
+        if (edit_profile_photo) flags_v |= (1u << 6);
+        if (edit_username) flags_v |= (1u << 7);
+        if (view_gifts) flags_v |= (1u << 8);
+        if (sell_gifts) flags_v |= (1u << 9);
+        if (change_gift_settings) flags_v |= (1u << 10);
+        if (transfer_and_upgrade_gifts) flags_v |= (1u << 11);
+        if (transfer_stars) flags_v |= (1u << 12);
+        if (manage_stories) flags_v |= (1u << 13);
+        tlw.write_uint32(flags_v);
+    }
 }
 
-RpcError RpcError::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x2144ca19u: return RpcError{types::rpc_error::read_body(r)};
-        default: throw TlError("unknown constructor id in RpcError");
-    }
+types::businessBotRights types::businessBotRights::read_body(TlReader& rv) {
+    types::businessBotRights out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.reply = (fl_flags & (1u << 0)) != 0;
+    out.read_messages = (fl_flags & (1u << 1)) != 0;
+    out.delete_sent_messages = (fl_flags & (1u << 2)) != 0;
+    out.delete_received_messages = (fl_flags & (1u << 3)) != 0;
+    out.edit_name = (fl_flags & (1u << 4)) != 0;
+    out.edit_bio = (fl_flags & (1u << 5)) != 0;
+    out.edit_profile_photo = (fl_flags & (1u << 6)) != 0;
+    out.edit_username = (fl_flags & (1u << 7)) != 0;
+    out.view_gifts = (fl_flags & (1u << 8)) != 0;
+    out.sell_gifts = (fl_flags & (1u << 9)) != 0;
+    out.change_gift_settings = (fl_flags & (1u << 10)) != 0;
+    out.transfer_and_upgrade_gifts = (fl_flags & (1u << 11)) != 0;
+    out.transfer_stars = (fl_flags & (1u << 12)) != 0;
+    out.manage_stories = (fl_flags & (1u << 13)) != 0;
+    return out;
 }
 
 
-void RpcResult::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::disallowedGiftsSettings::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (disallow_unlimited_stargifts) flags_v |= (1u << 0);
+        if (disallow_limited_stargifts) flags_v |= (1u << 1);
+        if (disallow_unique_stargifts) flags_v |= (1u << 2);
+        if (disallow_premium_gifts) flags_v |= (1u << 3);
+        if (disallow_stargifts_from_channels) flags_v |= (1u << 4);
+        tlw.write_uint32(flags_v);
+    }
 }
 
-RpcResult RpcResult::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xf35c6d01u: return RpcResult{types::rpc_result::read_body(r)};
-        default: throw TlError("unknown constructor id in RpcResult");
-    }
+types::disallowedGiftsSettings types::disallowedGiftsSettings::read_body(TlReader& rv) {
+    types::disallowedGiftsSettings out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.disallow_unlimited_stargifts = (fl_flags & (1u << 0)) != 0;
+    out.disallow_limited_stargifts = (fl_flags & (1u << 1)) != 0;
+    out.disallow_unique_stargifts = (fl_flags & (1u << 2)) != 0;
+    out.disallow_premium_gifts = (fl_flags & (1u << 3)) != 0;
+    out.disallow_stargifts_from_channels = (fl_flags & (1u << 4)) != 0;
+    return out;
 }
 
 
-void SavedContact::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::sponsoredPeer::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (sponsor_info.has_value()) flags_v |= (1u << 0);
+        if (additional_info.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_bytes(random_id);
+    peer->serialize(tlw);
+    if (sponsor_info.has_value()) { tlw.write_string(sponsor_info.value()); }
+    if (additional_info.has_value()) { tlw.write_string(additional_info.value()); }
 }
 
-SavedContact SavedContact::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x1142bd56u: return SavedContact{types::savedPhoneContact::read_body(r)};
-        default: throw TlError("unknown constructor id in SavedContact");
-    }
+types::sponsoredPeer types::sponsoredPeer::read_body(TlReader& rv) {
+    types::sponsoredPeer out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.random_id = rv.read_bytes();
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    if ((fl_flags & (1u << 0)) != 0) { out.sponsor_info = rv.read_string(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.additional_info = rv.read_string(); }
+    return out;
 }
 
 
-void SavedDialog::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::contacts_sponsoredPeersEmpty::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-SavedDialog SavedDialog::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xbd87cb6cu: return SavedDialog{types::savedDialog::read_body(r)};
-        case 0x64407ea7u: return SavedDialog{types::monoForumDialog::read_body(r)};
-        default: throw TlError("unknown constructor id in SavedDialog");
-    }
+types::contacts_sponsoredPeersEmpty types::contacts_sponsoredPeersEmpty::read_body(TlReader& rv) {
+    types::contacts_sponsoredPeersEmpty out;
+    return out;
 }
 
 
-void SavedReactionTag::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::contacts_sponsoredPeers::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, peers, [&](TlWriter& tlw1123, const auto& e1123) { e1123->serialize(tlw1123); });
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw1124, const auto& e1124) { e1124->serialize(tlw1124); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1125, const auto& e1125) { e1125->serialize(tlw1125); });
 }
 
-SavedReactionTag SavedReactionTag::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xcb6ff828u: return SavedReactionTag{types::savedReactionTag::read_body(r)};
-        default: throw TlError("unknown constructor id in SavedReactionTag");
-    }
+types::contacts_sponsoredPeers types::contacts_sponsoredPeers::read_body(TlReader& rv) {
+    types::contacts_sponsoredPeers out;
+    out.peers = tl::read_vector<std::shared_ptr<tl::SponsoredPeer>>(rv, [&](TlReader& r1120) -> std::shared_ptr<tl::SponsoredPeer> { return tl::read_boxed<tl::SponsoredPeer>(r1120); });
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r1121) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r1121); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1122) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1122); });
+    return out;
 }
 
 
-void SavedStarGift::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starGiftAttributeIdModel::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(document_id);
 }
 
-SavedStarGift SavedStarGift::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x41df43fcu: return SavedStarGift{types::savedStarGift::read_body(r)};
-        default: throw TlError("unknown constructor id in SavedStarGift");
-    }
+types::starGiftAttributeIdModel types::starGiftAttributeIdModel::read_body(TlReader& rv) {
+    types::starGiftAttributeIdModel out;
+    out.document_id = rv.read_int64();
+    return out;
 }
 
 
-void SearchPostsFlood::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starGiftAttributeIdPattern::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(document_id);
 }
 
-SearchPostsFlood SearchPostsFlood::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x3e0b5b6au: return SearchPostsFlood{types::searchPostsFlood::read_body(r)};
-        default: throw TlError("unknown constructor id in SearchPostsFlood");
-    }
+types::starGiftAttributeIdPattern types::starGiftAttributeIdPattern::read_body(TlReader& rv) {
+    types::starGiftAttributeIdPattern out;
+    out.document_id = rv.read_int64();
+    return out;
 }
 
 
-void SearchResultsCalendarPeriod::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starGiftAttributeIdBackdrop::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(backdrop_id);
 }
 
-SearchResultsCalendarPeriod SearchResultsCalendarPeriod::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xc9b0539fu: return SearchResultsCalendarPeriod{types::searchResultsCalendarPeriod::read_body(r)};
-        default: throw TlError("unknown constructor id in SearchResultsCalendarPeriod");
-    }
+types::starGiftAttributeIdBackdrop types::starGiftAttributeIdBackdrop::read_body(TlReader& rv) {
+    types::starGiftAttributeIdBackdrop out;
+    out.backdrop_id = rv.read_int32();
+    return out;
 }
 
 
-void SearchResultsPosition::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starGiftAttributeCounter::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    attribute->serialize(tlw);
+    tlw.write_int32(count);
 }
 
-SearchResultsPosition SearchResultsPosition::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x7f648b67u: return SearchResultsPosition{types::searchResultPosition::read_body(r)};
-        default: throw TlError("unknown constructor id in SearchResultsPosition");
-    }
+types::starGiftAttributeCounter types::starGiftAttributeCounter::read_body(TlReader& rv) {
+    types::starGiftAttributeCounter out;
+    out.attribute = tl::read_boxed<tl::StarGiftAttributeId>(rv);
+    out.count = rv.read_int32();
+    return out;
 }
 
 
-void SecureCredentialsEncrypted::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_resaleStarGifts::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (next_offset.has_value()) flags_v |= (1u << 0);
+        if (attributes.has_value()) flags_v |= (1u << 1);
+        if (attributes_hash.has_value()) flags_v |= (1u << 1);
+        if (counters.has_value()) flags_v |= (1u << 2);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int32(count);
+    tl::write_vector(tlw, gifts, [&](TlWriter& tlw1131, const auto& e1131) { e1131->serialize(tlw1131); });
+    if (next_offset.has_value()) { tlw.write_string(next_offset.value()); }
+    if (attributes.has_value()) { tl::write_vector(tlw, attributes.value(), [&](TlWriter& tlw1132, const auto& e1132) { e1132->serialize(tlw1132); }); }
+    if (attributes_hash.has_value()) { tlw.write_int64(attributes_hash.value()); }
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw1133, const auto& e1133) { e1133->serialize(tlw1133); });
+    if (counters.has_value()) { tl::write_vector(tlw, counters.value(), [&](TlWriter& tlw1134, const auto& e1134) { e1134->serialize(tlw1134); }); }
+    tl::write_vector(tlw, users, [&](TlWriter& tlw1135, const auto& e1135) { e1135->serialize(tlw1135); });
 }
 
-SecureCredentialsEncrypted SecureCredentialsEncrypted::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x33f0ea47u: return SecureCredentialsEncrypted{types::secureCredentialsEncrypted::read_body(r)};
-        default: throw TlError("unknown constructor id in SecureCredentialsEncrypted");
-    }
+types::payments_resaleStarGifts types::payments_resaleStarGifts::read_body(TlReader& rv) {
+    types::payments_resaleStarGifts out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.count = rv.read_int32();
+    out.gifts = tl::read_vector<std::shared_ptr<tl::StarGift>>(rv, [&](TlReader& r1126) -> std::shared_ptr<tl::StarGift> { return tl::read_boxed<tl::StarGift>(r1126); });
+    if ((fl_flags & (1u << 0)) != 0) { out.next_offset = rv.read_string(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.attributes = tl::read_vector<std::shared_ptr<tl::StarGiftAttribute>>(rv, [&](TlReader& r1127) -> std::shared_ptr<tl::StarGiftAttribute> { return tl::read_boxed<tl::StarGiftAttribute>(r1127); }); }
+    if ((fl_flags & (1u << 1)) != 0) { out.attributes_hash = rv.read_int64(); }
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r1128) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r1128); });
+    if ((fl_flags & (1u << 2)) != 0) { out.counters = tl::read_vector<std::shared_ptr<tl::StarGiftAttributeCounter>>(rv, [&](TlReader& r1129) -> std::shared_ptr<tl::StarGiftAttributeCounter> { return tl::read_boxed<tl::StarGiftAttributeCounter>(r1129); }); }
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1130) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1130); });
+    return out;
 }
 
 
-void SecureData::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::stories_canSendStoryCount::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(count_remains);
 }
 
-SecureData SecureData::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x8aeabec3u: return SecureData{types::secureData::read_body(r)};
-        default: throw TlError("unknown constructor id in SecureData");
-    }
+types::stories_canSendStoryCount types::stories_canSendStoryCount::read_body(TlReader& rv) {
+    types::stories_canSendStoryCount out;
+    out.count_remains = rv.read_int32();
+    return out;
 }
 
 
-void SecureFile::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::pendingSuggestion::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(suggestion);
+    title->serialize(tlw);
+    description->serialize(tlw);
+    tlw.write_string(url);
 }
 
-SecureFile SecureFile::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x64199744u: return SecureFile{types::secureFileEmpty::read_body(r)};
-        case 0x7d09c27eu: return SecureFile{types::secureFile::read_body(r)};
-        default: throw TlError("unknown constructor id in SecureFile");
-    }
+types::pendingSuggestion types::pendingSuggestion::read_body(TlReader& rv) {
+    types::pendingSuggestion out;
+    out.suggestion = rv.read_string();
+    out.title = tl::read_boxed<tl::TextWithEntities>(rv);
+    out.description = tl::read_boxed<tl::TextWithEntities>(rv);
+    out.url = rv.read_string();
+    return out;
 }
 
 
-void SecurePasswordKdfAlgo::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::todoItem::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(id);
+    title->serialize(tlw);
 }
 
-SecurePasswordKdfAlgo SecurePasswordKdfAlgo::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x004a8537u: return SecurePasswordKdfAlgo{types::securePasswordKdfAlgoUnknown::read_body(r)};
-        case 0xbbf2dda0u: return SecurePasswordKdfAlgo{types::securePasswordKdfAlgoPBKDF2HMACSHA512iter100000::read_body(r)};
-        case 0x86471d92u: return SecurePasswordKdfAlgo{types::securePasswordKdfAlgoSHA512::read_body(r)};
-        default: throw TlError("unknown constructor id in SecurePasswordKdfAlgo");
-    }
+types::todoItem types::todoItem::read_body(TlReader& rv) {
+    types::todoItem out;
+    out.id = rv.read_int32();
+    out.title = tl::read_boxed<tl::TextWithEntities>(rv);
+    return out;
 }
 
 
-void SecurePlainData::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::todoList::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (others_can_append) flags_v |= (1u << 0);
+        if (others_can_complete) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    title->serialize(tlw);
+    tl::write_vector(tlw, list, [&](TlWriter& tlw1137, const auto& e1137) { e1137->serialize(tlw1137); });
 }
 
-SecurePlainData SecurePlainData::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x7d6099ddu: return SecurePlainData{types::securePlainPhone::read_body(r)};
-        case 0x21ec5a5fu: return SecurePlainData{types::securePlainEmail::read_body(r)};
-        default: throw TlError("unknown constructor id in SecurePlainData");
-    }
+types::todoList types::todoList::read_body(TlReader& rv) {
+    types::todoList out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.others_can_append = (fl_flags & (1u << 0)) != 0;
+    out.others_can_complete = (fl_flags & (1u << 1)) != 0;
+    out.title = tl::read_boxed<tl::TextWithEntities>(rv);
+    out.list = tl::read_vector<std::shared_ptr<tl::TodoItem>>(rv, [&](TlReader& r1136) -> std::shared_ptr<tl::TodoItem> { return tl::read_boxed<tl::TodoItem>(r1136); });
+    return out;
 }
 
 
-void SecureRequiredType::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::todoCompletion::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(id);
+    completed_by->serialize(tlw);
+    tlw.write_int32(date);
 }
 
-SecureRequiredType SecureRequiredType::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x829d99dau: return SecureRequiredType{types::secureRequiredType::read_body(r)};
-        case 0x027477b4u: return SecureRequiredType{types::secureRequiredTypeOneOf::read_body(r)};
-        default: throw TlError("unknown constructor id in SecureRequiredType");
-    }
+types::todoCompletion types::todoCompletion::read_body(TlReader& rv) {
+    types::todoCompletion out;
+    out.id = rv.read_int32();
+    out.completed_by = tl::read_boxed<tl::Peer>(rv);
+    out.date = rv.read_int32();
+    return out;
 }
 
 
-void SecureSecretSettings::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::suggestedPost::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (accepted) flags_v |= (1u << 1);
+        if (rejected) flags_v |= (1u << 2);
+        if (price.has_value()) flags_v |= (1u << 3);
+        if (schedule_date.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    if (price.has_value()) { price.value()->serialize(tlw); }
+    if (schedule_date.has_value()) { tlw.write_int32(schedule_date.value()); }
 }
 
-SecureSecretSettings SecureSecretSettings::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x1527bcacu: return SecureSecretSettings{types::secureSecretSettings::read_body(r)};
-        default: throw TlError("unknown constructor id in SecureSecretSettings");
-    }
+types::suggestedPost types::suggestedPost::read_body(TlReader& rv) {
+    types::suggestedPost out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.accepted = (fl_flags & (1u << 1)) != 0;
+    out.rejected = (fl_flags & (1u << 2)) != 0;
+    if ((fl_flags & (1u << 3)) != 0) { out.price = tl::read_boxed<tl::StarsAmount>(rv); }
+    if ((fl_flags & (1u << 0)) != 0) { out.schedule_date = rv.read_int32(); }
+    return out;
 }
 
 
-void SecureValue::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starsRating::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (next_level_stars.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int32(level);
+    tlw.write_int64(current_level_stars);
+    tlw.write_int64(stars);
+    if (next_level_stars.has_value()) { tlw.write_int64(next_level_stars.value()); }
 }
 
-SecureValue SecureValue::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x187fa0cau: return SecureValue{types::secureValue::read_body(r)};
-        default: throw TlError("unknown constructor id in SecureValue");
-    }
+types::starsRating types::starsRating::read_body(TlReader& rv) {
+    types::starsRating out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.level = rv.read_int32();
+    out.current_level_stars = rv.read_int64();
+    out.stars = rv.read_int64();
+    if ((fl_flags & (1u << 0)) != 0) { out.next_level_stars = rv.read_int64(); }
+    return out;
 }
 
 
-void SecureValueError::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starGiftCollection::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (icon.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int32(collection_id);
+    tlw.write_string(title);
+    if (icon.has_value()) { icon.value()->serialize(tlw); }
+    tlw.write_int32(gifts_count);
+    tlw.write_int64(hash);
 }
 
-SecureValueError SecureValueError::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe8a40bd9u: return SecureValueError{types::secureValueErrorData::read_body(r)};
-        case 0x00be3dfau: return SecureValueError{types::secureValueErrorFrontSide::read_body(r)};
-        case 0x868a2aa5u: return SecureValueError{types::secureValueErrorReverseSide::read_body(r)};
-        case 0xe537ced6u: return SecureValueError{types::secureValueErrorSelfie::read_body(r)};
-        case 0x7a700873u: return SecureValueError{types::secureValueErrorFile::read_body(r)};
-        case 0x666220e9u: return SecureValueError{types::secureValueErrorFiles::read_body(r)};
-        case 0x869d758fu: return SecureValueError{types::secureValueError::read_body(r)};
-        case 0xa1144770u: return SecureValueError{types::secureValueErrorTranslationFile::read_body(r)};
-        case 0x34636dd8u: return SecureValueError{types::secureValueErrorTranslationFiles::read_body(r)};
-        default: throw TlError("unknown constructor id in SecureValueError");
-    }
+types::starGiftCollection types::starGiftCollection::read_body(TlReader& rv) {
+    types::starGiftCollection out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.collection_id = rv.read_int32();
+    out.title = rv.read_string();
+    if ((fl_flags & (1u << 0)) != 0) { out.icon = tl::read_boxed<tl::Document>(rv); }
+    out.gifts_count = rv.read_int32();
+    out.hash = rv.read_int64();
+    return out;
 }
 
 
-void SecureValueHash::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_starGiftCollectionsNotModified::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-SecureValueHash SecureValueHash::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xed1ecdb0u: return SecureValueHash{types::secureValueHash::read_body(r)};
-        default: throw TlError("unknown constructor id in SecureValueHash");
-    }
+types::payments_starGiftCollectionsNotModified types::payments_starGiftCollectionsNotModified::read_body(TlReader& rv) {
+    types::payments_starGiftCollectionsNotModified out;
+    return out;
 }
 
 
-void SecureValueType::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_starGiftCollections::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, collections, [&](TlWriter& tlw1139, const auto& e1139) { e1139->serialize(tlw1139); });
 }
 
-SecureValueType SecureValueType::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x9d2a81e3u: return SecureValueType{types::secureValueTypePersonalDetails::read_body(r)};
-        case 0x3dac6a00u: return SecureValueType{types::secureValueTypePassport::read_body(r)};
-        case 0x06e425c4u: return SecureValueType{types::secureValueTypeDriverLicense::read_body(r)};
-        case 0xa0d0744bu: return SecureValueType{types::secureValueTypeIdentityCard::read_body(r)};
-        case 0x99a48f23u: return SecureValueType{types::secureValueTypeInternalPassport::read_body(r)};
-        case 0xcbe31e26u: return SecureValueType{types::secureValueTypeAddress::read_body(r)};
-        case 0xfc36954eu: return SecureValueType{types::secureValueTypeUtilityBill::read_body(r)};
-        case 0x89137c0du: return SecureValueType{types::secureValueTypeBankStatement::read_body(r)};
-        case 0x8b883488u: return SecureValueType{types::secureValueTypeRentalAgreement::read_body(r)};
-        case 0x99e3806au: return SecureValueType{types::secureValueTypePassportRegistration::read_body(r)};
-        case 0xea02ec33u: return SecureValueType{types::secureValueTypeTemporaryRegistration::read_body(r)};
-        case 0xb320aadbu: return SecureValueType{types::secureValueTypePhone::read_body(r)};
-        case 0x8e3ca7eeu: return SecureValueType{types::secureValueTypeEmail::read_body(r)};
-        default: throw TlError("unknown constructor id in SecureValueType");
-    }
+types::payments_starGiftCollections types::payments_starGiftCollections::read_body(TlReader& rv) {
+    types::payments_starGiftCollections out;
+    out.collections = tl::read_vector<std::shared_ptr<tl::StarGiftCollection>>(rv, [&](TlReader& r1138) -> std::shared_ptr<tl::StarGiftCollection> { return tl::read_boxed<tl::StarGiftCollection>(r1138); });
+    return out;
 }
 
 
-void SendAsPeer::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::storyAlbum::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (icon_photo.has_value()) flags_v |= (1u << 0);
+        if (icon_video.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int32(album_id);
+    tlw.write_string(title);
+    if (icon_photo.has_value()) { icon_photo.value()->serialize(tlw); }
+    if (icon_video.has_value()) { icon_video.value()->serialize(tlw); }
 }
 
-SendAsPeer SendAsPeer::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb81c7034u: return SendAsPeer{types::sendAsPeer::read_body(r)};
-        default: throw TlError("unknown constructor id in SendAsPeer");
-    }
+types::storyAlbum types::storyAlbum::read_body(TlReader& rv) {
+    types::storyAlbum out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.album_id = rv.read_int32();
+    out.title = rv.read_string();
+    if ((fl_flags & (1u << 0)) != 0) { out.icon_photo = tl::read_boxed<tl::Photo>(rv); }
+    if ((fl_flags & (1u << 1)) != 0) { out.icon_video = tl::read_boxed<tl::Document>(rv); }
+    return out;
 }
 
 
-void SendMessageAction::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::stories_albumsNotModified::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-SendMessageAction SendMessageAction::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x16bf744eu: return SendMessageAction{types::sendMessageTypingAction::read_body(r)};
-        case 0xfd5ec8f5u: return SendMessageAction{types::sendMessageCancelAction::read_body(r)};
-        case 0xa187d66fu: return SendMessageAction{types::sendMessageRecordVideoAction::read_body(r)};
-        case 0xe9763aecu: return SendMessageAction{types::sendMessageUploadVideoAction::read_body(r)};
-        case 0xd52f73f7u: return SendMessageAction{types::sendMessageRecordAudioAction::read_body(r)};
-        case 0xf351d7abu: return SendMessageAction{types::sendMessageUploadAudioAction::read_body(r)};
-        case 0xd1d34a26u: return SendMessageAction{types::sendMessageUploadPhotoAction::read_body(r)};
-        case 0xaa0cd9e4u: return SendMessageAction{types::sendMessageUploadDocumentAction::read_body(r)};
-        case 0x176f8ba1u: return SendMessageAction{types::sendMessageGeoLocationAction::read_body(r)};
-        case 0x628cbc6fu: return SendMessageAction{types::sendMessageChooseContactAction::read_body(r)};
-        case 0xdd6a8f48u: return SendMessageAction{types::sendMessageGamePlayAction::read_body(r)};
-        case 0x88f27fbcu: return SendMessageAction{types::sendMessageRecordRoundAction::read_body(r)};
-        case 0x243e1c66u: return SendMessageAction{types::sendMessageUploadRoundAction::read_body(r)};
-        case 0xd92c2285u: return SendMessageAction{types::speakingInGroupCallAction::read_body(r)};
-        case 0xdbda9246u: return SendMessageAction{types::sendMessageHistoryImportAction::read_body(r)};
-        case 0xb05ac6b1u: return SendMessageAction{types::sendMessageChooseStickerAction::read_body(r)};
-        case 0x25972bcbu: return SendMessageAction{types::sendMessageEmojiInteraction::read_body(r)};
-        case 0xb665902eu: return SendMessageAction{types::sendMessageEmojiInteractionSeen::read_body(r)};
-        case 0x3630b85au: return SendMessageAction{types::sendMessageTextDraftAction::read_body(r)};
-        case 0xa937c7beu: return SendMessageAction{types::inputSendMessageRichMessageDraftAction::read_body(r)};
-        case 0x52564893u: return SendMessageAction{types::sendMessageRichMessageDraftAction::read_body(r)};
-        case 0xfbf902b0u: return SendMessageAction{types::sendMessageStopDraftAction::read_body(r)};
-        default: throw TlError("unknown constructor id in SendMessageAction");
-    }
+types::stories_albumsNotModified types::stories_albumsNotModified::read_body(TlReader& rv) {
+    types::stories_albumsNotModified out;
+    return out;
 }
 
 
-void Server_DH_Params::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::stories_albums::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(hash);
+    tl::write_vector(tlw, albums, [&](TlWriter& tlw1141, const auto& e1141) { e1141->serialize(tlw1141); });
 }
 
-Server_DH_Params Server_DH_Params::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x79cb045du: return Server_DH_Params{types::server_DH_params_fail::read_body(r)};
-        case 0xd0e8075cu: return Server_DH_Params{types::server_DH_params_ok::read_body(r)};
-        default: throw TlError("unknown constructor id in Server_DH_Params");
-    }
+types::stories_albums types::stories_albums::read_body(TlReader& rv) {
+    types::stories_albums out;
+    out.hash = rv.read_int64();
+    out.albums = tl::read_vector<std::shared_ptr<tl::StoryAlbum>>(rv, [&](TlReader& r1140) -> std::shared_ptr<tl::StoryAlbum> { return tl::read_boxed<tl::StoryAlbum>(r1140); });
+    return out;
 }
 
 
-void Server_DH_inner_data::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::searchPostsFlood::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (query_is_free) flags_v |= (1u << 0);
+        if (wait_till.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int32(total_daily);
+    tlw.write_int32(remains);
+    if (wait_till.has_value()) { tlw.write_int32(wait_till.value()); }
+    tlw.write_int64(stars_amount);
 }
 
-Server_DH_inner_data Server_DH_inner_data::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb5890dbau: return Server_DH_inner_data{types::server_DH_inner_data::read_body(r)};
-        default: throw TlError("unknown constructor id in Server_DH_inner_data");
-    }
+types::searchPostsFlood types::searchPostsFlood::read_body(TlReader& rv) {
+    types::searchPostsFlood out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.query_is_free = (fl_flags & (1u << 0)) != 0;
+    out.total_daily = rv.read_int32();
+    out.remains = rv.read_int32();
+    if ((fl_flags & (1u << 1)) != 0) { out.wait_till = rv.read_int32(); }
+    out.stars_amount = rv.read_int64();
+    return out;
 }
 
 
-void Set_client_DH_params_answer::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_uniqueStarGiftValueInfo::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (last_sale_on_fragment) flags_v |= (1u << 1);
+        if (value_is_average) flags_v |= (1u << 6);
+        if (last_sale_date.has_value()) flags_v |= (1u << 0);
+        if (last_sale_price.has_value()) flags_v |= (1u << 0);
+        if (floor_price.has_value()) flags_v |= (1u << 2);
+        if (average_price.has_value()) flags_v |= (1u << 3);
+        if (listed_count.has_value()) flags_v |= (1u << 4);
+        if (fragment_listed_count.has_value()) flags_v |= (1u << 5);
+        if (fragment_listed_url.has_value()) flags_v |= (1u << 5);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(currency);
+    tlw.write_int64(value);
+    tlw.write_int32(initial_sale_date);
+    tlw.write_int64(initial_sale_stars);
+    tlw.write_int64(initial_sale_price);
+    if (last_sale_date.has_value()) { tlw.write_int32(last_sale_date.value()); }
+    if (last_sale_price.has_value()) { tlw.write_int64(last_sale_price.value()); }
+    if (floor_price.has_value()) { tlw.write_int64(floor_price.value()); }
+    if (average_price.has_value()) { tlw.write_int64(average_price.value()); }
+    if (listed_count.has_value()) { tlw.write_int32(listed_count.value()); }
+    if (fragment_listed_count.has_value()) { tlw.write_int32(fragment_listed_count.value()); }
+    if (fragment_listed_url.has_value()) { tlw.write_string(fragment_listed_url.value()); }
 }
 
-Set_client_DH_params_answer Set_client_DH_params_answer::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x3bcbf734u: return Set_client_DH_params_answer{types::dh_gen_ok::read_body(r)};
-        case 0x46dc1fb9u: return Set_client_DH_params_answer{types::dh_gen_retry::read_body(r)};
-        case 0xa69dae02u: return Set_client_DH_params_answer{types::dh_gen_fail::read_body(r)};
-        default: throw TlError("unknown constructor id in Set_client_DH_params_answer");
-    }
+types::payments_uniqueStarGiftValueInfo types::payments_uniqueStarGiftValueInfo::read_body(TlReader& rv) {
+    types::payments_uniqueStarGiftValueInfo out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.last_sale_on_fragment = (fl_flags & (1u << 1)) != 0;
+    out.value_is_average = (fl_flags & (1u << 6)) != 0;
+    out.currency = rv.read_string();
+    out.value = rv.read_int64();
+    out.initial_sale_date = rv.read_int32();
+    out.initial_sale_stars = rv.read_int64();
+    out.initial_sale_price = rv.read_int64();
+    if ((fl_flags & (1u << 0)) != 0) { out.last_sale_date = rv.read_int32(); }
+    if ((fl_flags & (1u << 0)) != 0) { out.last_sale_price = rv.read_int64(); }
+    if ((fl_flags & (1u << 2)) != 0) { out.floor_price = rv.read_int64(); }
+    if ((fl_flags & (1u << 3)) != 0) { out.average_price = rv.read_int64(); }
+    if ((fl_flags & (1u << 4)) != 0) { out.listed_count = rv.read_int32(); }
+    if ((fl_flags & (1u << 5)) != 0) { out.fragment_listed_count = rv.read_int32(); }
+    if ((fl_flags & (1u << 5)) != 0) { out.fragment_listed_url = rv.read_string(); }
+    return out;
 }
 
 
-void ShareTheme::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::profileTabPosts::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-ShareTheme ShareTheme::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x95ace84fu: return ShareTheme{types::shareThemeDefault::read_body(r)};
-        case 0x64b334e1u: return ShareTheme{types::shareThemeEmojiBackdrop::read_body(r)};
-        case 0xebece66du: return ShareTheme{types::shareThemeGift::read_body(r)};
-        case 0x3fb92b5bu: return ShareTheme{types::inputShareThemeGift::read_body(r)};
-        default: throw TlError("unknown constructor id in ShareTheme");
-    }
+types::profileTabPosts types::profileTabPosts::read_body(TlReader& rv) {
+    types::profileTabPosts out;
+    return out;
 }
 
 
-void ShareThemeBackdropOption::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::profileTabGifts::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-ShareThemeBackdropOption ShareThemeBackdropOption::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x45c1d652u: return ShareThemeBackdropOption{types::shareThemeBackdropOption::read_body(r)};
-        default: throw TlError("unknown constructor id in ShareThemeBackdropOption");
-    }
+types::profileTabGifts types::profileTabGifts::read_body(TlReader& rv) {
+    types::profileTabGifts out;
+    return out;
 }
 
 
-void ShareThemeBackdrops::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::profileTabMedia::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-ShareThemeBackdrops ShareThemeBackdrops::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x7a3f6dffu: return ShareThemeBackdrops{types::shareThemeBackdropsNotModified::read_body(r)};
-        case 0xaaeadce0u: return ShareThemeBackdrops{types::shareThemeBackdrops::read_body(r)};
-        default: throw TlError("unknown constructor id in ShareThemeBackdrops");
-    }
+types::profileTabMedia types::profileTabMedia::read_body(TlReader& rv) {
+    types::profileTabMedia out;
+    return out;
 }
 
 
-void ShippingOption::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::profileTabFiles::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-ShippingOption ShippingOption::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb6213cdfu: return ShippingOption{types::shippingOption::read_body(r)};
-        default: throw TlError("unknown constructor id in ShippingOption");
-    }
+types::profileTabFiles types::profileTabFiles::read_body(TlReader& rv) {
+    types::profileTabFiles out;
+    return out;
 }
 
 
-void SmsJob::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::profileTabMusic::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-SmsJob SmsJob::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe6a1eeb8u: return SmsJob{types::smsJob::read_body(r)};
-        default: throw TlError("unknown constructor id in SmsJob");
-    }
+types::profileTabMusic types::profileTabMusic::read_body(TlReader& rv) {
+    types::profileTabMusic out;
+    return out;
 }
 
 
-void SponsoredMessage::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::profileTabVoice::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-SponsoredMessage SponsoredMessage::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x7dbf8673u: return SponsoredMessage{types::sponsoredMessage::read_body(r)};
-        default: throw TlError("unknown constructor id in SponsoredMessage");
-    }
+types::profileTabVoice types::profileTabVoice::read_body(TlReader& rv) {
+    types::profileTabVoice out;
+    return out;
 }
 
 
-void SponsoredMessageReportOption::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::profileTabLinks::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-SponsoredMessageReportOption SponsoredMessageReportOption::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x430d3150u: return SponsoredMessageReportOption{types::sponsoredMessageReportOption::read_body(r)};
-        default: throw TlError("unknown constructor id in SponsoredMessageReportOption");
-    }
+types::profileTabLinks types::profileTabLinks::read_body(TlReader& rv) {
+    types::profileTabLinks out;
+    return out;
 }
 
 
-void SponsoredPeer::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::profileTabGifs::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-SponsoredPeer SponsoredPeer::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xc69708d3u: return SponsoredPeer{types::sponsoredPeer::read_body(r)};
-        default: throw TlError("unknown constructor id in SponsoredPeer");
-    }
+types::profileTabGifs types::profileTabGifs::read_body(TlReader& rv) {
+    types::profileTabGifs out;
+    return out;
 }
 
 
-void StarGift::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::users_savedMusicNotModified::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(count);
 }
 
-StarGift StarGift::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x313a9547u: return StarGift{types::starGift::read_body(r)};
-        case 0x85f0a9cdu: return StarGift{types::starGiftUnique::read_body(r)};
-        default: throw TlError("unknown constructor id in StarGift");
-    }
+types::users_savedMusicNotModified types::users_savedMusicNotModified::read_body(TlReader& rv) {
+    types::users_savedMusicNotModified out;
+    out.count = rv.read_int32();
+    return out;
 }
 
 
-void StarGiftActiveAuctionState::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::users_savedMusic::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(count);
+    tl::write_vector(tlw, documents, [&](TlWriter& tlw1143, const auto& e1143) { e1143->serialize(tlw1143); });
 }
 
-StarGiftActiveAuctionState StarGiftActiveAuctionState::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xd31bc45du: return StarGiftActiveAuctionState{types::starGiftActiveAuctionState::read_body(r)};
-        default: throw TlError("unknown constructor id in StarGiftActiveAuctionState");
-    }
+types::users_savedMusic types::users_savedMusic::read_body(TlReader& rv) {
+    types::users_savedMusic out;
+    out.count = rv.read_int32();
+    out.documents = tl::read_vector<std::shared_ptr<tl::Document>>(rv, [&](TlReader& r1142) -> std::shared_ptr<tl::Document> { return tl::read_boxed<tl::Document>(r1142); });
+    return out;
 }
 
 
-void StarGiftAttribute::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::account_savedMusicIdsNotModified::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-StarGiftAttribute StarGiftAttribute::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x565251e2u: return StarGiftAttribute{types::starGiftAttributeModel::read_body(r)};
-        case 0x4e7085eau: return StarGiftAttribute{types::starGiftAttributePattern::read_body(r)};
-        case 0x9f2504e4u: return StarGiftAttribute{types::starGiftAttributeBackdrop::read_body(r)};
-        case 0xe0bff26cu: return StarGiftAttribute{types::starGiftAttributeOriginalDetails::read_body(r)};
-        default: throw TlError("unknown constructor id in StarGiftAttribute");
-    }
+types::account_savedMusicIdsNotModified types::account_savedMusicIdsNotModified::read_body(TlReader& rv) {
+    types::account_savedMusicIdsNotModified out;
+    return out;
 }
 
 
-void StarGiftAttributeCounter::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::account_savedMusicIds::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, ids, [&](TlWriter& tlw1145, const auto& e1145) { tlw1145.write_int64(e1145); });
 }
 
-StarGiftAttributeCounter StarGiftAttributeCounter::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x2eb1b658u: return StarGiftAttributeCounter{types::starGiftAttributeCounter::read_body(r)};
-        default: throw TlError("unknown constructor id in StarGiftAttributeCounter");
-    }
+types::account_savedMusicIds types::account_savedMusicIds::read_body(TlReader& rv) {
+    types::account_savedMusicIds out;
+    out.ids = tl::read_vector<std::int64_t>(rv, [&](TlReader& r1144) -> std::int64_t { return r1144.read_int64(); });
+    return out;
 }
 
 
-void StarGiftAttributeId::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_checkCanSendGiftResultOk::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-StarGiftAttributeId StarGiftAttributeId::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x48aaae3cu: return StarGiftAttributeId{types::starGiftAttributeIdModel::read_body(r)};
-        case 0x4a162433u: return StarGiftAttributeId{types::starGiftAttributeIdPattern::read_body(r)};
-        case 0x1f01c757u: return StarGiftAttributeId{types::starGiftAttributeIdBackdrop::read_body(r)};
-        default: throw TlError("unknown constructor id in StarGiftAttributeId");
-    }
+types::payments_checkCanSendGiftResultOk types::payments_checkCanSendGiftResultOk::read_body(TlReader& rv) {
+    types::payments_checkCanSendGiftResultOk out;
+    return out;
 }
 
 
-void StarGiftAttributeRarity::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::payments_checkCanSendGiftResultFail::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    reason->serialize(tlw);
 }
 
-StarGiftAttributeRarity StarGiftAttributeRarity::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x36437737u: return StarGiftAttributeRarity{types::starGiftAttributeRarity::read_body(r)};
-        case 0xdbce6389u: return StarGiftAttributeRarity{types::starGiftAttributeRarityUncommon::read_body(r)};
-        case 0xf08d516bu: return StarGiftAttributeRarity{types::starGiftAttributeRarityRare::read_body(r)};
-        case 0x78fbf3a8u: return StarGiftAttributeRarity{types::starGiftAttributeRarityEpic::read_body(r)};
-        case 0xcef7e7a8u: return StarGiftAttributeRarity{types::starGiftAttributeRarityLegendary::read_body(r)};
-        default: throw TlError("unknown constructor id in StarGiftAttributeRarity");
-    }
+types::payments_checkCanSendGiftResultFail types::payments_checkCanSendGiftResultFail::read_body(TlReader& rv) {
+    types::payments_checkCanSendGiftResultFail out;
+    out.reason = tl::read_boxed<tl::TextWithEntities>(rv);
+    return out;
 }
 
 
-void StarGiftAuctionAcquiredGift::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::inputChatThemeEmpty::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
 }
 
-StarGiftAuctionAcquiredGift StarGiftAuctionAcquiredGift::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x42b00348u: return StarGiftAuctionAcquiredGift{types::starGiftAuctionAcquiredGift::read_body(r)};
-        default: throw TlError("unknown constructor id in StarGiftAuctionAcquiredGift");
-    }
+types::inputChatThemeEmpty types::inputChatThemeEmpty::read_body(TlReader& rv) {
+    types::inputChatThemeEmpty out;
+    return out;
 }
 
 
-void StarGiftAuctionRound::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::inputChatTheme::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(emoticon);
 }
 
-StarGiftAuctionRound StarGiftAuctionRound::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x3aae0528u: return StarGiftAuctionRound{types::starGiftAuctionRound::read_body(r)};
-        case 0x0aa021e5u: return StarGiftAuctionRound{types::starGiftAuctionRoundExtendable::read_body(r)};
-        default: throw TlError("unknown constructor id in StarGiftAuctionRound");
-    }
+types::inputChatTheme types::inputChatTheme::read_body(TlReader& rv) {
+    types::inputChatTheme out;
+    out.emoticon = rv.read_string();
+    return out;
 }
 
 
-void StarGiftAuctionState::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::inputChatThemeUniqueGift::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(slug);
 }
 
-StarGiftAuctionState StarGiftAuctionState::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xfe333952u: return StarGiftAuctionState{types::starGiftAuctionStateNotModified::read_body(r)};
-        case 0x771a4e66u: return StarGiftAuctionState{types::starGiftAuctionState::read_body(r)};
-        case 0x972dabbfu: return StarGiftAuctionState{types::starGiftAuctionStateFinished::read_body(r)};
-        default: throw TlError("unknown constructor id in StarGiftAuctionState");
-    }
+types::inputChatThemeUniqueGift types::inputChatThemeUniqueGift::read_body(TlReader& rv) {
+    types::inputChatThemeUniqueGift out;
+    out.slug = rv.read_string();
+    return out;
 }
 
 
-void StarGiftAuctionUserState::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+void types::starGiftUpgradePrice::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(date);
+    tlw.write_int64(upgrade_stars);
 }
 
-StarGiftAuctionUserState StarGiftAuctionUserState::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x2eeed1c4u: return StarGiftAuctionUserState{types::starGiftAuctionUserState::read_body(r)};
-        default: throw TlError("unknown constructor id in StarGiftAuctionUserState");
-    }
+types::starGiftUpgradePrice types::starGiftUpgradePrice::read_body(TlReader& rv) {
+    types::starGiftUpgradePrice out;
+    out.date = rv.read_int32();
+    out.upgrade_stars = rv.read_int64();
+    return out;
 }
-
 
-void StarGiftBackground::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
 
-StarGiftBackground StarGiftBackground::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xaff56398u: return StarGiftBackground{types::starGiftBackground::read_body(r)};
-        default: throw TlError("unknown constructor id in StarGiftBackground");
+void types::groupCallMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (from_admin) flags_v |= (1u << 1);
+        if (paid_message_stars.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
     }
+    tlw.write_int32(id);
+    from_id->serialize(tlw);
+    tlw.write_int32(date);
+    message->serialize(tlw);
+    if (paid_message_stars.has_value()) { tlw.write_int64(paid_message_stars.value()); }
 }
 
-
-void StarGiftCollection::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
+types::groupCallMessage types::groupCallMessage::read_body(TlReader& rv) {
+    types::groupCallMessage out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.from_admin = (fl_flags & (1u << 1)) != 0;
+    out.id = rv.read_int32();
+    out.from_id = tl::read_boxed<tl::Peer>(rv);
+    out.date = rv.read_int32();
+    out.message = tl::read_boxed<tl::TextWithEntities>(rv);
+    if ((fl_flags & (1u << 0)) != 0) { out.paid_message_stars = rv.read_int64(); }
+    return out;
 }
+
 
-StarGiftCollection StarGiftCollection::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x9d6b13b0u: return StarGiftCollection{types::starGiftCollection::read_body(r)};
-        default: throw TlError("unknown constructor id in StarGiftCollection");
+void types::groupCallDonor::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (top) flags_v |= (1u << 0);
+        if (my) flags_v |= (1u << 1);
+        if (peer_id.has_value()) flags_v |= (1u << 3);
+        tlw.write_uint32(flags_v);
     }
+    if (peer_id.has_value()) { peer_id.value()->serialize(tlw); }
+    tlw.write_int64(stars);
 }
 
-
-void StarGiftUpgradePrice::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StarGiftUpgradePrice StarGiftUpgradePrice::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x99ea331du: return StarGiftUpgradePrice{types::starGiftUpgradePrice::read_body(r)};
-        default: throw TlError("unknown constructor id in StarGiftUpgradePrice");
-    }
-}
-
-
-void StarRefProgram::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StarRefProgram StarRefProgram::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xdd0c66f2u: return StarRefProgram{types::starRefProgram::read_body(r)};
-        default: throw TlError("unknown constructor id in StarRefProgram");
-    }
-}
-
-
-void StarsAmount::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StarsAmount StarsAmount::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xbbb6b4a3u: return StarsAmount{types::starsAmount::read_body(r)};
-        case 0x74aee3e0u: return StarsAmount{types::starsTonAmount::read_body(r)};
-        default: throw TlError("unknown constructor id in StarsAmount");
-    }
-}
-
-
-void StarsGiftOption::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StarsGiftOption StarsGiftOption::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x5e0589f1u: return StarsGiftOption{types::starsGiftOption::read_body(r)};
-        default: throw TlError("unknown constructor id in StarsGiftOption");
-    }
-}
-
-
-void StarsGiveawayOption::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StarsGiveawayOption StarsGiveawayOption::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x94ce852au: return StarsGiveawayOption{types::starsGiveawayOption::read_body(r)};
-        default: throw TlError("unknown constructor id in StarsGiveawayOption");
-    }
-}
-
-
-void StarsGiveawayWinnersOption::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StarsGiveawayWinnersOption StarsGiveawayWinnersOption::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x54236209u: return StarsGiveawayWinnersOption{types::starsGiveawayWinnersOption::read_body(r)};
-        default: throw TlError("unknown constructor id in StarsGiveawayWinnersOption");
-    }
-}
-
-
-void StarsRating::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StarsRating StarsRating::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x1b0e4f07u: return StarsRating{types::starsRating::read_body(r)};
-        default: throw TlError("unknown constructor id in StarsRating");
-    }
-}
-
-
-void StarsRevenueStatus::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StarsRevenueStatus StarsRevenueStatus::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xfebe5491u: return StarsRevenueStatus{types::starsRevenueStatus::read_body(r)};
-        default: throw TlError("unknown constructor id in StarsRevenueStatus");
-    }
-}
-
-
-void StarsSubscription::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StarsSubscription StarsSubscription::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x2e6eab1au: return StarsSubscription{types::starsSubscription::read_body(r)};
-        default: throw TlError("unknown constructor id in StarsSubscription");
-    }
-}
-
-
-void StarsSubscriptionPricing::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StarsSubscriptionPricing StarsSubscriptionPricing::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x05416d58u: return StarsSubscriptionPricing{types::starsSubscriptionPricing::read_body(r)};
-        default: throw TlError("unknown constructor id in StarsSubscriptionPricing");
-    }
-}
-
-
-void StarsTopupOption::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StarsTopupOption StarsTopupOption::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x0bd915c0u: return StarsTopupOption{types::starsTopupOption::read_body(r)};
-        default: throw TlError("unknown constructor id in StarsTopupOption");
-    }
-}
-
-
-void StarsTransaction::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StarsTransaction StarsTransaction::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x13659eb0u: return StarsTransaction{types::starsTransaction::read_body(r)};
-        default: throw TlError("unknown constructor id in StarsTransaction");
-    }
-}
-
-
-void StarsTransactionPeer::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StarsTransactionPeer StarsTransactionPeer::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x95f2bfe4u: return StarsTransactionPeer{types::starsTransactionPeerUnsupported::read_body(r)};
-        case 0xb457b375u: return StarsTransactionPeer{types::starsTransactionPeerAppStore::read_body(r)};
-        case 0x7b560a0bu: return StarsTransactionPeer{types::starsTransactionPeerPlayMarket::read_body(r)};
-        case 0x250dbaf8u: return StarsTransactionPeer{types::starsTransactionPeerPremiumBot::read_body(r)};
-        case 0xe92fd902u: return StarsTransactionPeer{types::starsTransactionPeerFragment::read_body(r)};
-        case 0xd80da15du: return StarsTransactionPeer{types::starsTransactionPeer::read_body(r)};
-        case 0x60682812u: return StarsTransactionPeer{types::starsTransactionPeerAds::read_body(r)};
-        case 0xf9677aadu: return StarsTransactionPeer{types::starsTransactionPeerAPI::read_body(r)};
-        default: throw TlError("unknown constructor id in StarsTransactionPeer");
-    }
-}
-
-
-void StatsAbsValueAndPrev::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StatsAbsValueAndPrev StatsAbsValueAndPrev::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xcb43acdeu: return StatsAbsValueAndPrev{types::statsAbsValueAndPrev::read_body(r)};
-        default: throw TlError("unknown constructor id in StatsAbsValueAndPrev");
-    }
-}
-
-
-void StatsDateRangeDays::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StatsDateRangeDays StatsDateRangeDays::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb637edafu: return StatsDateRangeDays{types::statsDateRangeDays::read_body(r)};
-        default: throw TlError("unknown constructor id in StatsDateRangeDays");
-    }
-}
-
-
-void StatsGraph::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StatsGraph StatsGraph::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x4a27eb2du: return StatsGraph{types::statsGraphAsync::read_body(r)};
-        case 0xbedc9822u: return StatsGraph{types::statsGraphError::read_body(r)};
-        case 0x8ea464b6u: return StatsGraph{types::statsGraph::read_body(r)};
-        default: throw TlError("unknown constructor id in StatsGraph");
-    }
-}
-
-
-void StatsGroupTopAdmin::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StatsGroupTopAdmin StatsGroupTopAdmin::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xd7584c87u: return StatsGroupTopAdmin{types::statsGroupTopAdmin::read_body(r)};
-        default: throw TlError("unknown constructor id in StatsGroupTopAdmin");
-    }
-}
-
-
-void StatsGroupTopInviter::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StatsGroupTopInviter StatsGroupTopInviter::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x535f779du: return StatsGroupTopInviter{types::statsGroupTopInviter::read_body(r)};
-        default: throw TlError("unknown constructor id in StatsGroupTopInviter");
-    }
-}
-
-
-void StatsGroupTopPoster::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StatsGroupTopPoster StatsGroupTopPoster::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x9d04af9bu: return StatsGroupTopPoster{types::statsGroupTopPoster::read_body(r)};
-        default: throw TlError("unknown constructor id in StatsGroupTopPoster");
-    }
-}
-
-
-void StatsPercentValue::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StatsPercentValue StatsPercentValue::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xcbce2fe0u: return StatsPercentValue{types::statsPercentValue::read_body(r)};
-        default: throw TlError("unknown constructor id in StatsPercentValue");
-    }
-}
-
-
-void StatsURL::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StatsURL StatsURL::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x47a971e0u: return StatsURL{types::statsURL::read_body(r)};
-        default: throw TlError("unknown constructor id in StatsURL");
-    }
-}
-
-
-void StickerKeyword::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StickerKeyword StickerKeyword::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xfcfeb29cu: return StickerKeyword{types::stickerKeyword::read_body(r)};
-        default: throw TlError("unknown constructor id in StickerKeyword");
-    }
-}
-
-
-void StickerPack::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StickerPack StickerPack::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x12b299d4u: return StickerPack{types::stickerPack::read_body(r)};
-        default: throw TlError("unknown constructor id in StickerPack");
-    }
-}
-
-
-void StickerSet::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StickerSet StickerSet::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x2dd14edcu: return StickerSet{types::stickerSet::read_body(r)};
-        default: throw TlError("unknown constructor id in StickerSet");
-    }
-}
-
-
-void StickerSetCovered::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StickerSetCovered StickerSetCovered::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x6410a5d2u: return StickerSetCovered{types::stickerSetCovered::read_body(r)};
-        case 0x3407e51bu: return StickerSetCovered{types::stickerSetMultiCovered::read_body(r)};
-        case 0x40d13c0eu: return StickerSetCovered{types::stickerSetFullCovered::read_body(r)};
-        case 0x77b15d1cu: return StickerSetCovered{types::stickerSetNoCovered::read_body(r)};
-        default: throw TlError("unknown constructor id in StickerSetCovered");
-    }
-}
-
-
-void StoriesStealthMode::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StoriesStealthMode StoriesStealthMode::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x712e27fdu: return StoriesStealthMode{types::storiesStealthMode::read_body(r)};
-        default: throw TlError("unknown constructor id in StoriesStealthMode");
-    }
-}
-
-
-void StoryAlbum::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StoryAlbum StoryAlbum::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x9325705au: return StoryAlbum{types::storyAlbum::read_body(r)};
-        default: throw TlError("unknown constructor id in StoryAlbum");
-    }
-}
-
-
-void StoryFwdHeader::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StoryFwdHeader StoryFwdHeader::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb826e150u: return StoryFwdHeader{types::storyFwdHeader::read_body(r)};
-        default: throw TlError("unknown constructor id in StoryFwdHeader");
-    }
-}
-
-
-void StoryItem::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StoryItem StoryItem::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x51e6ee4fu: return StoryItem{types::storyItemDeleted::read_body(r)};
-        case 0xffadc913u: return StoryItem{types::storyItemSkipped::read_body(r)};
-        case 0x16a4b93cu: return StoryItem{types::storyItem::read_body(r)};
-        default: throw TlError("unknown constructor id in StoryItem");
-    }
-}
-
-
-void StoryReaction::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StoryReaction StoryReaction::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x6090d6d5u: return StoryReaction{types::storyReaction::read_body(r)};
-        case 0xbbab2643u: return StoryReaction{types::storyReactionPublicForward::read_body(r)};
-        case 0xcfcd0f13u: return StoryReaction{types::storyReactionPublicRepost::read_body(r)};
-        default: throw TlError("unknown constructor id in StoryReaction");
-    }
-}
-
-
-void StoryView::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StoryView StoryView::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb0bdeac5u: return StoryView{types::storyView::read_body(r)};
-        case 0x9083670bu: return StoryView{types::storyViewPublicForward::read_body(r)};
-        case 0xbd74cf49u: return StoryView{types::storyViewPublicRepost::read_body(r)};
-        default: throw TlError("unknown constructor id in StoryView");
-    }
-}
-
-
-void StoryViews::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-StoryViews StoryViews::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x8d595cd6u: return StoryViews{types::storyViews::read_body(r)};
-        default: throw TlError("unknown constructor id in StoryViews");
-    }
-}
-
-
-void SuggestedPost::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-SuggestedPost SuggestedPost::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x0e8e37e5u: return SuggestedPost{types::suggestedPost::read_body(r)};
-        default: throw TlError("unknown constructor id in SuggestedPost");
-    }
-}
-
-
-void TextWithEntities::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-TextWithEntities TextWithEntities::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x751f3146u: return TextWithEntities{types::textWithEntities::read_body(r)};
-        default: throw TlError("unknown constructor id in TextWithEntities");
-    }
-}
-
-
-void Theme::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-Theme Theme::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xa00e67d6u: return Theme{types::theme::read_body(r)};
-        default: throw TlError("unknown constructor id in Theme");
-    }
-}
-
-
-void ThemeSettings::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-ThemeSettings ThemeSettings::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xfa58b6d4u: return ThemeSettings{types::themeSettings::read_body(r)};
-        default: throw TlError("unknown constructor id in ThemeSettings");
-    }
-}
-
-
-void Timezone::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-Timezone Timezone::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xff9289f5u: return Timezone{types::timezone::read_body(r)};
-        default: throw TlError("unknown constructor id in Timezone");
-    }
-}
-
-
-void TodoCompletion::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-TodoCompletion TodoCompletion::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x221bb5e4u: return TodoCompletion{types::todoCompletion::read_body(r)};
-        default: throw TlError("unknown constructor id in TodoCompletion");
-    }
-}
-
-
-void TodoItem::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-TodoItem TodoItem::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xcba9a52fu: return TodoItem{types::todoItem::read_body(r)};
-        default: throw TlError("unknown constructor id in TodoItem");
-    }
-}
-
-
-void TodoList::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-TodoList TodoList::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x49b92a26u: return TodoList{types::todoList::read_body(r)};
-        default: throw TlError("unknown constructor id in TodoList");
-    }
-}
-
-
-void TonConnectManifest::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-TonConnectManifest TonConnectManifest::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x12229264u: return TonConnectManifest{types::tonConnectManifest::read_body(r)};
-        default: throw TlError("unknown constructor id in TonConnectManifest");
-    }
-}
-
-
-void TonConnectNextEventId::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-TonConnectNextEventId TonConnectNextEventId::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x582464e3u: return TonConnectNextEventId{types::tonConnectNextEventId::read_body(r)};
-        default: throw TlError("unknown constructor id in TonConnectNextEventId");
-    }
-}
-
-
-void TonConnectRequest::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-TonConnectRequest TonConnectRequest::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xa15f8513u: return TonConnectRequest{types::tonConnectRequest::read_body(r)};
-        default: throw TlError("unknown constructor id in TonConnectRequest");
-    }
-}
-
-
-void TonConnectSession::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-TonConnectSession TonConnectSession::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x126556c6u: return TonConnectSession{types::tonConnectSession::read_body(r)};
-        default: throw TlError("unknown constructor id in TonConnectSession");
-    }
-}
-
-
-void TopPeer::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-TopPeer TopPeer::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xedcdc05bu: return TopPeer{types::topPeer::read_body(r)};
-        default: throw TlError("unknown constructor id in TopPeer");
-    }
-}
-
-
-void TopPeerCategory::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-TopPeerCategory TopPeerCategory::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xab661b5bu: return TopPeerCategory{types::topPeerCategoryBotsPM::read_body(r)};
-        case 0x148677e2u: return TopPeerCategory{types::topPeerCategoryBotsInline::read_body(r)};
-        case 0x0637b7edu: return TopPeerCategory{types::topPeerCategoryCorrespondents::read_body(r)};
-        case 0xbd17a14au: return TopPeerCategory{types::topPeerCategoryGroups::read_body(r)};
-        case 0x161d9628u: return TopPeerCategory{types::topPeerCategoryChannels::read_body(r)};
-        case 0x1e76a78cu: return TopPeerCategory{types::topPeerCategoryPhoneCalls::read_body(r)};
-        case 0xa8406ca9u: return TopPeerCategory{types::topPeerCategoryForwardUsers::read_body(r)};
-        case 0xfbeec0f0u: return TopPeerCategory{types::topPeerCategoryForwardChats::read_body(r)};
-        case 0xfd9e7becu: return TopPeerCategory{types::topPeerCategoryBotsApp::read_body(r)};
-        case 0x6c24f3ddu: return TopPeerCategory{types::topPeerCategoryBotsGuestChat::read_body(r)};
-        default: throw TlError("unknown constructor id in TopPeerCategory");
-    }
-}
-
-
-void TopPeerCategoryPeers::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-TopPeerCategoryPeers TopPeerCategoryPeers::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xfb834291u: return TopPeerCategoryPeers{types::topPeerCategoryPeers::read_body(r)};
-        default: throw TlError("unknown constructor id in TopPeerCategoryPeers");
-    }
-}
-
-
-void Update::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-Update Update::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x1f2b0afdu: return Update{types::updateNewMessage::read_body(r)};
-        case 0x4e90bfd6u: return Update{types::updateMessageID::read_body(r)};
-        case 0xa20db0e5u: return Update{types::updateDeleteMessages::read_body(r)};
-        case 0x2a17bf5cu: return Update{types::updateUserTyping::read_body(r)};
-        case 0x83487af0u: return Update{types::updateChatUserTyping::read_body(r)};
-        case 0x07761198u: return Update{types::updateChatParticipants::read_body(r)};
-        case 0xe5bdf8deu: return Update{types::updateUserStatus::read_body(r)};
-        case 0xa7848924u: return Update{types::updateUserName::read_body(r)};
-        case 0x8951abefu: return Update{types::updateNewAuthorization::read_body(r)};
-        case 0x12bcbd9au: return Update{types::updateNewEncryptedMessage::read_body(r)};
-        case 0x1710f156u: return Update{types::updateEncryptedChatTyping::read_body(r)};
-        case 0xb4a2e88du: return Update{types::updateEncryption::read_body(r)};
-        case 0x38fe25b7u: return Update{types::updateEncryptedMessagesRead::read_body(r)};
-        case 0x3dda5451u: return Update{types::updateChatParticipantAdd::read_body(r)};
-        case 0xe32f3d77u: return Update{types::updateChatParticipantDelete::read_body(r)};
-        case 0x8e5e9873u: return Update{types::updateDcOptions::read_body(r)};
-        case 0xbec268efu: return Update{types::updateNotifySettings::read_body(r)};
-        case 0xebe46819u: return Update{types::updateServiceNotification::read_body(r)};
-        case 0xee3b272au: return Update{types::updatePrivacy::read_body(r)};
-        case 0x05492a13u: return Update{types::updateUserPhone::read_body(r)};
-        case 0x9e84bc99u: return Update{types::updateReadHistoryInbox::read_body(r)};
-        case 0x2f2f21bfu: return Update{types::updateReadHistoryOutbox::read_body(r)};
-        case 0x7f891213u: return Update{types::updateWebPage::read_body(r)};
-        case 0xf8227181u: return Update{types::updateReadMessagesContents::read_body(r)};
-        case 0x108d941fu: return Update{types::updateChannelTooLong::read_body(r)};
-        case 0x635b4c09u: return Update{types::updateChannel::read_body(r)};
-        case 0x62ba04d9u: return Update{types::updateNewChannelMessage::read_body(r)};
-        case 0x922e6e10u: return Update{types::updateReadChannelInbox::read_body(r)};
-        case 0xc32d5b12u: return Update{types::updateDeleteChannelMessages::read_body(r)};
-        case 0xf226ac08u: return Update{types::updateChannelMessageViews::read_body(r)};
-        case 0xd7ca61a2u: return Update{types::updateChatParticipantAdmin::read_body(r)};
-        case 0x688a30aau: return Update{types::updateNewStickerSet::read_body(r)};
-        case 0x0bb2d201u: return Update{types::updateStickerSetsOrder::read_body(r)};
-        case 0x31c24808u: return Update{types::updateStickerSets::read_body(r)};
-        case 0x9375341eu: return Update{types::updateSavedGifs::read_body(r)};
-        case 0x496f379cu: return Update{types::updateBotInlineQuery::read_body(r)};
-        case 0x12f12a07u: return Update{types::updateBotInlineSend::read_body(r)};
-        case 0x1b3f4df7u: return Update{types::updateEditChannelMessage::read_body(r)};
-        case 0xb9cfc48du: return Update{types::updateBotCallbackQuery::read_body(r)};
-        case 0xe40370a3u: return Update{types::updateEditMessage::read_body(r)};
-        case 0x691e9052u: return Update{types::updateInlineBotCallbackQuery::read_body(r)};
-        case 0xb75f99a9u: return Update{types::updateReadChannelOutbox::read_body(r)};
-        case 0xedfc111eu: return Update{types::updateDraftMessage::read_body(r)};
-        case 0x571d2742u: return Update{types::updateReadFeaturedStickers::read_body(r)};
-        case 0x9a422c20u: return Update{types::updateRecentStickers::read_body(r)};
-        case 0xa229dd06u: return Update{types::updateConfig::read_body(r)};
-        case 0x3354678fu: return Update{types::updatePtsChanged::read_body(r)};
-        case 0x2f2ba99fu: return Update{types::updateChannelWebPage::read_body(r)};
-        case 0x6e6fe51cu: return Update{types::updateDialogPinned::read_body(r)};
-        case 0xfa0f3ca2u: return Update{types::updatePinnedDialogs::read_body(r)};
-        case 0x8317c0c3u: return Update{types::updateBotWebhookJSON::read_body(r)};
-        case 0x9b9240a6u: return Update{types::updateBotWebhookJSONQuery::read_body(r)};
-        case 0xb5aefd7du: return Update{types::updateBotShippingQuery::read_body(r)};
-        case 0x8caa9a96u: return Update{types::updateBotPrecheckoutQuery::read_body(r)};
-        case 0xab0f6b1eu: return Update{types::updatePhoneCall::read_body(r)};
-        case 0x46560264u: return Update{types::updateLangPackTooLong::read_body(r)};
-        case 0x56022f4du: return Update{types::updateLangPack::read_body(r)};
-        case 0xe511996du: return Update{types::updateFavedStickers::read_body(r)};
-        case 0x25f324f7u: return Update{types::updateChannelReadMessagesContents::read_body(r)};
-        case 0x7084a7beu: return Update{types::updateContactsReset::read_body(r)};
-        case 0xb23fc698u: return Update{types::updateChannelAvailableMessages::read_body(r)};
-        case 0xb658f23eu: return Update{types::updateDialogUnreadMark::read_body(r)};
-        case 0xd64c522bu: return Update{types::updateMessagePoll::read_body(r)};
-        case 0x54c01850u: return Update{types::updateChatDefaultBannedRights::read_body(r)};
-        case 0x19360dc0u: return Update{types::updateFolderPeers::read_body(r)};
-        case 0x6a7e7366u: return Update{types::updatePeerSettings::read_body(r)};
-        case 0xb4afcfb0u: return Update{types::updatePeerLocated::read_body(r)};
-        case 0x39a51dfbu: return Update{types::updateNewScheduledMessage::read_body(r)};
-        case 0xf2a71983u: return Update{types::updateDeleteScheduledMessages::read_body(r)};
-        case 0x8216fba3u: return Update{types::updateTheme::read_body(r)};
-        case 0x871fb939u: return Update{types::updateGeoLiveViewed::read_body(r)};
-        case 0x564fe691u: return Update{types::updateLoginToken::read_body(r)};
-        case 0x7699f014u: return Update{types::updateMessagePollVote::read_body(r)};
-        case 0x26ffde7du: return Update{types::updateDialogFilter::read_body(r)};
-        case 0xa5d72105u: return Update{types::updateDialogFilterOrder::read_body(r)};
-        case 0x3504914fu: return Update{types::updateDialogFilters::read_body(r)};
-        case 0x2661bf09u: return Update{types::updatePhoneCallSignalingData::read_body(r)};
-        case 0xd29a27f4u: return Update{types::updateChannelMessageForwards::read_body(r)};
-        case 0xd6b19546u: return Update{types::updateReadChannelDiscussionInbox::read_body(r)};
-        case 0x695c9e7cu: return Update{types::updateReadChannelDiscussionOutbox::read_body(r)};
-        case 0xebe07752u: return Update{types::updatePeerBlocked::read_body(r)};
-        case 0x8c88c923u: return Update{types::updateChannelUserTyping::read_body(r)};
-        case 0xed85eab5u: return Update{types::updatePinnedMessages::read_body(r)};
-        case 0x5bb98608u: return Update{types::updatePinnedChannelMessages::read_body(r)};
-        case 0xf89a6a4eu: return Update{types::updateChat::read_body(r)};
-        case 0xf2ebdb4eu: return Update{types::updateGroupCallParticipants::read_body(r)};
-        case 0x9d2216e0u: return Update{types::updateGroupCall::read_body(r)};
-        case 0xbb9bb9a5u: return Update{types::updatePeerHistoryTTL::read_body(r)};
-        case 0xd087663au: return Update{types::updateChatParticipant::read_body(r)};
-        case 0x985d3abbu: return Update{types::updateChannelParticipant::read_body(r)};
-        case 0xc4870a49u: return Update{types::updateBotStopped::read_body(r)};
-        case 0x0b783982u: return Update{types::updateGroupCallConnection::read_body(r)};
-        case 0x4d712f2eu: return Update{types::updateBotCommands::read_body(r)};
-        case 0x7063c3dbu: return Update{types::updatePendingJoinRequests::read_body(r)};
-        case 0x7cb34d79u: return Update{types::updateBotChatInviteRequester::read_body(r)};
-        case 0x1e297bfau: return Update{types::updateMessageReactions::read_body(r)};
-        case 0x17b7a20bu: return Update{types::updateAttachMenuBots::read_body(r)};
-        case 0x1592b79du: return Update{types::updateWebViewResultSent::read_body(r)};
-        case 0x14b85813u: return Update{types::updateBotMenuButton::read_body(r)};
-        case 0x74d8be99u: return Update{types::updateSavedRingtones::read_body(r)};
-        case 0x0084cd5au: return Update{types::updateTranscribedAudio::read_body(r)};
-        case 0xfb4c496cu: return Update{types::updateReadFeaturedEmojiStickers::read_body(r)};
-        case 0x28373599u: return Update{types::updateUserEmojiStatus::read_body(r)};
-        case 0x30f443dbu: return Update{types::updateRecentEmojiStatuses::read_body(r)};
-        case 0x6f7863f4u: return Update{types::updateRecentReactions::read_body(r)};
-        case 0x86fccf85u: return Update{types::updateMoveStickerSetToTop::read_body(r)};
-        case 0xd5a41724u: return Update{types::updateMessageExtendedMedia::read_body(r)};
-        case 0x20529438u: return Update{types::updateUser::read_body(r)};
-        case 0xec05b097u: return Update{types::updateAutoSaveSettings::read_body(r)};
-        case 0x75b3b798u: return Update{types::updateStory::read_body(r)};
-        case 0xf74e932bu: return Update{types::updateReadStories::read_body(r)};
-        case 0x1bf335b9u: return Update{types::updateStoryID::read_body(r)};
-        case 0x2c084dc1u: return Update{types::updateStoriesStealthMode::read_body(r)};
-        case 0x7d627683u: return Update{types::updateSentStoryReaction::read_body(r)};
-        case 0x904dd49cu: return Update{types::updateBotChatBoost::read_body(r)};
-        case 0x07b68920u: return Update{types::updateChannelViewForumAsMessages::read_body(r)};
-        case 0xae3f101du: return Update{types::updatePeerWallpaper::read_body(r)};
-        case 0xac21d3ceu: return Update{types::updateBotMessageReaction::read_body(r)};
-        case 0x09cb7759u: return Update{types::updateBotMessageReactions::read_body(r)};
-        case 0xaeaf9e74u: return Update{types::updateSavedDialogPinned::read_body(r)};
-        case 0x686c85a6u: return Update{types::updatePinnedSavedDialogs::read_body(r)};
-        case 0x39c67432u: return Update{types::updateSavedReactionTags::read_body(r)};
-        case 0xf16269d4u: return Update{types::updateSmsJob::read_body(r)};
-        case 0xf9470ab2u: return Update{types::updateQuickReplies::read_body(r)};
-        case 0xf53da717u: return Update{types::updateNewQuickReply::read_body(r)};
-        case 0x53e6f1ecu: return Update{types::updateDeleteQuickReply::read_body(r)};
-        case 0x3e050d0fu: return Update{types::updateQuickReplyMessage::read_body(r)};
-        case 0x566fe7cdu: return Update{types::updateDeleteQuickReplyMessages::read_body(r)};
-        case 0x8ae5c97au: return Update{types::updateBotBusinessConnect::read_body(r)};
-        case 0x9ddb347cu: return Update{types::updateBotNewBusinessMessage::read_body(r)};
-        case 0x07df587cu: return Update{types::updateBotEditBusinessMessage::read_body(r)};
-        case 0xa02a982eu: return Update{types::updateBotDeleteBusinessMessage::read_body(r)};
-        case 0x1824e40bu: return Update{types::updateNewStoryReaction::read_body(r)};
-        case 0x4e80a379u: return Update{types::updateStarsBalance::read_body(r)};
-        case 0x1ea2fda7u: return Update{types::updateBusinessBotCallbackQuery::read_body(r)};
-        case 0xa584b019u: return Update{types::updateStarsRevenueStatus::read_body(r)};
-        case 0x283bd312u: return Update{types::updateBotPurchasedPaidMedia::read_body(r)};
-        case 0x8b725fceu: return Update{types::updatePaidReactionPrivacy::read_body(r)};
-        case 0x504aa18fu: return Update{types::updateSentPhoneCode::read_body(r)};
-        case 0xa477288fu: return Update{types::updateGroupCallChainBlocks::read_body(r)};
-        case 0x77b0e372u: return Update{types::updateReadMonoForumInbox::read_body(r)};
-        case 0xa4a79376u: return Update{types::updateReadMonoForumOutbox::read_body(r)};
-        case 0x9f812b08u: return Update{types::updateMonoForumNoPaidException::read_body(r)};
-        case 0xd8326f0du: return Update{types::updateGroupCallMessage::read_body(r)};
-        case 0xc957a766u: return Update{types::updateGroupCallEncryptedMessage::read_body(r)};
-        case 0x683b2c52u: return Update{types::updatePinnedForumTopic::read_body(r)};
-        case 0xdef143d0u: return Update{types::updatePinnedForumTopics::read_body(r)};
-        case 0x3e85e92cu: return Update{types::updateDeleteGroupCallMessages::read_body(r)};
-        case 0x48e246c2u: return Update{types::updateStarGiftAuctionState::read_body(r)};
-        case 0xdc58f31eu: return Update{types::updateStarGiftAuctionUserState::read_body(r)};
-        case 0xfb9c547au: return Update{types::updateEmojiGameInfo::read_body(r)};
-        case 0xac072444u: return Update{types::updateStarGiftCraftFail::read_body(r)};
-        case 0xbd8367b9u: return Update{types::updateChatParticipantRank::read_body(r)};
-        case 0x4880ed9au: return Update{types::updateManagedBot::read_body(r)};
-        case 0xcdd4093du: return Update{types::updateBotGuestChatQuery::read_body(r)};
-        case 0x8c0f91fbu: return Update{types::updateAiComposeTones::read_body(r)};
-        case 0xbdac7e70u: return Update{types::updateJoinChatWebViewDecision::read_body(r)};
-        case 0xb22083a6u: return Update{types::updateNewBotConnection::read_body(r)};
-        case 0xc39a2adeu: return Update{types::updateWebBrowserSettings::read_body(r)};
-        case 0x140502d1u: return Update{types::updateWebBrowserException::read_body(r)};
-        case 0x20bcbba1u: return Update{types::updateNewEphemeralMessage::read_body(r)};
-        case 0x56dbfcf8u: return Update{types::updateDeleteEphemeralMessages::read_body(r)};
-        case 0x4bbb8f01u: return Update{types::updateEditEphemeralMessage::read_body(r)};
-        case 0x7c1079d6u: return Update{types::updateEphemeralBotCallbackQuery::read_body(r)};
-        case 0x6c0d8e23u: return Update{types::updateBotStarsSubscription::read_body(r)};
-        case 0x6ac3f2aau: return Update{types::updateWalletState::read_body(r)};
-        case 0xb1434d4au: return Update{types::updateSentWalletTransaction::read_body(r)};
-        case 0xa8ae1cacu: return Update{types::updateWalletGaslessInfo::read_body(r)};
-        case 0x50a38e0eu: return Update{types::updateWalletTonConnectSession::read_body(r)};
-        case 0xd1ee8199u: return Update{types::updateWalletTonConnectPendingDisconnect::read_body(r)};
-        default: throw TlError("unknown constructor id in Update");
-    }
-}
-
-
-void Updates::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-Updates Updates::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe317af7eu: return Updates{types::updatesTooLong::read_body(r)};
-        case 0x313bc7f8u: return Updates{types::updateShortMessage::read_body(r)};
-        case 0x4d6deea5u: return Updates{types::updateShortChatMessage::read_body(r)};
-        case 0x78d4dec1u: return Updates{types::updateShort::read_body(r)};
-        case 0x725b04c3u: return Updates{types::updatesCombined::read_body(r)};
-        case 0x74ae4240u: return Updates{types::updates::read_body(r)};
-        case 0x9015e101u: return Updates{types::updateShortSentMessage::read_body(r)};
-        default: throw TlError("unknown constructor id in Updates");
-    }
-}
-
-
-void UrlAuthResult::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-UrlAuthResult UrlAuthResult::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xbdca6167u: return UrlAuthResult{types::urlAuthResultRequest::read_body(r)};
-        case 0x623a8fa0u: return UrlAuthResult{types::urlAuthResultAccepted::read_body(r)};
-        case 0xa9d6db1fu: return UrlAuthResult{types::urlAuthResultDefault::read_body(r)};
-        default: throw TlError("unknown constructor id in UrlAuthResult");
-    }
-}
-
-
-void User::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-User User::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xd3bc4b7au: return User{types::userEmpty::read_body(r)};
-        case 0xb1b8cc83u: return User{types::user::read_body(r)};
-        default: throw TlError("unknown constructor id in User");
-    }
-}
-
-
-void UserFull::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-UserFull UserFull::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb90c2afdu: return UserFull{types::userFull::read_body(r)};
-        default: throw TlError("unknown constructor id in UserFull");
-    }
-}
-
-
-void UserProfilePhoto::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-UserProfilePhoto UserProfilePhoto::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x4f11bae1u: return UserProfilePhoto{types::userProfilePhotoEmpty::read_body(r)};
-        case 0x82d1f706u: return UserProfilePhoto{types::userProfilePhoto::read_body(r)};
-        default: throw TlError("unknown constructor id in UserProfilePhoto");
-    }
-}
-
-
-void UserStatus::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-UserStatus UserStatus::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x09d05049u: return UserStatus{types::userStatusEmpty::read_body(r)};
-        case 0xedb93949u: return UserStatus{types::userStatusOnline::read_body(r)};
-        case 0x008c703fu: return UserStatus{types::userStatusOffline::read_body(r)};
-        case 0x7b197dc8u: return UserStatus{types::userStatusRecently::read_body(r)};
-        case 0x541a1d1au: return UserStatus{types::userStatusLastWeek::read_body(r)};
-        case 0x65899777u: return UserStatus{types::userStatusLastMonth::read_body(r)};
-        default: throw TlError("unknown constructor id in UserStatus");
-    }
-}
-
-
-void Username::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-Username Username::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb4073647u: return Username{types::username::read_body(r)};
-        default: throw TlError("unknown constructor id in Username");
-    }
-}
-
-
-void VideoSize::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-VideoSize VideoSize::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xde33b094u: return VideoSize{types::videoSize::read_body(r)};
-        case 0xf85c413cu: return VideoSize{types::videoSizeEmojiMarkup::read_body(r)};
-        case 0x0da082feu: return VideoSize{types::videoSizeStickerMarkup::read_body(r)};
-        default: throw TlError("unknown constructor id in VideoSize");
-    }
-}
-
-
-void WallPaper::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-WallPaper WallPaper::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xa437c3edu: return WallPaper{types::wallPaper::read_body(r)};
-        case 0xe0804116u: return WallPaper{types::wallPaperNoFile::read_body(r)};
-        default: throw TlError("unknown constructor id in WallPaper");
-    }
-}
-
-
-void WallPaperSettings::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-WallPaperSettings WallPaperSettings::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x372efcd0u: return WallPaperSettings{types::wallPaperSettings::read_body(r)};
-        default: throw TlError("unknown constructor id in WallPaperSettings");
-    }
-}
-
-
-void WalletOwnershipProof::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-WalletOwnershipProof WalletOwnershipProof::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x60bccb0du: return WalletOwnershipProof{types::walletOwnershipProof::read_body(r)};
-        default: throw TlError("unknown constructor id in WalletOwnershipProof");
-    }
-}
-
-
-void WalletState::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-WalletState WalletState::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x9cb9b2ecu: return WalletState{types::walletStateEmpty::read_body(r)};
-        case 0x95c5346bu: return WalletState{types::walletState::read_body(r)};
-        default: throw TlError("unknown constructor id in WalletState");
-    }
-}
-
-
-void WalletTransaction::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-WalletTransaction WalletTransaction::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x952dc143u: return WalletTransaction{types::walletTransaction::read_body(r)};
-        default: throw TlError("unknown constructor id in WalletTransaction");
-    }
-}
-
-
-void WalletTransactionPeer::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-WalletTransactionPeer WalletTransactionPeer::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xd4ea706du: return WalletTransactionPeer{types::walletTransactionPeerUser::read_body(r)};
-        case 0x062cc1bcu: return WalletTransactionPeer{types::walletTransactionPeerAddress::read_body(r)};
-        case 0xe595186eu: return WalletTransactionPeer{types::walletTransactionPeerOnramp::read_body(r)};
-        case 0x728bed5au: return WalletTransactionPeer{types::walletTransactionPeerUnsupported::read_body(r)};
-        case 0x54e70c31u: return WalletTransactionPeer{types::walletTransactionPeerChannel::read_body(r)};
-        case 0xf4729499u: return WalletTransactionPeer{types::walletTransactionPeerTelegramGift::read_body(r)};
-        default: throw TlError("unknown constructor id in WalletTransactionPeer");
-    }
-}
-
-
-void WalletUserAddress::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-WalletUserAddress WalletUserAddress::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xfe78eeccu: return WalletUserAddress{types::walletUserAddress::read_body(r)};
-        default: throw TlError("unknown constructor id in WalletUserAddress");
-    }
-}
-
-
-void WebAuthorization::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-WebAuthorization WebAuthorization::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xa6f8f452u: return WebAuthorization{types::webAuthorization::read_body(r)};
-        default: throw TlError("unknown constructor id in WebAuthorization");
-    }
-}
-
-
-void WebDocument::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-WebDocument WebDocument::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x1c570ed1u: return WebDocument{types::webDocument::read_body(r)};
-        case 0xf9c8bcc6u: return WebDocument{types::webDocumentNoProxy::read_body(r)};
-        default: throw TlError("unknown constructor id in WebDocument");
-    }
-}
-
-
-void WebDomainException::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-WebDomainException WebDomainException::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x933ca597u: return WebDomainException{types::webDomainException::read_body(r)};
-        default: throw TlError("unknown constructor id in WebDomainException");
-    }
-}
-
-
-void WebPage::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-WebPage WebPage::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x211a1788u: return WebPage{types::webPageEmpty::read_body(r)};
-        case 0xb0d13e47u: return WebPage{types::webPagePending::read_body(r)};
-        case 0xe89c45b2u: return WebPage{types::webPage::read_body(r)};
-        case 0x7311ca11u: return WebPage{types::webPageNotModified::read_body(r)};
-        default: throw TlError("unknown constructor id in WebPage");
-    }
-}
-
-
-void WebPageAttribute::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-WebPageAttribute WebPageAttribute::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x54b56617u: return WebPageAttribute{types::webPageAttributeTheme::read_body(r)};
-        case 0x2e94c3e7u: return WebPageAttribute{types::webPageAttributeStory::read_body(r)};
-        case 0x50cc03d3u: return WebPageAttribute{types::webPageAttributeStickerSet::read_body(r)};
-        case 0xcf6f6db8u: return WebPageAttribute{types::webPageAttributeUniqueStarGift::read_body(r)};
-        case 0x31cad303u: return WebPageAttribute{types::webPageAttributeStarGiftCollection::read_body(r)};
-        case 0x01c641c2u: return WebPageAttribute{types::webPageAttributeStarGiftAuction::read_body(r)};
-        case 0x7781fe18u: return WebPageAttribute{types::webPageAttributeAiComposeTone::read_body(r)};
-        default: throw TlError("unknown constructor id in WebPageAttribute");
-    }
-}
-
-
-void WebViewMessageSent::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-WebViewMessageSent WebViewMessageSent::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x0c94511cu: return WebViewMessageSent{types::webViewMessageSent::read_body(r)};
-        default: throw TlError("unknown constructor id in WebViewMessageSent");
-    }
-}
-
-
-void WebViewResult::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-WebViewResult WebViewResult::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x4d22ff98u: return WebViewResult{types::webViewResultUrl::read_body(r)};
-        default: throw TlError("unknown constructor id in WebViewResult");
-    }
-}
-
-
-void account_AuthorizationForm::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_AuthorizationForm account_AuthorizationForm::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xad2e1cd8u: return account_AuthorizationForm{types::account_authorizationForm::read_body(r)};
-        default: throw TlError("unknown constructor id in account_AuthorizationForm");
-    }
-}
-
-
-void account_Authorizations::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_Authorizations account_Authorizations::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x4bff8ea0u: return account_Authorizations{types::account_authorizations::read_body(r)};
-        default: throw TlError("unknown constructor id in account_Authorizations");
-    }
-}
-
-
-void account_AutoDownloadSettings::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_AutoDownloadSettings account_AutoDownloadSettings::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x63cacf26u: return account_AutoDownloadSettings{types::account_autoDownloadSettings::read_body(r)};
-        default: throw TlError("unknown constructor id in account_AutoDownloadSettings");
-    }
-}
-
-
-void account_AutoSaveSettings::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_AutoSaveSettings account_AutoSaveSettings::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x4c3e069du: return account_AutoSaveSettings{types::account_autoSaveSettings::read_body(r)};
-        default: throw TlError("unknown constructor id in account_AutoSaveSettings");
-    }
-}
-
-
-void account_BusinessChatLinks::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_BusinessChatLinks account_BusinessChatLinks::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xec43a2d1u: return account_BusinessChatLinks{types::account_businessChatLinks::read_body(r)};
-        default: throw TlError("unknown constructor id in account_BusinessChatLinks");
-    }
-}
-
-
-void account_ChatThemes::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_ChatThemes account_ChatThemes::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe011e1c4u: return account_ChatThemes{types::account_chatThemesNotModified::read_body(r)};
-        case 0xbe098173u: return account_ChatThemes{types::account_chatThemes::read_body(r)};
-        default: throw TlError("unknown constructor id in account_ChatThemes");
-    }
-}
-
-
-void account_ConnectedBots::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_ConnectedBots account_ConnectedBots::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x17d7f87bu: return account_ConnectedBots{types::account_connectedBots::read_body(r)};
-        default: throw TlError("unknown constructor id in account_ConnectedBots");
-    }
-}
-
-
-void account_ContentSettings::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_ContentSettings account_ContentSettings::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x57e28221u: return account_ContentSettings{types::account_contentSettings::read_body(r)};
-        default: throw TlError("unknown constructor id in account_ContentSettings");
-    }
-}
-
-
-void account_EmailVerified::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_EmailVerified account_EmailVerified::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x2b96cd1bu: return account_EmailVerified{types::account_emailVerified::read_body(r)};
-        case 0xe1bb0d61u: return account_EmailVerified{types::account_emailVerifiedLogin::read_body(r)};
-        default: throw TlError("unknown constructor id in account_EmailVerified");
-    }
-}
-
-
-void account_EmojiStatuses::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_EmojiStatuses account_EmojiStatuses::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xd08ce645u: return account_EmojiStatuses{types::account_emojiStatusesNotModified::read_body(r)};
-        case 0x90c467d1u: return account_EmojiStatuses{types::account_emojiStatuses::read_body(r)};
-        default: throw TlError("unknown constructor id in account_EmojiStatuses");
-    }
-}
-
-
-void account_PaidMessagesRevenue::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_PaidMessagesRevenue account_PaidMessagesRevenue::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x1e109708u: return account_PaidMessagesRevenue{types::account_paidMessagesRevenue::read_body(r)};
-        default: throw TlError("unknown constructor id in account_PaidMessagesRevenue");
-    }
-}
-
-
-void account_PasskeyRegistrationOptions::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_PasskeyRegistrationOptions account_PasskeyRegistrationOptions::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe16b5ce1u: return account_PasskeyRegistrationOptions{types::account_passkeyRegistrationOptions::read_body(r)};
-        default: throw TlError("unknown constructor id in account_PasskeyRegistrationOptions");
-    }
-}
-
-
-void account_Passkeys::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_Passkeys account_Passkeys::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xf8e0aa1cu: return account_Passkeys{types::account_passkeys::read_body(r)};
-        default: throw TlError("unknown constructor id in account_Passkeys");
-    }
-}
-
-
-void account_Password::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_Password account_Password::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x957b50fbu: return account_Password{types::account_password::read_body(r)};
-        default: throw TlError("unknown constructor id in account_Password");
-    }
-}
-
-
-void account_PasswordInputSettings::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_PasswordInputSettings account_PasswordInputSettings::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xc23727c9u: return account_PasswordInputSettings{types::account_passwordInputSettings::read_body(r)};
-        default: throw TlError("unknown constructor id in account_PasswordInputSettings");
-    }
-}
-
-
-void account_PasswordSettings::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_PasswordSettings account_PasswordSettings::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x9a5c33e5u: return account_PasswordSettings{types::account_passwordSettings::read_body(r)};
-        default: throw TlError("unknown constructor id in account_PasswordSettings");
-    }
-}
-
-
-void account_PrivacyRules::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_PrivacyRules account_PrivacyRules::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x50a04e45u: return account_PrivacyRules{types::account_privacyRules::read_body(r)};
-        default: throw TlError("unknown constructor id in account_PrivacyRules");
-    }
-}
-
-
-void account_ResetPasswordResult::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_ResetPasswordResult account_ResetPasswordResult::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe3779861u: return account_ResetPasswordResult{types::account_resetPasswordFailedWait::read_body(r)};
-        case 0xe9effc7du: return account_ResetPasswordResult{types::account_resetPasswordRequestedWait::read_body(r)};
-        case 0xe926d63eu: return account_ResetPasswordResult{types::account_resetPasswordOk::read_body(r)};
-        default: throw TlError("unknown constructor id in account_ResetPasswordResult");
-    }
-}
-
-
-void account_ResolvedBusinessChatLinks::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_ResolvedBusinessChatLinks account_ResolvedBusinessChatLinks::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x9a23af21u: return account_ResolvedBusinessChatLinks{types::account_resolvedBusinessChatLinks::read_body(r)};
-        default: throw TlError("unknown constructor id in account_ResolvedBusinessChatLinks");
-    }
-}
-
-
-void account_SavedMusicIds::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_SavedMusicIds account_SavedMusicIds::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x4fc81d6eu: return account_SavedMusicIds{types::account_savedMusicIdsNotModified::read_body(r)};
-        case 0x998d6636u: return account_SavedMusicIds{types::account_savedMusicIds::read_body(r)};
-        default: throw TlError("unknown constructor id in account_SavedMusicIds");
-    }
-}
-
-
-void account_SavedRingtone::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_SavedRingtone account_SavedRingtone::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb7263f6du: return account_SavedRingtone{types::account_savedRingtone::read_body(r)};
-        case 0x1f307eb7u: return account_SavedRingtone{types::account_savedRingtoneConverted::read_body(r)};
-        default: throw TlError("unknown constructor id in account_SavedRingtone");
-    }
-}
-
-
-void account_SavedRingtones::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_SavedRingtones account_SavedRingtones::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xfbf6e8b1u: return account_SavedRingtones{types::account_savedRingtonesNotModified::read_body(r)};
-        case 0xc1e92cc5u: return account_SavedRingtones{types::account_savedRingtones::read_body(r)};
-        default: throw TlError("unknown constructor id in account_SavedRingtones");
-    }
-}
-
-
-void account_SentEmailCode::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_SentEmailCode account_SentEmailCode::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x811f854fu: return account_SentEmailCode{types::account_sentEmailCode::read_body(r)};
-        default: throw TlError("unknown constructor id in account_SentEmailCode");
-    }
-}
-
-
-void account_Takeout::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_Takeout account_Takeout::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x4dba4501u: return account_Takeout{types::account_takeout::read_body(r)};
-        default: throw TlError("unknown constructor id in account_Takeout");
-    }
-}
-
-
-void account_Themes::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_Themes account_Themes::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xf41eb622u: return account_Themes{types::account_themesNotModified::read_body(r)};
-        case 0x9a3d8c6du: return account_Themes{types::account_themes::read_body(r)};
-        default: throw TlError("unknown constructor id in account_Themes");
-    }
-}
-
-
-void account_TmpPassword::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_TmpPassword account_TmpPassword::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xdb64fd34u: return account_TmpPassword{types::account_tmpPassword::read_body(r)};
-        default: throw TlError("unknown constructor id in account_TmpPassword");
-    }
-}
-
-
-void account_WallPapers::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_WallPapers account_WallPapers::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x1c199183u: return account_WallPapers{types::account_wallPapersNotModified::read_body(r)};
-        case 0xcdc3858cu: return account_WallPapers{types::account_wallPapers::read_body(r)};
-        default: throw TlError("unknown constructor id in account_WallPapers");
-    }
-}
-
-
-void account_WebAuthorizations::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_WebAuthorizations account_WebAuthorizations::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xed56c9fcu: return account_WebAuthorizations{types::account_webAuthorizations::read_body(r)};
-        default: throw TlError("unknown constructor id in account_WebAuthorizations");
-    }
-}
-
-
-void account_WebBrowserSettings::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-account_WebBrowserSettings account_WebBrowserSettings::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xc31c8f4eu: return account_WebBrowserSettings{types::account_webBrowserSettingsNotModified::read_body(r)};
-        case 0x79eb8cb3u: return account_WebBrowserSettings{types::account_webBrowserSettings::read_body(r)};
-        default: throw TlError("unknown constructor id in account_WebBrowserSettings");
-    }
-}
-
-
-void aicompose_Tones::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-aicompose_Tones aicompose_Tones::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xc1f46103u: return aicompose_Tones{types::aicompose_tonesNotModified::read_body(r)};
-        case 0x6c9d0efeu: return aicompose_Tones{types::aicompose_tones::read_body(r)};
-        default: throw TlError("unknown constructor id in aicompose_Tones");
-    }
-}
-
-
-void auth_Authorization::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-auth_Authorization auth_Authorization::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x2ea2c0d4u: return auth_Authorization{types::auth_authorization::read_body(r)};
-        case 0x44747e9au: return auth_Authorization{types::auth_authorizationSignUpRequired::read_body(r)};
-        default: throw TlError("unknown constructor id in auth_Authorization");
-    }
-}
-
-
-void auth_CodeType::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-auth_CodeType auth_CodeType::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x72a3158cu: return auth_CodeType{types::auth_codeTypeSms::read_body(r)};
-        case 0x741cd3e3u: return auth_CodeType{types::auth_codeTypeCall::read_body(r)};
-        case 0x226ccefbu: return auth_CodeType{types::auth_codeTypeFlashCall::read_body(r)};
-        case 0xd61ad6eeu: return auth_CodeType{types::auth_codeTypeMissedCall::read_body(r)};
-        case 0x06ed998cu: return auth_CodeType{types::auth_codeTypeFragmentSms::read_body(r)};
-        default: throw TlError("unknown constructor id in auth_CodeType");
-    }
-}
-
-
-void auth_ExportedAuthorization::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-auth_ExportedAuthorization auth_ExportedAuthorization::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb434e2b8u: return auth_ExportedAuthorization{types::auth_exportedAuthorization::read_body(r)};
-        default: throw TlError("unknown constructor id in auth_ExportedAuthorization");
-    }
-}
-
-
-void auth_FirebasePnvIntent::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-auth_FirebasePnvIntent auth_FirebasePnvIntent::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xdf5ac00cu: return auth_FirebasePnvIntent{types::auth_firebasePnvIntent::read_body(r)};
-        default: throw TlError("unknown constructor id in auth_FirebasePnvIntent");
-    }
-}
-
-
-void auth_LoggedOut::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-auth_LoggedOut auth_LoggedOut::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xc3a2835fu: return auth_LoggedOut{types::auth_loggedOut::read_body(r)};
-        default: throw TlError("unknown constructor id in auth_LoggedOut");
-    }
-}
-
-
-void auth_LoginToken::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-auth_LoginToken auth_LoginToken::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x629f1980u: return auth_LoginToken{types::auth_loginToken::read_body(r)};
-        case 0x068e9916u: return auth_LoginToken{types::auth_loginTokenMigrateTo::read_body(r)};
-        case 0x390d5c5eu: return auth_LoginToken{types::auth_loginTokenSuccess::read_body(r)};
-        default: throw TlError("unknown constructor id in auth_LoginToken");
-    }
-}
-
-
-void auth_PasskeyLoginOptions::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-auth_PasskeyLoginOptions auth_PasskeyLoginOptions::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe2037789u: return auth_PasskeyLoginOptions{types::auth_passkeyLoginOptions::read_body(r)};
-        default: throw TlError("unknown constructor id in auth_PasskeyLoginOptions");
-    }
-}
-
-
-void auth_PasswordRecovery::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-auth_PasswordRecovery auth_PasswordRecovery::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x137948a5u: return auth_PasswordRecovery{types::auth_passwordRecovery::read_body(r)};
-        default: throw TlError("unknown constructor id in auth_PasswordRecovery");
-    }
-}
-
-
-void auth_SentCode::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-auth_SentCode auth_SentCode::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x5e002502u: return auth_SentCode{types::auth_sentCode::read_body(r)};
-        case 0x2390fe44u: return auth_SentCode{types::auth_sentCodeSuccess::read_body(r)};
-        case 0xf8827ebfu: return auth_SentCode{types::auth_sentCodePaymentRequired::read_body(r)};
-        default: throw TlError("unknown constructor id in auth_SentCode");
-    }
-}
-
-
-void auth_SentCodeType::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-auth_SentCodeType auth_SentCodeType::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x3dbb5986u: return auth_SentCodeType{types::auth_sentCodeTypeApp::read_body(r)};
-        case 0xc000bba2u: return auth_SentCodeType{types::auth_sentCodeTypeSms::read_body(r)};
-        case 0x5353e5a7u: return auth_SentCodeType{types::auth_sentCodeTypeCall::read_body(r)};
-        case 0xab03c6d9u: return auth_SentCodeType{types::auth_sentCodeTypeFlashCall::read_body(r)};
-        case 0x82006484u: return auth_SentCodeType{types::auth_sentCodeTypeMissedCall::read_body(r)};
-        case 0xf450f59bu: return auth_SentCodeType{types::auth_sentCodeTypeEmailCode::read_body(r)};
-        case 0xa5491deau: return auth_SentCodeType{types::auth_sentCodeTypeSetUpEmailRequired::read_body(r)};
-        case 0xd9565c39u: return auth_SentCodeType{types::auth_sentCodeTypeFragmentSms::read_body(r)};
-        case 0x009fd736u: return auth_SentCodeType{types::auth_sentCodeTypeFirebaseSms::read_body(r)};
-        case 0xa416ac81u: return auth_SentCodeType{types::auth_sentCodeTypeSmsWord::read_body(r)};
-        case 0xb37794afu: return auth_SentCodeType{types::auth_sentCodeTypeSmsPhrase::read_body(r)};
-        default: throw TlError("unknown constructor id in auth_SentCodeType");
-    }
-}
-
-
-void bots_AccessSettings::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-bots_AccessSettings bots_AccessSettings::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xdd1fbf93u: return bots_AccessSettings{types::bots_accessSettings::read_body(r)};
-        default: throw TlError("unknown constructor id in bots_AccessSettings");
-    }
-}
-
-
-void bots_BotInfo::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-bots_BotInfo bots_BotInfo::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe8a775b0u: return bots_BotInfo{types::bots_botInfo::read_body(r)};
-        default: throw TlError("unknown constructor id in bots_BotInfo");
-    }
-}
-
-
-void bots_ExportedBotToken::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-bots_ExportedBotToken bots_ExportedBotToken::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x3c60b621u: return bots_ExportedBotToken{types::bots_exportedBotToken::read_body(r)};
-        default: throw TlError("unknown constructor id in bots_ExportedBotToken");
-    }
-}
-
-
-void bots_PopularAppBots::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-bots_PopularAppBots bots_PopularAppBots::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x1991b13bu: return bots_PopularAppBots{types::bots_popularAppBots::read_body(r)};
-        default: throw TlError("unknown constructor id in bots_PopularAppBots");
-    }
-}
-
-
-void bots_PreviewInfo::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-bots_PreviewInfo bots_PreviewInfo::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x0ca71d64u: return bots_PreviewInfo{types::bots_previewInfo::read_body(r)};
-        default: throw TlError("unknown constructor id in bots_PreviewInfo");
-    }
-}
-
-
-void bots_RequestedButton::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-bots_RequestedButton bots_RequestedButton::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xf13bbcd7u: return bots_RequestedButton{types::bots_requestedButton::read_body(r)};
-        default: throw TlError("unknown constructor id in bots_RequestedButton");
-    }
-}
-
-
-void channels_AdminLogResults::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-channels_AdminLogResults channels_AdminLogResults::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xed8af74du: return channels_AdminLogResults{types::channels_adminLogResults::read_body(r)};
-        default: throw TlError("unknown constructor id in channels_AdminLogResults");
-    }
-}
-
-
-void channels_ChannelParticipant::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-channels_ChannelParticipant channels_ChannelParticipant::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xdfb80317u: return channels_ChannelParticipant{types::channels_channelParticipant::read_body(r)};
-        default: throw TlError("unknown constructor id in channels_ChannelParticipant");
-    }
-}
-
-
-void channels_ChannelParticipants::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-channels_ChannelParticipants channels_ChannelParticipants::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x9ab0feafu: return channels_ChannelParticipants{types::channels_channelParticipants::read_body(r)};
-        case 0xf0173fe9u: return channels_ChannelParticipants{types::channels_channelParticipantsNotModified::read_body(r)};
-        default: throw TlError("unknown constructor id in channels_ChannelParticipants");
-    }
-}
-
-
-void channels_SendAsPeers::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-channels_SendAsPeers channels_SendAsPeers::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xf496b0c6u: return channels_SendAsPeers{types::channels_sendAsPeers::read_body(r)};
-        default: throw TlError("unknown constructor id in channels_SendAsPeers");
-    }
-}
-
-
-void channels_SponsoredMessageReportResult::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-channels_SponsoredMessageReportResult channels_SponsoredMessageReportResult::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x846f9e42u: return channels_SponsoredMessageReportResult{types::channels_sponsoredMessageReportResultChooseOption::read_body(r)};
-        case 0x3e3bcf2fu: return channels_SponsoredMessageReportResult{types::channels_sponsoredMessageReportResultAdsHidden::read_body(r)};
-        case 0xad798849u: return channels_SponsoredMessageReportResult{types::channels_sponsoredMessageReportResultReported::read_body(r)};
-        default: throw TlError("unknown constructor id in channels_SponsoredMessageReportResult");
-    }
-}
-
-
-void chatlists_ChatlistInvite::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-chatlists_ChatlistInvite chatlists_ChatlistInvite::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xfa87f659u: return chatlists_ChatlistInvite{types::chatlists_chatlistInviteAlready::read_body(r)};
-        case 0xf10ece2fu: return chatlists_ChatlistInvite{types::chatlists_chatlistInvite::read_body(r)};
-        default: throw TlError("unknown constructor id in chatlists_ChatlistInvite");
-    }
-}
-
-
-void chatlists_ChatlistUpdates::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-chatlists_ChatlistUpdates chatlists_ChatlistUpdates::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x93bd878du: return chatlists_ChatlistUpdates{types::chatlists_chatlistUpdates::read_body(r)};
-        default: throw TlError("unknown constructor id in chatlists_ChatlistUpdates");
-    }
-}
-
-
-void chatlists_ExportedChatlistInvite::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-chatlists_ExportedChatlistInvite chatlists_ExportedChatlistInvite::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x10e6e3a6u: return chatlists_ExportedChatlistInvite{types::chatlists_exportedChatlistInvite::read_body(r)};
-        default: throw TlError("unknown constructor id in chatlists_ExportedChatlistInvite");
-    }
-}
-
-
-void chatlists_ExportedInvites::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-chatlists_ExportedInvites chatlists_ExportedInvites::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x10ab6dc7u: return chatlists_ExportedInvites{types::chatlists_exportedInvites::read_body(r)};
-        default: throw TlError("unknown constructor id in chatlists_ExportedInvites");
-    }
-}
-
-
-void communities_ParticipantJoinedChats::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-communities_ParticipantJoinedChats communities_ParticipantJoinedChats::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x8d78512au: return communities_ParticipantJoinedChats{types::communities_participantJoinedChats::read_body(r)};
-        default: throw TlError("unknown constructor id in communities_ParticipantJoinedChats");
-    }
-}
-
-
-void communities_PeerLinkRequests::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-communities_PeerLinkRequests communities_PeerLinkRequests::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x2244afadu: return communities_PeerLinkRequests{types::communities_peerLinkRequests::read_body(r)};
-        default: throw TlError("unknown constructor id in communities_PeerLinkRequests");
-    }
-}
-
-
-void contacts_Blocked::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-contacts_Blocked contacts_Blocked::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x0ade1591u: return contacts_Blocked{types::contacts_blocked::read_body(r)};
-        case 0xe1664194u: return contacts_Blocked{types::contacts_blockedSlice::read_body(r)};
-        default: throw TlError("unknown constructor id in contacts_Blocked");
-    }
-}
-
-
-void contacts_ContactBirthdays::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-contacts_ContactBirthdays contacts_ContactBirthdays::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x114ff30du: return contacts_ContactBirthdays{types::contacts_contactBirthdays::read_body(r)};
-        default: throw TlError("unknown constructor id in contacts_ContactBirthdays");
-    }
-}
-
-
-void contacts_Contacts::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-contacts_Contacts contacts_Contacts::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb74ba9d2u: return contacts_Contacts{types::contacts_contactsNotModified::read_body(r)};
-        case 0xeae87e42u: return contacts_Contacts{types::contacts_contacts::read_body(r)};
-        default: throw TlError("unknown constructor id in contacts_Contacts");
-    }
-}
-
-
-void contacts_Found::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-contacts_Found contacts_Found::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb3134d9du: return contacts_Found{types::contacts_found::read_body(r)};
-        default: throw TlError("unknown constructor id in contacts_Found");
-    }
-}
-
-
-void contacts_ImportedContacts::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-contacts_ImportedContacts contacts_ImportedContacts::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x77d01c3bu: return contacts_ImportedContacts{types::contacts_importedContacts::read_body(r)};
-        default: throw TlError("unknown constructor id in contacts_ImportedContacts");
-    }
-}
-
-
-void contacts_ResolvedPeer::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-contacts_ResolvedPeer contacts_ResolvedPeer::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x7f077ad9u: return contacts_ResolvedPeer{types::contacts_resolvedPeer::read_body(r)};
-        default: throw TlError("unknown constructor id in contacts_ResolvedPeer");
-    }
-}
-
-
-void contacts_SponsoredPeers::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-contacts_SponsoredPeers contacts_SponsoredPeers::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xea32b4b1u: return contacts_SponsoredPeers{types::contacts_sponsoredPeersEmpty::read_body(r)};
-        case 0xeb032884u: return contacts_SponsoredPeers{types::contacts_sponsoredPeers::read_body(r)};
-        default: throw TlError("unknown constructor id in contacts_SponsoredPeers");
-    }
-}
-
-
-void contacts_TopPeers::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-contacts_TopPeers contacts_TopPeers::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xde266ef5u: return contacts_TopPeers{types::contacts_topPeersNotModified::read_body(r)};
-        case 0x70b772a8u: return contacts_TopPeers{types::contacts_topPeers::read_body(r)};
-        case 0xb52c939du: return contacts_TopPeers{types::contacts_topPeersDisabled::read_body(r)};
-        default: throw TlError("unknown constructor id in contacts_TopPeers");
-    }
-}
-
-
-void ephemeral_WelcomeMessages::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-ephemeral_WelcomeMessages ephemeral_WelcomeMessages::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x59ffdb31u: return ephemeral_WelcomeMessages{types::ephemeral_welcomeMessagesNotModified::read_body(r)};
-        case 0x104fc872u: return ephemeral_WelcomeMessages{types::ephemeral_welcomeMessages::read_body(r)};
-        default: throw TlError("unknown constructor id in ephemeral_WelcomeMessages");
-    }
-}
-
-
-void fragment_CollectibleInfo::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-fragment_CollectibleInfo fragment_CollectibleInfo::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x6ebdff91u: return fragment_CollectibleInfo{types::fragment_collectibleInfo::read_body(r)};
-        default: throw TlError("unknown constructor id in fragment_CollectibleInfo");
-    }
-}
-
-
-void help_AppConfig::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_AppConfig help_AppConfig::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x7cde641du: return help_AppConfig{types::help_appConfigNotModified::read_body(r)};
-        case 0xdd18782eu: return help_AppConfig{types::help_appConfig::read_body(r)};
-        default: throw TlError("unknown constructor id in help_AppConfig");
-    }
-}
-
-
-void help_AppUpdate::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_AppUpdate help_AppUpdate::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xccbbce30u: return help_AppUpdate{types::help_appUpdate::read_body(r)};
-        case 0xc45a6536u: return help_AppUpdate{types::help_noAppUpdate::read_body(r)};
-        default: throw TlError("unknown constructor id in help_AppUpdate");
-    }
-}
-
-
-void help_ConfigSimple::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_ConfigSimple help_ConfigSimple::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x5a592a6cu: return help_ConfigSimple{types::help_configSimple::read_body(r)};
-        default: throw TlError("unknown constructor id in help_ConfigSimple");
-    }
-}
-
-
-void help_CountriesList::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_CountriesList help_CountriesList::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x93cc1f32u: return help_CountriesList{types::help_countriesListNotModified::read_body(r)};
-        case 0x87d0759eu: return help_CountriesList{types::help_countriesList::read_body(r)};
-        default: throw TlError("unknown constructor id in help_CountriesList");
-    }
-}
-
-
-void help_Country::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_Country help_Country::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xc3878e23u: return help_Country{types::help_country::read_body(r)};
-        default: throw TlError("unknown constructor id in help_Country");
-    }
-}
-
-
-void help_CountryCode::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_CountryCode help_CountryCode::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x4203c5efu: return help_CountryCode{types::help_countryCode::read_body(r)};
-        default: throw TlError("unknown constructor id in help_CountryCode");
-    }
-}
-
-
-void help_DeepLinkInfo::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_DeepLinkInfo help_DeepLinkInfo::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x66afa166u: return help_DeepLinkInfo{types::help_deepLinkInfoEmpty::read_body(r)};
-        case 0x6a4ee832u: return help_DeepLinkInfo{types::help_deepLinkInfo::read_body(r)};
-        default: throw TlError("unknown constructor id in help_DeepLinkInfo");
-    }
-}
-
-
-void help_InviteText::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_InviteText help_InviteText::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x18cb9f78u: return help_InviteText{types::help_inviteText::read_body(r)};
-        default: throw TlError("unknown constructor id in help_InviteText");
-    }
-}
-
-
-void help_PassportConfig::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_PassportConfig help_PassportConfig::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xbfb9f457u: return help_PassportConfig{types::help_passportConfigNotModified::read_body(r)};
-        case 0xa098d6afu: return help_PassportConfig{types::help_passportConfig::read_body(r)};
-        default: throw TlError("unknown constructor id in help_PassportConfig");
-    }
-}
-
-
-void help_PeerColorOption::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_PeerColorOption help_PeerColorOption::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xadec6ebeu: return help_PeerColorOption{types::help_peerColorOption::read_body(r)};
-        default: throw TlError("unknown constructor id in help_PeerColorOption");
-    }
-}
-
-
-void help_PeerColorSet::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_PeerColorSet help_PeerColorSet::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x26219a58u: return help_PeerColorSet{types::help_peerColorSet::read_body(r)};
-        case 0x767d61ebu: return help_PeerColorSet{types::help_peerColorProfileSet::read_body(r)};
-        default: throw TlError("unknown constructor id in help_PeerColorSet");
-    }
-}
-
-
-void help_PeerColors::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_PeerColors help_PeerColors::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x2ba1f5ceu: return help_PeerColors{types::help_peerColorsNotModified::read_body(r)};
-        case 0x00f8ed08u: return help_PeerColors{types::help_peerColors::read_body(r)};
-        default: throw TlError("unknown constructor id in help_PeerColors");
-    }
-}
-
-
-void help_PremiumPromo::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_PremiumPromo help_PremiumPromo::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x5334759cu: return help_PremiumPromo{types::help_premiumPromo::read_body(r)};
-        default: throw TlError("unknown constructor id in help_PremiumPromo");
-    }
-}
-
-
-void help_PromoData::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_PromoData help_PromoData::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x98f6ac75u: return help_PromoData{types::help_promoDataEmpty::read_body(r)};
-        case 0x08a4d87au: return help_PromoData{types::help_promoData::read_body(r)};
-        default: throw TlError("unknown constructor id in help_PromoData");
-    }
-}
-
-
-void help_RecentMeUrls::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_RecentMeUrls help_RecentMeUrls::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x0e0310d7u: return help_RecentMeUrls{types::help_recentMeUrls::read_body(r)};
-        default: throw TlError("unknown constructor id in help_RecentMeUrls");
-    }
-}
-
-
-void help_Support::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_Support help_Support::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x17c6b5f6u: return help_Support{types::help_support::read_body(r)};
-        default: throw TlError("unknown constructor id in help_Support");
-    }
-}
-
-
-void help_SupportName::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_SupportName help_SupportName::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x8c05f1c9u: return help_SupportName{types::help_supportName::read_body(r)};
-        default: throw TlError("unknown constructor id in help_SupportName");
-    }
-}
-
-
-void help_TermsOfService::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_TermsOfService help_TermsOfService::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x780a0310u: return help_TermsOfService{types::help_termsOfService::read_body(r)};
-        default: throw TlError("unknown constructor id in help_TermsOfService");
-    }
-}
-
-
-void help_TermsOfServiceUpdate::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_TermsOfServiceUpdate help_TermsOfServiceUpdate::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe3309f7fu: return help_TermsOfServiceUpdate{types::help_termsOfServiceUpdateEmpty::read_body(r)};
-        case 0x28ecf961u: return help_TermsOfServiceUpdate{types::help_termsOfServiceUpdate::read_body(r)};
-        default: throw TlError("unknown constructor id in help_TermsOfServiceUpdate");
-    }
-}
-
-
-void help_TimezonesList::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_TimezonesList help_TimezonesList::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x970708ccu: return help_TimezonesList{types::help_timezonesListNotModified::read_body(r)};
-        case 0x7b74ed71u: return help_TimezonesList{types::help_timezonesList::read_body(r)};
-        default: throw TlError("unknown constructor id in help_TimezonesList");
-    }
-}
-
-
-void help_UserInfo::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-help_UserInfo help_UserInfo::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xf3ae2eedu: return help_UserInfo{types::help_userInfoEmpty::read_body(r)};
-        case 0x01eb3758u: return help_UserInfo{types::help_userInfo::read_body(r)};
-        default: throw TlError("unknown constructor id in help_UserInfo");
-    }
-}
-
-
-void messages_AffectedFoundMessages::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-messages_AffectedFoundMessages messages_AffectedFoundMessages::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xef8d3e6cu: return messages_AffectedFoundMessages{types::messages_affectedFoundMessages::read_body(r)};
-        default: throw TlError("unknown constructor id in messages_AffectedFoundMessages");
-    }
-}
-
-
-void messages_AffectedHistory::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-messages_AffectedHistory messages_AffectedHistory::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb45c69d1u: return messages_AffectedHistory{types::messages_affectedHistory::read_body(r)};
-        default: throw TlError("unknown constructor id in messages_AffectedHistory");
-    }
-}
-
-
-void messages_AffectedMessages::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-messages_AffectedMessages messages_AffectedMessages::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x84d19185u: return messages_AffectedMessages{types::messages_affectedMessages::read_body(r)};
-        default: throw TlError("unknown constructor id in messages_AffectedMessages");
-    }
-}
-
-
-void messages_AllStickers::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-messages_AllStickers messages_AllStickers::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe86602c3u: return messages_AllStickers{types::messages_allStickersNotModified::read_body(r)};
-        case 0xcdbbcebbu: return messages_AllStickers{types::messages_allStickers::read_body(r)};
-        default: throw TlError("unknown constructor id in messages_AllStickers");
-    }
-}
-
-
-void messages_ArchivedStickers::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-messages_ArchivedStickers messages_ArchivedStickers::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x4fcba9c8u: return messages_ArchivedStickers{types::messages_archivedStickers::read_body(r)};
-        default: throw TlError("unknown constructor id in messages_ArchivedStickers");
-    }
-}
-
-
-void messages_AvailableEffects::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-messages_AvailableEffects messages_AvailableEffects::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xd1ed9a5bu: return messages_AvailableEffects{types::messages_availableEffectsNotModified::read_body(r)};
-        case 0xbddb616eu: return messages_AvailableEffects{types::messages_availableEffects::read_body(r)};
-        default: throw TlError("unknown constructor id in messages_AvailableEffects");
-    }
-}
-
-
-void messages_AvailableReactions::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-messages_AvailableReactions messages_AvailableReactions::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x9f071957u: return messages_AvailableReactions{types::messages_availableReactionsNotModified::read_body(r)};
-        case 0x768e3aadu: return messages_AvailableReactions{types::messages_availableReactions::read_body(r)};
-        default: throw TlError("unknown constructor id in messages_AvailableReactions");
-    }
-}
-
-
-void messages_BotApp::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-messages_BotApp messages_BotApp::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xeb50adf5u: return messages_BotApp{types::messages_botApp::read_body(r)};
-        default: throw TlError("unknown constructor id in messages_BotApp");
-    }
-}
-
-
-void messages_BotCallbackAnswer::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-messages_BotCallbackAnswer messages_BotCallbackAnswer::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x36585ea4u: return messages_BotCallbackAnswer{types::messages_botCallbackAnswer::read_body(r)};
-        default: throw TlError("unknown constructor id in messages_BotCallbackAnswer");
-    }
-}
-
-
-void messages_BotPreparedInlineMessage::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-messages_BotPreparedInlineMessage messages_BotPreparedInlineMessage::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0x8ecf0511u: return messages_BotPreparedInlineMessage{types::messages_botPreparedInlineMessage::read_body(r)};
-        default: throw TlError("unknown constructor id in messages_BotPreparedInlineMessage");
-    }
-}
-
-
-void messages_BotResults::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-messages_BotResults messages_BotResults::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe021f2f6u: return messages_BotResults{types::messages_botResults::read_body(r)};
-        default: throw TlError("unknown constructor id in messages_BotResults");
-    }
-}
-
-
-void messages_ChatAdminsWithInvites::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-messages_ChatAdminsWithInvites messages_ChatAdminsWithInvites::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xb69b72d7u: return messages_ChatAdminsWithInvites{types::messages_chatAdminsWithInvites::read_body(r)};
-        default: throw TlError("unknown constructor id in messages_ChatAdminsWithInvites");
-    }
-}
-
-
-void messages_ChatFull::serialize(TlWriter& tlw) const {
-    std::visit([&](const auto& v) { v.serialize(tlw); }, value);
-}
-
-messages_ChatFull messages_ChatFull::read(TlReader& r) {
-    const std::uint32_t id = r.read_uint32();
-    switch (id) {
-        case 0xe5d7d19cu: return messages_ChatFull{types::messages_chatFull::read_body(r)};
-        default: throw TlError("unknown constructor id in messages_ChatFull");
-    }
+types::groupCallDonor types::groupCallDonor::read_body(TlReader& rv) {
+    types::groupCallDonor out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.top = (fl_flags & (1u << 0)) != 0;
+    out.my = (fl_flags & (1u << 1)) != 0;
+    if ((fl_flags & (1u << 3)) != 0) { out.peer_id = tl::read_boxed<tl::Peer>(rv); }
+    out.stars = rv.read_int64();
+    return out;
 }
 
 

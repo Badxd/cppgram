@@ -432,6 +432,7 @@ struct User;
 struct UserFull;
 struct UserProfilePhoto;
 struct UserStatus;
+struct UserWallet;
 struct Username;
 struct VideoSize;
 struct WallPaper;
@@ -448,6 +449,7 @@ struct WebPage;
 struct WebPageAttribute;
 struct WebViewMessageSent;
 struct WebViewResult;
+struct WidgetQueryType;
 struct account_AuthorizationForm;
 struct account_Authorizations;
 struct account_AutoDownloadSettings;
@@ -547,6 +549,7 @@ struct messages_BotApp;
 struct messages_BotCallbackAnswer;
 struct messages_BotPreparedInlineMessage;
 struct messages_BotResults;
+struct messages_BotWidgetQueryAnswer;
 struct messages_ChatAdminsWithInvites;
 struct messages_ChatFull;
 struct messages_ChatInviteImporters;
@@ -602,6 +605,7 @@ struct messages_TranslatedText;
 struct messages_VotesList;
 struct messages_WebPage;
 struct messages_WebPagePreview;
+struct messages_WidgetPublicData;
 struct payments_BankCardData;
 struct payments_CheckCanSendGiftResult;
 struct payments_CheckedGiftCode;
@@ -1014,6 +1018,27 @@ struct inputMediaStakeDice {
     static types::inputMediaStakeDice read_body(TlReader& rv);
 };
 
+struct inputMediaWidget {
+    static constexpr std::uint32_t kId = 0x44f6c04eu;
+    bool allow_queries = false;
+    bool shared_widget = false;
+    std::int32_t width{};
+    std::int32_t height{};
+    std::string html{};
+    std::optional<std::string> public_data;
+    std::optional<std::string> chat_data;
+    void serialize(TlWriter& tlw) const;
+    static types::inputMediaWidget read_body(TlReader& rv);
+};
+
+struct inputMediaWidgetId {
+    static constexpr std::uint32_t kId = 0x7c855cb5u;
+    std::int64_t widget_id{};
+    std::optional<std::string> chat_data;
+    void serialize(TlWriter& tlw) const;
+    static types::inputMediaWidgetId read_body(TlReader& rv);
+};
+
 struct inputChatPhotoEmpty {
     static constexpr std::uint32_t kId = 0x1ca48f57u;
     void serialize(TlWriter& tlw) const;
@@ -1279,6 +1304,7 @@ struct user {
     bool bot_can_manage_bots = false;
     bool bot_guestchat = false;
     bool bot_guard = false;
+    bool bot_forum_sidebar = false;
     std::int64_t id{};
     std::optional<std::int64_t> access_hash;
     std::optional<std::string> first_name;
@@ -1429,6 +1455,7 @@ struct channel {
     bool monoforum = false;
     bool forum_tabs = false;
     bool in_news = false;
+    bool forum_sidebar = false;
     std::int64_t id{};
     std::optional<std::int64_t> access_hash;
     std::string title{};
@@ -1952,6 +1979,22 @@ struct messageMediaVideoStream {
     std::shared_ptr<tl::InputGroupCall> call{};
     void serialize(TlWriter& tlw) const;
     static types::messageMediaVideoStream read_body(TlReader& rv);
+};
+
+struct messageMediaWidget {
+    static constexpr std::uint32_t kId = 0x2238f214u;
+    bool is_copy = false;
+    bool can_query = false;
+    bool background_query = false;
+    std::int32_t width{};
+    std::int32_t height{};
+    Bytes payload{};
+    std::optional<std::string> public_data;
+    std::optional<std::int64_t> public_data_hash;
+    std::optional<std::string> chat_data;
+    std::optional<std::int64_t> widget_id;
+    void serialize(TlWriter& tlw) const;
+    static types::messageMediaWidget read_body(TlReader& rv);
 };
 
 struct messageActionEmpty {
@@ -4792,6 +4835,83 @@ struct updateWalletTonConnectPendingDisconnect {
     static types::updateWalletTonConnectPendingDisconnect read_body(TlReader& rv);
 };
 
+struct updateEditForumTopic {
+    static constexpr std::uint32_t kId = 0x2366665cu;
+    std::shared_ptr<tl::Peer> peer{};
+    std::int32_t topic_id{};
+    std::optional<std::string> title;
+    std::optional<std::int64_t> icon_emoji_id;
+    std::optional<bool> closed;
+    std::optional<bool> hidden;
+    void serialize(TlWriter& tlw) const;
+    static types::updateEditForumTopic read_body(TlReader& rv);
+};
+
+struct updateBotWidgetQuery {
+    static constexpr std::uint32_t kId = 0xb373fe68u;
+    std::int64_t query_id{};
+    std::shared_ptr<tl::WidgetQueryType> query_type{};
+    std::int64_t user_id{};
+    std::shared_ptr<tl::Peer> peer{};
+    std::int32_t msg_id{};
+    std::int64_t chat_instance{};
+    std::string chat_type{};
+    Bytes data{};
+    std::optional<std::int64_t> widget_id;
+    std::optional<std::shared_ptr<tl::wallet_Card>> wallet_card;
+    void serialize(TlWriter& tlw) const;
+    static types::updateBotWidgetQuery read_body(TlReader& rv);
+};
+
+struct updateInlineBotWidgetQuery {
+    static constexpr std::uint32_t kId = 0xa5f07e08u;
+    std::int64_t query_id{};
+    std::shared_ptr<tl::WidgetQueryType> query_type{};
+    std::int64_t user_id{};
+    std::shared_ptr<tl::InputBotInlineMessageID> inline_message_id{};
+    std::int64_t chat_instance{};
+    std::string chat_type{};
+    Bytes data{};
+    std::optional<std::int64_t> widget_id;
+    std::optional<std::shared_ptr<tl::wallet_Card>> wallet_card;
+    void serialize(TlWriter& tlw) const;
+    static types::updateInlineBotWidgetQuery read_body(TlReader& rv);
+};
+
+struct updateBotWidgetCopyQuery {
+    static constexpr std::uint32_t kId = 0xfa89bef7u;
+    std::int64_t query_id{};
+    std::shared_ptr<tl::WidgetQueryType> query_type{};
+    std::int64_t user_id{};
+    Bytes data{};
+    std::int64_t widget_id{};
+    std::optional<std::shared_ptr<tl::wallet_Card>> wallet_card;
+    void serialize(TlWriter& tlw) const;
+    static types::updateBotWidgetCopyQuery read_body(TlReader& rv);
+};
+
+struct updateMessageWidgetData {
+    static constexpr std::uint32_t kId = 0xbbb078ddu;
+    std::shared_ptr<tl::Peer> peer{};
+    std::int32_t msg_id{};
+    std::optional<std::string> public_data;
+    std::optional<std::int64_t> public_data_hash;
+    std::optional<std::string> chat_data;
+    std::int32_t pts{};
+    std::int32_t pts_count{};
+    void serialize(TlWriter& tlw) const;
+    static types::updateMessageWidgetData read_body(TlReader& rv);
+};
+
+struct updateTranscribedAudioFile {
+    static constexpr std::uint32_t kId = 0x734c2e7bu;
+    bool pending = false;
+    std::int64_t transcription_id{};
+    std::string text{};
+    void serialize(TlWriter& tlw) const;
+    static types::updateTranscribedAudioFile read_body(TlReader& rv);
+};
+
 struct updates_state {
     static constexpr std::uint32_t kId = 0xa56c2a3eu;
     std::int32_t pts{};
@@ -6924,6 +7044,35 @@ struct inputBotInlineMessageRichMessage {
     static types::inputBotInlineMessageRichMessage read_body(TlReader& rv);
 };
 
+struct inputBotInlineMessageWidget {
+    static constexpr std::uint32_t kId = 0xf597a3f0u;
+    bool allow_queries = false;
+    bool shared_widget = false;
+    bool invert_media = false;
+    std::int32_t width{};
+    std::int32_t height{};
+    std::string html{};
+    std::optional<std::string> public_data;
+    std::optional<std::string> chat_data;
+    std::optional<std::shared_ptr<tl::ReplyMarkup>> reply_markup;
+    std::string message{};
+    std::optional<std::vector<std::shared_ptr<tl::MessageEntity>>> entities;
+    void serialize(TlWriter& tlw) const;
+    static types::inputBotInlineMessageWidget read_body(TlReader& rv);
+};
+
+struct inputBotInlineMessageWidgetId {
+    static constexpr std::uint32_t kId = 0xfe8b792bu;
+    bool invert_media = false;
+    std::int64_t widget_id{};
+    std::optional<std::string> chat_data;
+    std::optional<std::shared_ptr<tl::ReplyMarkup>> reply_markup;
+    std::string message{};
+    std::optional<std::vector<std::shared_ptr<tl::MessageEntity>>> entities;
+    void serialize(TlWriter& tlw) const;
+    static types::inputBotInlineMessageWidgetId read_body(TlReader& rv);
+};
+
 struct inputBotInlineResult {
     static constexpr std::uint32_t kId = 0x88bf9319u;
     std::string id{};
@@ -7060,6 +7209,23 @@ struct botInlineMessageRichMessage {
     std::shared_ptr<tl::RichMessage> rich_message{};
     void serialize(TlWriter& tlw) const;
     static types::botInlineMessageRichMessage read_body(TlReader& rv);
+};
+
+struct botInlineMessageWidget {
+    static constexpr std::uint32_t kId = 0xbaa17834u;
+    bool invert_media = false;
+    std::int32_t width{};
+    std::int32_t height{};
+    Bytes payload{};
+    std::optional<std::string> public_data;
+    std::optional<std::int64_t> public_data_hash;
+    std::optional<std::string> chat_data;
+    std::optional<std::shared_ptr<tl::ReplyMarkup>> reply_markup;
+    std::optional<std::int64_t> widget_id;
+    std::string message{};
+    std::optional<std::vector<std::shared_ptr<tl::MessageEntity>>> entities;
+    void serialize(TlWriter& tlw) const;
+    static types::botInlineMessageWidget read_body(TlReader& rv);
 };
 
 struct botInlineResult {
@@ -16224,6 +16390,62 @@ struct payments_starGiftDepositPayload {
     static types::payments_starGiftDepositPayload read_body(TlReader& rv);
 };
 
+struct userWallet {
+    static constexpr std::uint32_t kId = 0x454d2737u;
+    std::string address{};
+    std::int64_t balance{};
+    std::optional<Bytes> public_key;
+    std::optional<Bytes> state_init;
+    void serialize(TlWriter& tlw) const;
+    static types::userWallet read_body(TlReader& rv);
+};
+
+struct widgetQueryTypeData {
+    static constexpr std::uint32_t kId = 0x16d8cf0bu;
+    bool with_wallet = false;
+    void serialize(TlWriter& tlw) const;
+    static types::widgetQueryTypeData read_body(TlReader& rv);
+};
+
+struct widgetQueryTypeSignData {
+    static constexpr std::uint32_t kId = 0x192047dcu;
+    std::shared_ptr<tl::UserWallet> wallet{};
+    std::shared_ptr<tl::DataJSON> sign_data{};
+    void serialize(TlWriter& tlw) const;
+    static types::widgetQueryTypeSignData read_body(TlReader& rv);
+};
+
+struct widgetQueryTypeSentTransaction {
+    static constexpr std::uint32_t kId = 0xff3b33b4u;
+    std::shared_ptr<tl::UserWallet> wallet{};
+    std::string msg_hash{};
+    void serialize(TlWriter& tlw) const;
+    static types::widgetQueryTypeSentTransaction read_body(TlReader& rv);
+};
+
+struct messages_botWidgetQueryAnswer {
+    static constexpr std::uint32_t kId = 0x95b73023u;
+    std::optional<std::string> result;
+    void serialize(TlWriter& tlw) const;
+    static types::messages_botWidgetQueryAnswer read_body(TlReader& rv);
+};
+
+struct messages_widgetPublicDataNotModified {
+    static constexpr std::uint32_t kId = 0xb9196e57u;
+    std::int32_t period{};
+    void serialize(TlWriter& tlw) const;
+    static types::messages_widgetPublicDataNotModified read_body(TlReader& rv);
+};
+
+struct messages_widgetPublicData {
+    static constexpr std::uint32_t kId = 0x04493bffu;
+    std::int64_t hash{};
+    std::string data{};
+    std::int32_t period{};
+    void serialize(TlWriter& tlw) const;
+    static types::messages_widgetPublicData read_body(TlReader& rv);
+};
+
 struct msgs_ack {
     static constexpr std::uint32_t kId = 0x62d6b459u;
     std::vector<std::int64_t> msg_ids{};
@@ -16614,7 +16836,7 @@ struct invokeAfterMsgs {
     using Result = typename X::Result;
     void serialize(TlWriter& tlw) const {
         tlw.write_uint32(kId);
-        tl::write_vector(tlw, msg_ids, [&](TlWriter& tlw1276, const auto& e1276) { tlw1276.write_int64(e1276); });
+        tl::write_vector(tlw, msg_ids, [&](TlWriter& tlw1282, const auto& e1282) { tlw1282.write_int64(e1282); });
         query.serialize(tlw);
     }
     static Result read_result(TlReader& rv) { return X::read_result(rv); }
@@ -21161,6 +21383,83 @@ struct messages_getShareThemeBackdrops {
     static Result read_result(TlReader& rv);
 };
 
+struct messages_getBotWidgetQueryAnswer {
+    static constexpr std::uint32_t kId = 0x5c550579u;
+    std::shared_ptr<tl::InputPeer> peer{};
+    std::int32_t msg_id{};
+    std::shared_ptr<tl::WidgetQueryType> query_type{};
+    Bytes data{};
+    using Result = tl::messages_BotWidgetQueryAnswer;
+    void serialize(TlWriter& tlw) const;
+    static Result read_result(TlReader& rv);
+};
+
+struct messages_setBotWidgetQueryAnswer {
+    static constexpr std::uint32_t kId = 0xf8cdec6au;
+    std::int64_t query_id{};
+    std::optional<std::string> result;
+    using Result = bool;
+    void serialize(TlWriter& tlw) const;
+    static Result read_result(TlReader& rv);
+};
+
+struct messages_editMessageWidgetData {
+    static constexpr std::uint32_t kId = 0xf624bc1eu;
+    std::shared_ptr<tl::InputPeer> peer{};
+    std::int32_t id{};
+    std::optional<std::string> public_data;
+    std::optional<std::string> chat_data;
+    using Result = tl::Updates;
+    void serialize(TlWriter& tlw) const;
+    static Result read_result(TlReader& rv);
+};
+
+struct messages_editInlineBotMessageWidgetData {
+    static constexpr std::uint32_t kId = 0x6396ce2bu;
+    std::shared_ptr<tl::InputBotInlineMessageID> id{};
+    std::optional<std::string> public_data;
+    std::optional<std::string> chat_data;
+    using Result = bool;
+    void serialize(TlWriter& tlw) const;
+    static Result read_result(TlReader& rv);
+};
+
+struct messages_editWidgetData {
+    static constexpr std::uint32_t kId = 0xeac343c0u;
+    std::int64_t widget_id{};
+    std::string public_data{};
+    std::optional<std::int32_t> cache_time;
+    using Result = bool;
+    void serialize(TlWriter& tlw) const;
+    static Result read_result(TlReader& rv);
+};
+
+struct messages_getWidgetPublicData {
+    static constexpr std::uint32_t kId = 0x6fc53181u;
+    std::shared_ptr<tl::InputPeer> peer{};
+    std::int32_t msg_id{};
+    std::int64_t hash{};
+    using Result = tl::messages_WidgetPublicData;
+    void serialize(TlWriter& tlw) const;
+    static Result read_result(TlReader& rv);
+};
+
+struct messages_transcribeAudioFile {
+    static constexpr std::uint32_t kId = 0x072d2ef7u;
+    std::shared_ptr<tl::InputFile> file{};
+    using Result = tl::messages_TranscribedAudio;
+    void serialize(TlWriter& tlw) const;
+    static Result read_result(TlReader& rv);
+};
+
+struct messages_getTranscriptionLangs {
+    static constexpr std::uint32_t kId = 0xba6cd9aau;
+    std::optional<std::shared_ptr<tl::InputPeer>> peer;
+    using Result = std::vector<std::string>;
+    void serialize(TlWriter& tlw) const;
+    static Result read_result(TlReader& rv);
+};
+
 struct updates_getState {
     static constexpr std::uint32_t kId = 0xedd4882au;
     using Result = tl::updates_State;
@@ -21913,10 +22212,11 @@ struct channels_deactivateAllUsernames {
 };
 
 struct channels_toggleForum {
-    static constexpr std::uint32_t kId = 0x3ff75734u;
+    static constexpr std::uint32_t kId = 0xa2952b54u;
     std::shared_ptr<tl::InputChannel> channel{};
     bool enabled{};
     bool tabs{};
+    bool sidebar{};
     using Result = tl::Updates;
     void serialize(TlWriter& tlw) const;
     static Result read_result(TlReader& rv);
@@ -25145,7 +25445,7 @@ struct BotInfo {
 };
 
 struct BotInlineMessage {
-    std::variant<types::botInlineMessageMediaAuto, types::botInlineMessageText, types::botInlineMessageMediaGeo, types::botInlineMessageMediaVenue, types::botInlineMessageMediaContact, types::botInlineMessageMediaInvoice, types::botInlineMessageMediaWebPage, types::botInlineMessageRichMessage> value;
+    std::variant<types::botInlineMessageMediaAuto, types::botInlineMessageText, types::botInlineMessageMediaGeo, types::botInlineMessageMediaVenue, types::botInlineMessageMediaContact, types::botInlineMessageMediaInvoice, types::botInlineMessageMediaWebPage, types::botInlineMessageRichMessage, types::botInlineMessageWidget> value;
     void serialize(TlWriter& tlw) const;
     static BotInlineMessage read(TlReader& r);
 };
@@ -25805,7 +26105,7 @@ struct InputBotApp {
 };
 
 struct InputBotInlineMessage {
-    std::variant<types::inputBotInlineMessageMediaAuto, types::inputBotInlineMessageText, types::inputBotInlineMessageMediaGeo, types::inputBotInlineMessageMediaVenue, types::inputBotInlineMessageMediaContact, types::inputBotInlineMessageGame, types::inputBotInlineMessageMediaInvoice, types::inputBotInlineMessageMediaWebPage, types::inputBotInlineMessageRichMessage> value;
+    std::variant<types::inputBotInlineMessageMediaAuto, types::inputBotInlineMessageText, types::inputBotInlineMessageMediaGeo, types::inputBotInlineMessageMediaVenue, types::inputBotInlineMessageMediaContact, types::inputBotInlineMessageGame, types::inputBotInlineMessageMediaInvoice, types::inputBotInlineMessageMediaWebPage, types::inputBotInlineMessageRichMessage, types::inputBotInlineMessageWidget, types::inputBotInlineMessageWidgetId> value;
     void serialize(TlWriter& tlw) const;
     static InputBotInlineMessage read(TlReader& r);
 };
@@ -25973,7 +26273,7 @@ struct InputInvoice {
 };
 
 struct InputMedia {
-    std::variant<types::inputMediaEmpty, types::inputMediaUploadedPhoto, types::inputMediaPhoto, types::inputMediaGeoPoint, types::inputMediaContact, types::inputMediaUploadedDocument, types::inputMediaDocument, types::inputMediaVenue, types::inputMediaPhotoExternal, types::inputMediaDocumentExternal, types::inputMediaGame, types::inputMediaInvoice, types::inputMediaGeoLive, types::inputMediaPoll, types::inputMediaDice, types::inputMediaStory, types::inputMediaWebPage, types::inputMediaPaidMedia, types::inputMediaTodo, types::inputMediaStakeDice> value;
+    std::variant<types::inputMediaEmpty, types::inputMediaUploadedPhoto, types::inputMediaPhoto, types::inputMediaGeoPoint, types::inputMediaContact, types::inputMediaUploadedDocument, types::inputMediaDocument, types::inputMediaVenue, types::inputMediaPhotoExternal, types::inputMediaDocumentExternal, types::inputMediaGame, types::inputMediaInvoice, types::inputMediaGeoLive, types::inputMediaPoll, types::inputMediaDice, types::inputMediaStory, types::inputMediaWebPage, types::inputMediaPaidMedia, types::inputMediaTodo, types::inputMediaStakeDice, types::inputMediaWidget, types::inputMediaWidgetId> value;
     void serialize(TlWriter& tlw) const;
     static InputMedia read(TlReader& r);
 };
@@ -26321,7 +26621,7 @@ struct MessageFwdHeader {
 };
 
 struct MessageMedia {
-    std::variant<types::messageMediaEmpty, types::messageMediaPhoto, types::messageMediaGeo, types::messageMediaContact, types::messageMediaUnsupported, types::messageMediaDocument, types::messageMediaWebPage, types::messageMediaVenue, types::messageMediaGame, types::messageMediaInvoice, types::messageMediaGeoLive, types::messageMediaPoll, types::messageMediaDice, types::messageMediaStory, types::messageMediaGiveaway, types::messageMediaGiveawayResults, types::messageMediaPaidMedia, types::messageMediaToDo, types::messageMediaVideoStream> value;
+    std::variant<types::messageMediaEmpty, types::messageMediaPhoto, types::messageMediaGeo, types::messageMediaContact, types::messageMediaUnsupported, types::messageMediaDocument, types::messageMediaWebPage, types::messageMediaVenue, types::messageMediaGame, types::messageMediaInvoice, types::messageMediaGeoLive, types::messageMediaPoll, types::messageMediaDice, types::messageMediaStory, types::messageMediaGiveaway, types::messageMediaGiveawayResults, types::messageMediaPaidMedia, types::messageMediaToDo, types::messageMediaVideoStream, types::messageMediaWidget> value;
     void serialize(TlWriter& tlw) const;
     static MessageMedia read(TlReader& r);
 };
@@ -27455,7 +27755,7 @@ struct TopPeerCategoryPeers {
 };
 
 struct Update {
-    std::variant<types::updateNewMessage, types::updateMessageID, types::updateDeleteMessages, types::updateUserTyping, types::updateChatUserTyping, types::updateChatParticipants, types::updateUserStatus, types::updateUserName, types::updateNewAuthorization, types::updateNewEncryptedMessage, types::updateEncryptedChatTyping, types::updateEncryption, types::updateEncryptedMessagesRead, types::updateChatParticipantAdd, types::updateChatParticipantDelete, types::updateDcOptions, types::updateNotifySettings, types::updateServiceNotification, types::updatePrivacy, types::updateUserPhone, types::updateReadHistoryInbox, types::updateReadHistoryOutbox, types::updateWebPage, types::updateReadMessagesContents, types::updateChannelTooLong, types::updateChannel, types::updateNewChannelMessage, types::updateReadChannelInbox, types::updateDeleteChannelMessages, types::updateChannelMessageViews, types::updateChatParticipantAdmin, types::updateNewStickerSet, types::updateStickerSetsOrder, types::updateStickerSets, types::updateSavedGifs, types::updateBotInlineQuery, types::updateBotInlineSend, types::updateEditChannelMessage, types::updateBotCallbackQuery, types::updateEditMessage, types::updateInlineBotCallbackQuery, types::updateReadChannelOutbox, types::updateDraftMessage, types::updateReadFeaturedStickers, types::updateRecentStickers, types::updateConfig, types::updatePtsChanged, types::updateChannelWebPage, types::updateDialogPinned, types::updatePinnedDialogs, types::updateBotWebhookJSON, types::updateBotWebhookJSONQuery, types::updateBotShippingQuery, types::updateBotPrecheckoutQuery, types::updatePhoneCall, types::updateLangPackTooLong, types::updateLangPack, types::updateFavedStickers, types::updateChannelReadMessagesContents, types::updateContactsReset, types::updateChannelAvailableMessages, types::updateDialogUnreadMark, types::updateMessagePoll, types::updateChatDefaultBannedRights, types::updateFolderPeers, types::updatePeerSettings, types::updatePeerLocated, types::updateNewScheduledMessage, types::updateDeleteScheduledMessages, types::updateTheme, types::updateGeoLiveViewed, types::updateLoginToken, types::updateMessagePollVote, types::updateDialogFilter, types::updateDialogFilterOrder, types::updateDialogFilters, types::updatePhoneCallSignalingData, types::updateChannelMessageForwards, types::updateReadChannelDiscussionInbox, types::updateReadChannelDiscussionOutbox, types::updatePeerBlocked, types::updateChannelUserTyping, types::updatePinnedMessages, types::updatePinnedChannelMessages, types::updateChat, types::updateGroupCallParticipants, types::updateGroupCall, types::updatePeerHistoryTTL, types::updateChatParticipant, types::updateChannelParticipant, types::updateBotStopped, types::updateGroupCallConnection, types::updateBotCommands, types::updatePendingJoinRequests, types::updateBotChatInviteRequester, types::updateMessageReactions, types::updateAttachMenuBots, types::updateWebViewResultSent, types::updateBotMenuButton, types::updateSavedRingtones, types::updateTranscribedAudio, types::updateReadFeaturedEmojiStickers, types::updateUserEmojiStatus, types::updateRecentEmojiStatuses, types::updateRecentReactions, types::updateMoveStickerSetToTop, types::updateMessageExtendedMedia, types::updateUser, types::updateAutoSaveSettings, types::updateStory, types::updateReadStories, types::updateStoryID, types::updateStoriesStealthMode, types::updateSentStoryReaction, types::updateBotChatBoost, types::updateChannelViewForumAsMessages, types::updatePeerWallpaper, types::updateBotMessageReaction, types::updateBotMessageReactions, types::updateSavedDialogPinned, types::updatePinnedSavedDialogs, types::updateSavedReactionTags, types::updateSmsJob, types::updateQuickReplies, types::updateNewQuickReply, types::updateDeleteQuickReply, types::updateQuickReplyMessage, types::updateDeleteQuickReplyMessages, types::updateBotBusinessConnect, types::updateBotNewBusinessMessage, types::updateBotEditBusinessMessage, types::updateBotDeleteBusinessMessage, types::updateNewStoryReaction, types::updateStarsBalance, types::updateBusinessBotCallbackQuery, types::updateStarsRevenueStatus, types::updateBotPurchasedPaidMedia, types::updatePaidReactionPrivacy, types::updateSentPhoneCode, types::updateGroupCallChainBlocks, types::updateReadMonoForumInbox, types::updateReadMonoForumOutbox, types::updateMonoForumNoPaidException, types::updateGroupCallMessage, types::updateGroupCallEncryptedMessage, types::updatePinnedForumTopic, types::updatePinnedForumTopics, types::updateDeleteGroupCallMessages, types::updateStarGiftAuctionState, types::updateStarGiftAuctionUserState, types::updateEmojiGameInfo, types::updateStarGiftCraftFail, types::updateChatParticipantRank, types::updateManagedBot, types::updateBotGuestChatQuery, types::updateAiComposeTones, types::updateJoinChatWebViewDecision, types::updateNewBotConnection, types::updateWebBrowserSettings, types::updateWebBrowserException, types::updateNewEphemeralMessage, types::updateDeleteEphemeralMessages, types::updateEditEphemeralMessage, types::updateEphemeralBotCallbackQuery, types::updateBotStarsSubscription, types::updateWalletState, types::updateSentWalletTransaction, types::updateWalletGaslessInfo, types::updateWalletTonConnectSession, types::updateWalletTonConnectPendingDisconnect> value;
+    std::variant<types::updateNewMessage, types::updateMessageID, types::updateDeleteMessages, types::updateUserTyping, types::updateChatUserTyping, types::updateChatParticipants, types::updateUserStatus, types::updateUserName, types::updateNewAuthorization, types::updateNewEncryptedMessage, types::updateEncryptedChatTyping, types::updateEncryption, types::updateEncryptedMessagesRead, types::updateChatParticipantAdd, types::updateChatParticipantDelete, types::updateDcOptions, types::updateNotifySettings, types::updateServiceNotification, types::updatePrivacy, types::updateUserPhone, types::updateReadHistoryInbox, types::updateReadHistoryOutbox, types::updateWebPage, types::updateReadMessagesContents, types::updateChannelTooLong, types::updateChannel, types::updateNewChannelMessage, types::updateReadChannelInbox, types::updateDeleteChannelMessages, types::updateChannelMessageViews, types::updateChatParticipantAdmin, types::updateNewStickerSet, types::updateStickerSetsOrder, types::updateStickerSets, types::updateSavedGifs, types::updateBotInlineQuery, types::updateBotInlineSend, types::updateEditChannelMessage, types::updateBotCallbackQuery, types::updateEditMessage, types::updateInlineBotCallbackQuery, types::updateReadChannelOutbox, types::updateDraftMessage, types::updateReadFeaturedStickers, types::updateRecentStickers, types::updateConfig, types::updatePtsChanged, types::updateChannelWebPage, types::updateDialogPinned, types::updatePinnedDialogs, types::updateBotWebhookJSON, types::updateBotWebhookJSONQuery, types::updateBotShippingQuery, types::updateBotPrecheckoutQuery, types::updatePhoneCall, types::updateLangPackTooLong, types::updateLangPack, types::updateFavedStickers, types::updateChannelReadMessagesContents, types::updateContactsReset, types::updateChannelAvailableMessages, types::updateDialogUnreadMark, types::updateMessagePoll, types::updateChatDefaultBannedRights, types::updateFolderPeers, types::updatePeerSettings, types::updatePeerLocated, types::updateNewScheduledMessage, types::updateDeleteScheduledMessages, types::updateTheme, types::updateGeoLiveViewed, types::updateLoginToken, types::updateMessagePollVote, types::updateDialogFilter, types::updateDialogFilterOrder, types::updateDialogFilters, types::updatePhoneCallSignalingData, types::updateChannelMessageForwards, types::updateReadChannelDiscussionInbox, types::updateReadChannelDiscussionOutbox, types::updatePeerBlocked, types::updateChannelUserTyping, types::updatePinnedMessages, types::updatePinnedChannelMessages, types::updateChat, types::updateGroupCallParticipants, types::updateGroupCall, types::updatePeerHistoryTTL, types::updateChatParticipant, types::updateChannelParticipant, types::updateBotStopped, types::updateGroupCallConnection, types::updateBotCommands, types::updatePendingJoinRequests, types::updateBotChatInviteRequester, types::updateMessageReactions, types::updateAttachMenuBots, types::updateWebViewResultSent, types::updateBotMenuButton, types::updateSavedRingtones, types::updateTranscribedAudio, types::updateReadFeaturedEmojiStickers, types::updateUserEmojiStatus, types::updateRecentEmojiStatuses, types::updateRecentReactions, types::updateMoveStickerSetToTop, types::updateMessageExtendedMedia, types::updateUser, types::updateAutoSaveSettings, types::updateStory, types::updateReadStories, types::updateStoryID, types::updateStoriesStealthMode, types::updateSentStoryReaction, types::updateBotChatBoost, types::updateChannelViewForumAsMessages, types::updatePeerWallpaper, types::updateBotMessageReaction, types::updateBotMessageReactions, types::updateSavedDialogPinned, types::updatePinnedSavedDialogs, types::updateSavedReactionTags, types::updateSmsJob, types::updateQuickReplies, types::updateNewQuickReply, types::updateDeleteQuickReply, types::updateQuickReplyMessage, types::updateDeleteQuickReplyMessages, types::updateBotBusinessConnect, types::updateBotNewBusinessMessage, types::updateBotEditBusinessMessage, types::updateBotDeleteBusinessMessage, types::updateNewStoryReaction, types::updateStarsBalance, types::updateBusinessBotCallbackQuery, types::updateStarsRevenueStatus, types::updateBotPurchasedPaidMedia, types::updatePaidReactionPrivacy, types::updateSentPhoneCode, types::updateGroupCallChainBlocks, types::updateReadMonoForumInbox, types::updateReadMonoForumOutbox, types::updateMonoForumNoPaidException, types::updateGroupCallMessage, types::updateGroupCallEncryptedMessage, types::updatePinnedForumTopic, types::updatePinnedForumTopics, types::updateDeleteGroupCallMessages, types::updateStarGiftAuctionState, types::updateStarGiftAuctionUserState, types::updateEmojiGameInfo, types::updateStarGiftCraftFail, types::updateChatParticipantRank, types::updateManagedBot, types::updateBotGuestChatQuery, types::updateAiComposeTones, types::updateJoinChatWebViewDecision, types::updateNewBotConnection, types::updateWebBrowserSettings, types::updateWebBrowserException, types::updateNewEphemeralMessage, types::updateDeleteEphemeralMessages, types::updateEditEphemeralMessage, types::updateEphemeralBotCallbackQuery, types::updateBotStarsSubscription, types::updateWalletState, types::updateSentWalletTransaction, types::updateWalletGaslessInfo, types::updateWalletTonConnectSession, types::updateWalletTonConnectPendingDisconnect, types::updateEditForumTopic, types::updateBotWidgetQuery, types::updateInlineBotWidgetQuery, types::updateBotWidgetCopyQuery, types::updateMessageWidgetData, types::updateTranscribedAudioFile> value;
     void serialize(TlWriter& tlw) const;
     static Update read(TlReader& r);
 };
@@ -27494,6 +27794,12 @@ struct UserStatus {
     std::variant<types::userStatusEmpty, types::userStatusOnline, types::userStatusOffline, types::userStatusRecently, types::userStatusLastWeek, types::userStatusLastMonth> value;
     void serialize(TlWriter& tlw) const;
     static UserStatus read(TlReader& r);
+};
+
+struct UserWallet {
+    std::variant<types::userWallet> value;
+    void serialize(TlWriter& tlw) const;
+    static UserWallet read(TlReader& r);
 };
 
 struct Username {
@@ -27590,6 +27896,12 @@ struct WebViewResult {
     std::variant<types::webViewResultUrl> value;
     void serialize(TlWriter& tlw) const;
     static WebViewResult read(TlReader& r);
+};
+
+struct WidgetQueryType {
+    std::variant<types::widgetQueryTypeData, types::widgetQueryTypeSignData, types::widgetQueryTypeSentTransaction> value;
+    void serialize(TlWriter& tlw) const;
+    static WidgetQueryType read(TlReader& r);
 };
 
 struct account_AuthorizationForm {
@@ -28186,6 +28498,12 @@ struct messages_BotResults {
     static messages_BotResults read(TlReader& r);
 };
 
+struct messages_BotWidgetQueryAnswer {
+    std::variant<types::messages_botWidgetQueryAnswer> value;
+    void serialize(TlWriter& tlw) const;
+    static messages_BotWidgetQueryAnswer read(TlReader& r);
+};
+
 struct messages_ChatAdminsWithInvites {
     std::variant<types::messages_chatAdminsWithInvites> value;
     void serialize(TlWriter& tlw) const;
@@ -28514,6 +28832,12 @@ struct messages_WebPagePreview {
     std::variant<types::messages_webPagePreview> value;
     void serialize(TlWriter& tlw) const;
     static messages_WebPagePreview read(TlReader& r);
+};
+
+struct messages_WidgetPublicData {
+    std::variant<types::messages_widgetPublicDataNotModified, types::messages_widgetPublicData> value;
+    void serialize(TlWriter& tlw) const;
+    static messages_WidgetPublicData read(TlReader& r);
 };
 
 struct payments_BankCardData {

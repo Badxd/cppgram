@@ -24,36 +24,6 @@ std::shared_ptr<tl::InputDocument> input_document_of(const MediaInfo& m) {
     return std::make_shared<tl::InputDocument>(tl::InputDocument{ty::inputDocument{m.id, m.access_hash, m.file_reference}});
 }
 
-// Converts a Telegram document (sticker or otherwise) into MediaInfo.
-std::optional<MediaInfo> media_info_of(const tl::Document& doc) {
-    const auto* d = std::get_if<ty::document>(&doc.value);
-    if (d == nullptr) return std::nullopt;
-    MediaInfo info;
-    info.kind = MediaKind::Document;
-    info.id = d->id;
-    info.access_hash = d->access_hash;
-    info.file_reference = d->file_reference;
-    info.mime_type = d->mime_type;
-    info.size = d->size;
-    info.dc_id = d->dc_id;
-    for (const auto& attr : d->attributes) {
-        if (!attr) continue;
-        if (std::holds_alternative<ty::documentAttributeSticker>(attr->value)) info.is_sticker = true;
-        if (const auto* fn_attr = std::get_if<ty::documentAttributeFilename>(&attr->value)) info.file_name = fn_attr->file_name;
-    }
-    return info;
-}
-
-StickerSetInfo info_of(const ty::stickerSet& s) {
-    StickerSetInfo info;
-    info.id = s.id;
-    info.access_hash = s.access_hash;
-    info.title = s.title;
-    info.short_name = s.short_name;
-    info.count = s.count;
-    return info;
-}
-
 std::string sticker_mime(const std::string& path) {
     const std::string ext = std::filesystem::path(path).extension().string();
     if (ext == ".webp") return "image/webp";
@@ -181,7 +151,7 @@ StickerSetInfo Client::create_sticker_set(const std::string& title, const std::s
     if (set == nullptr || !set->set) throw std::runtime_error("stickers.createStickerSet returned no set");
     const auto* meta = std::get_if<ty::stickerSet>(&set->set->value);
     if (meta == nullptr) throw std::runtime_error("unexpected sticker set type");
-    return info_of(*meta);
+    return detail::sticker_set_info_from_tl(*meta);
 }
 
 StickerSetContent Client::get_sticker_set(const std::string& short_name) {
@@ -195,10 +165,10 @@ StickerSetContent Client::get_sticker_set(const std::string& short_name) {
     const auto* meta = std::get_if<ty::stickerSet>(&set->set->value);
     if (meta == nullptr) throw std::runtime_error("unexpected sticker set type");
     StickerSetContent out;
-    out.info = info_of(*meta);
+    out.info = detail::sticker_set_info_from_tl(*meta);
     for (const auto& d : set->documents) {
         if (!d) continue;
-        if (auto m = media_info_of(*d)) out.stickers.push_back(*m);
+        if (auto m = detail::media_info_from_document(*d)) out.stickers.push_back(*m);
     }
     return out;
 }
@@ -212,7 +182,7 @@ std::vector<StickerSetInfo> Client::get_installed_sticker_sets() {
     if (const auto* all = std::get_if<ty::messages_allStickers>(&result.value)) {
         for (const auto& s : all->sets) {
             if (!s) continue;
-            if (const auto* meta = std::get_if<ty::stickerSet>(&s->value)) out.push_back(info_of(*meta));
+            if (const auto* meta = std::get_if<ty::stickerSet>(&s->value)) out.push_back(detail::sticker_set_info_from_tl(*meta));
         }
     }
     return out;
@@ -228,7 +198,7 @@ std::vector<MediaInfo> Client::get_stickers_by_emoji(const std::string& emoji) {
     if (const auto* st = std::get_if<ty::messages_stickers>(&result.value)) {
         for (const auto& d : st->stickers) {
             if (!d) continue;
-            if (auto m = media_info_of(*d)) out.push_back(*m);
+            if (auto m = detail::media_info_from_document(*d)) out.push_back(*m);
         }
     }
     return out;

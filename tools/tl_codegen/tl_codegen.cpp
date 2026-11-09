@@ -273,7 +273,9 @@ public:
                 fs::remove(entry.path());
             }
         }
-        constexpr std::size_t kPerFile = 350;
+        // Bodies per api_impl file. 175 keeps the peak compile RSS of the largest file near 2.8 GB (350 gave 4.05 GB).
+        // See BUILD_RESULTS.md for the measurements. Changing this changes the file set, so CMakeLists.txt must list it.
+        constexpr std::size_t kPerFile = 175;
         std::size_t file_index = 0;
         for (std::size_t start = 0; start < impls.size(); start += kPerFile, ++file_index) {
             std::ostringstream out;

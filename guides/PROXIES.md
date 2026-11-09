@@ -1,6 +1,6 @@
 # Proxies: SOCKS5 and MTProto obfuscated proxy
 
-Status labels: see [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md). Neither proxy has been tested against a live proxy
+Status labels: see [FINAL_REPORT.md](../FINAL_REPORT.md) and [KNOWN_LIMITATIONS.md](../KNOWN_LIMITATIONS.md). Neither proxy has been tested against a live proxy
 or against Telegram. Both are NOT VERIFIED LIVE.
 
 Only one of the two can be set. `connect()` throws `std::invalid_argument` when both are set. Both apply to the main DC

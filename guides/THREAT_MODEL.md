@@ -79,6 +79,6 @@ and can read the account's messages, without the 2FA password. Revoke it from an
 - Run the service as a dedicated unprivileged user.
 - Session directory: owner-only (`chmod 700`), files `0600`, owned by the service user.
 - Keep the bot token and API hash in an environment file readable only by the service user, outside the
-  repository. `env.example` lists the names with placeholder values only.
+  repository. `.env.example` lists the names with placeholder values only.
 - Do not run the client inside a shared container volume that other services can read.
 - Back up the session file with the same permissions. A backup is as sensitive as the original.

@@ -46,6 +46,8 @@ std::optional<AuthState> next_auth_state(AuthState from, AuthEvent event) noexce
         case AuthState::PasswordRequired:
             switch (event) {
                 case AuthEvent::LoginStarted: return AuthState::Authenticating;
+                // 2FA password recovery (auth.recoverPassword) completes the login from the password prompt.
+                case AuthEvent::SignedIn: return AuthState::Authorized;
                 case AuthEvent::PermanentFailure: return AuthState::PermanentError;
                 default: return std::nullopt;
             }

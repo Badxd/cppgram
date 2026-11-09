@@ -1,6 +1,42 @@
 # Changelog
 
-## Unreleased - coroutines, in-flight cancellation, transfer recovery, benchmarks
+Versions follow [Semantic Versioning](https://semver.org/). Until 1.0.0, a minor version may change the public API.
+
+## 0.1.0 - first pre-release candidate (2026-11-09)
+
+Basis for 0.1.0: no version has been tagged or published before, and the client has always announced `0.1.0` to Telegram
+(`app_version`). The live Telegram path has not been verified, so the release is pre-1.0. `VERSION` is the single source;
+`tools/check_version.sh` checks the other places that state it.
+
+This release folds the earlier "Unreleased" sections below into one version. Their entries are kept for history.
+
+Changes in 0.1.0 relative to the work before this release:
+
+- Release preparation: `VERSION`, `RELEASE_NOTES.md`, the reproducible packager (`tools/package_release.py`) and its
+  verifier (`tools/verify_release.sh`), `make checks`, `make package`, `make verify-release`.
+- CMake: the version comes from `VERSION`; the package now ships `cppgramConfigVersion.cmake`; the package config
+  finds OpenSSL, ZLIB and SQLite3, which a static-library consumer needs.
+- Checks: `tools/check_cmake_sources.py` (every source and test file is built), `tools/check_version.sh`,
+  `tools/format_check.sh` (clang-format-18 on 53 allowlisted files), and schema checksums in `schema/SHA256SUMS.txt`
+  checked by `tools/check_schema.sh`, which also detects stale generated files.
+- Generated TL code split into 19 files of 175 bodies each (was 10 files of 350), which lowers the largest single compile
+  from about 4.05 GB to about 2.84 GB peak RSS.
+- Removed: the Heroku and Docker deployment files (`Dockerfile`, `.dockerignore`, `heroku.yml`, `app.json`), and the
+  second env template `env.example` (merged into `.env.example`). Duplicate guides are now pointers.
+- Documentation: `README.md`, `AGENTS.md`, `HOW_TO_UPDATE_TELEGRAM_API.md` and `HOW_TO_RELEASE.md` rewritten to match the
+  repository. Status and limits are in `IMPLEMENTATION_STATUS.md` and `KNOWN_LIMITATIONS.md`.
+- Test count is now 624 test cases (historical run, see `TEST_RESULTS.md`). The earlier count of 621 predates the typed
+  rich-block test.
+
+### Included in 0.1.0 - TL layer 233
+
+- Upgraded the MTProto TL schema to layer 233 from the Kurigram reference and regenerated the C++ schema code.
+  The client now sends layer 233. Offline tests cover the new constructor IDs and wire layout.
+- Added `docs/KURIGRAM_PARITY.md` and a list of unused Kurigram TL functions. Feature parity is not complete. The list
+  was later renamed `docs/KURIGRAM_UNUSED_TL_FUNCTIONS.txt`, and the parity document is now a pointer to `PARITY_MATRIX.md`.
+  The file `docs/KURIGRAM_MISSING_METHODS.txt` named here does not exist.
+
+### Included in 0.1.0 - coroutines, in-flight cancellation, transfer recovery, benchmarks
 
 - C++20 coroutines (`cppgram/task.h`): `async::Task<T>` is lazy and move-only. `co_await` accepts `Task` and
   `this_task_stop_token()`. `async::spawn(runner, task)` runs it on a `Runner`. Exceptions and cancellation propagate.
@@ -18,7 +54,7 @@
 - Documentation: `docs/ASYNC.md`, `docs/METRICS.md`, `docs/MEDIA.md`, `docs/BENCHMARKS.md`. The examples in them are
   mirrored and compiled by `tests/async/docs_examples_test.cpp`.
 
-## Unreleased - metrics, async APIs and media transfers (Phases 5-7)
+### Included in 0.1.0 - metrics, async APIs and media transfers (Phases 5-7)
 
 - Metrics (`cppgram/metrics.h`): thread-safe counters, gauges and histograms in a `metrics::Registry`. Series are
   capped per family (default 128), with extra label sets folded into an `__overflow__` series. Label values pass
@@ -45,7 +81,7 @@
 - ABI: `ClientOptions` gained trailing fields (`metrics`, `upload_part_size`). `Client`, `bot::Api` and
   `bot::CurlHttpClient` gained members and methods. `mtproto::MtSession` gained `set_flood_wait_observer`.
 
-## Unreleased - integration hardening (Phase 4.1)
+### Included in 0.1.0 - integration hardening (Phase 4.1)
 
 - Structured logging is wired into the connect lifecycle, the login flow, RPC errors and flood waits, the transport
   (connection closed or recv failures), the Bot API (method name, error code, elapsed time) and the Curl transport.
@@ -92,7 +128,7 @@
 - `tools/check_live_tests_offline.sh`: offline checks for SKIP, NOT_SUPPORTED and bad-secret paths.
 - Ninja, optional ccache, and a Dockerfile that builds only the live binaries with a cached dependency layer.
 
-## Unreleased
+### Included in 0.1.0
 
 ### Security and robustness (final offline round)
 - Fixed: the encrypted session reader accepted scrypt cost up to N = 2^20 with r = 16, about 2 GiB of memory, from an untrusted file. The accepted range is now N up to 2^17 and r up to 8 (at most 128 MiB). The writer is unchanged.

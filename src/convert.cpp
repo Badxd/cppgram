@@ -357,4 +357,161 @@ std::optional<ChatMember> chat_member_from_tl(const tl::ChannelParticipant& part
     return m;
 }
 
+std::optional<MediaInfo> media_info_from_document(const tl::Document& doc) {
+    const auto* d = std::get_if<ty::document>(&doc.value);
+    if (d == nullptr) return std::nullopt;
+    MediaInfo info;
+    info.kind = MediaKind::Document;
+    info.id = d->id;
+    info.access_hash = d->access_hash;
+    info.file_reference = d->file_reference;
+    info.mime_type = d->mime_type;
+    info.size = d->size;
+    info.dc_id = d->dc_id;
+    for (const auto& attr : d->attributes) {
+        if (!attr) continue;
+        if (std::holds_alternative<ty::documentAttributeSticker>(attr->value)) info.is_sticker = true;
+        if (const auto* fn_attr = std::get_if<ty::documentAttributeFilename>(&attr->value)) {
+            info.file_name = fn_attr->file_name;
+        }
+    }
+    return info;
+}
+
+StickerSetInfo sticker_set_info_from_tl(const ty::stickerSet& s) {
+    StickerSetInfo info;
+    info.id = s.id;
+    info.access_hash = s.access_hash;
+    info.title = s.title;
+    info.short_name = s.short_name;
+    info.count = s.count;
+    info.hash = s.hash;
+    info.archived = s.archived;
+    info.official = s.official;
+    info.masks = s.masks;
+    info.emojis = s.emojis;
+    info.creator = s.creator;
+    if (s.installed_date) info.installed_date = *s.installed_date;
+    if (s.thumb_document_id) info.thumb_document_id = *s.thumb_document_id;
+    return info;
+}
+
+std::vector<DialogInfo> dialogs_from_tl(const std::vector<std::shared_ptr<tl::Dialog>>& dialogs,
+                                        const std::vector<Message>& messages, const PeerCache& cache) {
+    std::vector<DialogInfo> out;
+    for (const auto& d : dialogs) {
+        if (!d) continue;
+        const auto* dd = std::get_if<ty::dialog>(&d->value);
+        if (dd == nullptr || !dd->peer) continue;
+        DialogInfo info;
+        info.peer = peer_from_tl(*dd->peer, cache);
+        info.top_message = dd->top_message;
+        info.unread_count = dd->unread_count;
+        info.pinned = dd->pinned;
+        for (const auto& msg : messages) {
+            if (msg.id == dd->top_message && msg.chat.kind == info.peer.kind && msg.chat.id == info.peer.id) {
+                info.top = msg;
+                break;
+            }
+        }
+        out.push_back(std::move(info));
+    }
+    return out;
+}
+
+std::optional<SavedStarGiftInfo> saved_star_gift_from_tl(const tl::SavedStarGift& wrapper) {
+    const auto* found = std::get_if<ty::savedStarGift>(&wrapper.value);
+    if (found == nullptr) return std::nullopt;
+    const auto& g = *found;
+    SavedStarGiftInfo out;
+    if (g.msg_id) out.msg_id = *g.msg_id;
+    if (g.saved_id) out.saved_id = *g.saved_id;
+    if (g.gift) {
+        if (const auto* regular = std::get_if<ty::starGift>(&g.gift->value)) {
+            out.gift_id = regular->id;
+        } else if (const auto* unique = std::get_if<ty::starGiftUnique>(&g.gift->value)) {
+            out.unique_slug = unique->slug;
+        }
+    }
+    out.date = g.date;
+    out.unsaved = g.unsaved;
+    out.name_hidden = g.name_hidden;
+    out.pinned_to_top = g.pinned_to_top;
+    out.can_upgrade = g.can_upgrade;
+    out.convert_stars = g.convert_stars;
+    out.upgrade_stars = g.upgrade_stars;
+    out.transfer_stars = g.transfer_stars;
+    if (g.message) {
+        if (const auto* text = std::get_if<ty::textWithEntities>(&(*g.message)->value)) out.message = text->text;
+    }
+    return out;
+}
+
+std::optional<StarGiftInfo> star_gift_info_from_tl(const tl::StarGift& wrapper) {
+    const auto* gift = std::get_if<ty::starGift>(&wrapper.value);
+    if (gift == nullptr) return std::nullopt;
+    StarGiftInfo info;
+    info.id = gift->id;
+    info.stars = gift->stars;
+    info.limited = gift->limited;
+    info.sold_out = gift->sold_out;
+    info.remaining = gift->availability_remains;
+    info.total = gift->availability_total;
+    return info;
+}
+
+std::shared_ptr<tl::MessageEntity> to_tl_entity(const TextEntity& e) {
+    switch (e.kind) {
+        case TextEntity::Kind::Bold:
+            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityBold{e.offset, e.length}});
+        case TextEntity::Kind::Italic:
+            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityItalic{e.offset, e.length}});
+        case TextEntity::Kind::Underline:
+            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityUnderline{e.offset, e.length}});
+        case TextEntity::Kind::Strike:
+            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityStrike{e.offset, e.length}});
+        case TextEntity::Kind::Spoiler:
+            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntitySpoiler{e.offset, e.length}});
+        case TextEntity::Kind::Code:
+            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityCode{e.offset, e.length}});
+        case TextEntity::Kind::Pre:
+            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityPre{e.offset, e.length, e.language}});
+        case TextEntity::Kind::TextUrl:
+            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityTextUrl{e.offset, e.length, e.url}});
+        case TextEntity::Kind::MentionName:
+            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityMentionName{e.offset, e.length, e.user_id}});
+        case TextEntity::Kind::Blockquote:
+            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityBlockquote{false, e.offset, e.length}});
+    }
+    throw std::logic_error("unknown entity kind");
+}
+
+std::optional<TextEntity> text_entity_from_tl(const tl::MessageEntity& wrapper) {
+    TextEntity out;
+    if (const auto* e = std::get_if<ty::messageEntityBold>(&wrapper.value)) {
+        out.kind = TextEntity::Kind::Bold; out.offset = e->offset; out.length = e->length;
+    } else if (const auto* e = std::get_if<ty::messageEntityItalic>(&wrapper.value)) {
+        out.kind = TextEntity::Kind::Italic; out.offset = e->offset; out.length = e->length;
+    } else if (const auto* e = std::get_if<ty::messageEntityUnderline>(&wrapper.value)) {
+        out.kind = TextEntity::Kind::Underline; out.offset = e->offset; out.length = e->length;
+    } else if (const auto* e = std::get_if<ty::messageEntityStrike>(&wrapper.value)) {
+        out.kind = TextEntity::Kind::Strike; out.offset = e->offset; out.length = e->length;
+    } else if (const auto* e = std::get_if<ty::messageEntitySpoiler>(&wrapper.value)) {
+        out.kind = TextEntity::Kind::Spoiler; out.offset = e->offset; out.length = e->length;
+    } else if (const auto* e = std::get_if<ty::messageEntityCode>(&wrapper.value)) {
+        out.kind = TextEntity::Kind::Code; out.offset = e->offset; out.length = e->length;
+    } else if (const auto* e = std::get_if<ty::messageEntityPre>(&wrapper.value)) {
+        out.kind = TextEntity::Kind::Pre; out.offset = e->offset; out.length = e->length; out.language = e->language;
+    } else if (const auto* e = std::get_if<ty::messageEntityTextUrl>(&wrapper.value)) {
+        out.kind = TextEntity::Kind::TextUrl; out.offset = e->offset; out.length = e->length; out.url = e->url;
+    } else if (const auto* e = std::get_if<ty::messageEntityMentionName>(&wrapper.value)) {
+        out.kind = TextEntity::Kind::MentionName; out.offset = e->offset; out.length = e->length; out.user_id = e->user_id;
+    } else if (const auto* e = std::get_if<ty::messageEntityBlockquote>(&wrapper.value)) {
+        out.kind = TextEntity::Kind::Blockquote; out.offset = e->offset; out.length = e->length;
+    } else {
+        return std::nullopt;
+    }
+    return out;
+}
+
 }  // namespace cppgram::detail

@@ -3,4641 +3,2778 @@
 
 namespace cppgram::mtproto::tl {
 
-void types::dh_gen_fail::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int128(nonce);
-    tlw.write_int128(server_nonce);
-    tlw.write_int128(new_nonce_hash3);
-}
-
-types::dh_gen_fail types::dh_gen_fail::read_body(TlReader& rv) {
-    types::dh_gen_fail out;
-    out.nonce = rv.read_int128();
-    out.server_nonce = rv.read_int128();
-    out.new_nonce_hash3 = rv.read_int128();
-    return out;
-}
-
-
-void types::destroy_auth_key_ok::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::destroy_auth_key_ok types::destroy_auth_key_ok::read_body(TlReader& rv) {
-    types::destroy_auth_key_ok out;
-    return out;
-}
-
-
-void types::destroy_auth_key_none::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::destroy_auth_key_none types::destroy_auth_key_none::read_body(TlReader& rv) {
-    types::destroy_auth_key_none out;
-    return out;
-}
-
-
-void types::destroy_auth_key_fail::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::destroy_auth_key_fail types::destroy_auth_key_fail::read_body(TlReader& rv) {
-    types::destroy_auth_key_fail out;
-    return out;
-}
-
-
-void functions::auth_sendCode::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(phone_number);
-    tlw.write_int32(api_id);
-    tlw.write_string(api_hash);
-    settings->serialize(tlw);
-}
-
-functions::auth_sendCode::Result functions::auth_sendCode::read_result(TlReader& rv) {
-    return tl::auth_SentCode::read(rv);
-}
-
-
-void functions::auth_signUp::serialize(TlWriter& tlw) const {
+void types::inputStickerSetItem::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (no_joined_notifications) flags_v |= (1u << 0);
+        if (mask_coords.has_value()) flags_v |= (1u << 0);
+        if (keywords.has_value()) flags_v |= (1u << 1);
         tlw.write_uint32(flags_v);
     }
-    tlw.write_string(phone_number);
-    tlw.write_string(phone_code_hash);
-    tlw.write_string(first_name);
-    tlw.write_string(last_name);
+    document->serialize(tlw);
+    tlw.write_string(emoji);
+    if (mask_coords.has_value()) { mask_coords.value()->serialize(tlw); }
+    if (keywords.has_value()) { tlw.write_string(keywords.value()); }
 }
 
-functions::auth_signUp::Result functions::auth_signUp::read_result(TlReader& rv) {
-    return tl::auth_Authorization::read(rv);
-}
-
-
-void functions::auth_signIn::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (phone_code.has_value()) flags_v |= (1u << 0);
-        if (email_verification.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(phone_number);
-    tlw.write_string(phone_code_hash);
-    if (phone_code.has_value()) { tlw.write_string(phone_code.value()); }
-    if (email_verification.has_value()) { email_verification.value()->serialize(tlw); }
-}
-
-functions::auth_signIn::Result functions::auth_signIn::read_result(TlReader& rv) {
-    return tl::auth_Authorization::read(rv);
+types::inputStickerSetItem types::inputStickerSetItem::read_body(TlReader& rv) {
+    types::inputStickerSetItem out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.document = tl::read_boxed<tl::InputDocument>(rv);
+    out.emoji = rv.read_string();
+    if ((fl_flags & (1u << 0)) != 0) { out.mask_coords = tl::read_boxed<tl::MaskCoords>(rv); }
+    if ((fl_flags & (1u << 1)) != 0) { out.keywords = rv.read_string(); }
+    return out;
 }
 
 
-void functions::auth_logOut::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::auth_logOut::Result functions::auth_logOut::read_result(TlReader& rv) {
-    return tl::auth_LoggedOut::read(rv);
-}
-
-
-void functions::auth_resetAuthorizations::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::auth_resetAuthorizations::Result functions::auth_resetAuthorizations::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::auth_exportAuthorization::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(dc_id);
-}
-
-functions::auth_exportAuthorization::Result functions::auth_exportAuthorization::read_result(TlReader& rv) {
-    return tl::auth_ExportedAuthorization::read(rv);
-}
-
-
-void functions::auth_importAuthorization::serialize(TlWriter& tlw) const {
+void types::inputPhoneCall::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     tlw.write_int64(id);
+    tlw.write_int64(access_hash);
+}
+
+types::inputPhoneCall types::inputPhoneCall::read_body(TlReader& rv) {
+    types::inputPhoneCall out;
+    out.id = rv.read_int64();
+    out.access_hash = rv.read_int64();
+    return out;
+}
+
+
+void types::phoneCallEmpty::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(id);
+}
+
+types::phoneCallEmpty types::phoneCallEmpty::read_body(TlReader& rv) {
+    types::phoneCallEmpty out;
+    out.id = rv.read_int64();
+    return out;
+}
+
+
+void types::phoneCallWaiting::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (video) flags_v |= (1u << 6);
+        if (receive_date.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(id);
+    tlw.write_int64(access_hash);
+    tlw.write_int32(date);
+    tlw.write_int64(admin_id);
+    tlw.write_int64(participant_id);
+    protocol->serialize(tlw);
+    if (receive_date.has_value()) { tlw.write_int32(receive_date.value()); }
+}
+
+types::phoneCallWaiting types::phoneCallWaiting::read_body(TlReader& rv) {
+    types::phoneCallWaiting out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.video = (fl_flags & (1u << 6)) != 0;
+    out.id = rv.read_int64();
+    out.access_hash = rv.read_int64();
+    out.date = rv.read_int32();
+    out.admin_id = rv.read_int64();
+    out.participant_id = rv.read_int64();
+    out.protocol = tl::read_boxed<tl::PhoneCallProtocol>(rv);
+    if ((fl_flags & (1u << 0)) != 0) { out.receive_date = rv.read_int32(); }
+    return out;
+}
+
+
+void types::phoneCallRequested::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (video) flags_v |= (1u << 6);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(id);
+    tlw.write_int64(access_hash);
+    tlw.write_int32(date);
+    tlw.write_int64(admin_id);
+    tlw.write_int64(participant_id);
+    tlw.write_bytes(g_a_hash);
+    protocol->serialize(tlw);
+}
+
+types::phoneCallRequested types::phoneCallRequested::read_body(TlReader& rv) {
+    types::phoneCallRequested out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.video = (fl_flags & (1u << 6)) != 0;
+    out.id = rv.read_int64();
+    out.access_hash = rv.read_int64();
+    out.date = rv.read_int32();
+    out.admin_id = rv.read_int64();
+    out.participant_id = rv.read_int64();
+    out.g_a_hash = rv.read_bytes();
+    out.protocol = tl::read_boxed<tl::PhoneCallProtocol>(rv);
+    return out;
+}
+
+
+void types::phoneCallAccepted::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (video) flags_v |= (1u << 6);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(id);
+    tlw.write_int64(access_hash);
+    tlw.write_int32(date);
+    tlw.write_int64(admin_id);
+    tlw.write_int64(participant_id);
+    tlw.write_bytes(g_b);
+    protocol->serialize(tlw);
+}
+
+types::phoneCallAccepted types::phoneCallAccepted::read_body(TlReader& rv) {
+    types::phoneCallAccepted out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.video = (fl_flags & (1u << 6)) != 0;
+    out.id = rv.read_int64();
+    out.access_hash = rv.read_int64();
+    out.date = rv.read_int32();
+    out.admin_id = rv.read_int64();
+    out.participant_id = rv.read_int64();
+    out.g_b = rv.read_bytes();
+    out.protocol = tl::read_boxed<tl::PhoneCallProtocol>(rv);
+    return out;
+}
+
+
+void types::phoneCall::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (p2p_allowed) flags_v |= (1u << 5);
+        if (video) flags_v |= (1u << 6);
+        if (conference_supported) flags_v |= (1u << 8);
+        if (custom_parameters.has_value()) flags_v |= (1u << 7);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(id);
+    tlw.write_int64(access_hash);
+    tlw.write_int32(date);
+    tlw.write_int64(admin_id);
+    tlw.write_int64(participant_id);
+    tlw.write_bytes(g_a_or_b);
+    tlw.write_int64(key_fingerprint);
+    protocol->serialize(tlw);
+    tl::write_vector(tlw, connections, [&](TlWriter& tlw489, const auto& e489) { e489->serialize(tlw489); });
+    tlw.write_int32(start_date);
+    if (custom_parameters.has_value()) { custom_parameters.value()->serialize(tlw); }
+}
+
+types::phoneCall types::phoneCall::read_body(TlReader& rv) {
+    types::phoneCall out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.p2p_allowed = (fl_flags & (1u << 5)) != 0;
+    out.video = (fl_flags & (1u << 6)) != 0;
+    out.conference_supported = (fl_flags & (1u << 8)) != 0;
+    out.id = rv.read_int64();
+    out.access_hash = rv.read_int64();
+    out.date = rv.read_int32();
+    out.admin_id = rv.read_int64();
+    out.participant_id = rv.read_int64();
+    out.g_a_or_b = rv.read_bytes();
+    out.key_fingerprint = rv.read_int64();
+    out.protocol = tl::read_boxed<tl::PhoneCallProtocol>(rv);
+    out.connections = tl::read_vector<std::shared_ptr<tl::PhoneConnection>>(rv, [&](TlReader& r488) -> std::shared_ptr<tl::PhoneConnection> { return tl::read_boxed<tl::PhoneConnection>(r488); });
+    out.start_date = rv.read_int32();
+    if ((fl_flags & (1u << 7)) != 0) { out.custom_parameters = tl::read_boxed<tl::DataJSON>(rv); }
+    return out;
+}
+
+
+void types::phoneCallDiscarded::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (need_rating) flags_v |= (1u << 2);
+        if (need_debug) flags_v |= (1u << 3);
+        if (video) flags_v |= (1u << 6);
+        if (reason.has_value()) flags_v |= (1u << 0);
+        if (duration.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(id);
+    if (reason.has_value()) { reason.value()->serialize(tlw); }
+    if (duration.has_value()) { tlw.write_int32(duration.value()); }
+}
+
+types::phoneCallDiscarded types::phoneCallDiscarded::read_body(TlReader& rv) {
+    types::phoneCallDiscarded out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.need_rating = (fl_flags & (1u << 2)) != 0;
+    out.need_debug = (fl_flags & (1u << 3)) != 0;
+    out.video = (fl_flags & (1u << 6)) != 0;
+    out.id = rv.read_int64();
+    if ((fl_flags & (1u << 0)) != 0) { out.reason = tl::read_boxed<tl::PhoneCallDiscardReason>(rv); }
+    if ((fl_flags & (1u << 1)) != 0) { out.duration = rv.read_int32(); }
+    return out;
+}
+
+
+void types::phoneConnection::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (tcp) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(id);
+    tlw.write_string(ip);
+    tlw.write_string(ipv6);
+    tlw.write_int32(port);
+    tlw.write_bytes(peer_tag);
+}
+
+types::phoneConnection types::phoneConnection::read_body(TlReader& rv) {
+    types::phoneConnection out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.tcp = (fl_flags & (1u << 0)) != 0;
+    out.id = rv.read_int64();
+    out.ip = rv.read_string();
+    out.ipv6 = rv.read_string();
+    out.port = rv.read_int32();
+    out.peer_tag = rv.read_bytes();
+    return out;
+}
+
+
+void types::phoneConnectionWebrtc::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (turn) flags_v |= (1u << 0);
+        if (stun) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(id);
+    tlw.write_string(ip);
+    tlw.write_string(ipv6);
+    tlw.write_int32(port);
+    tlw.write_string(username);
+    tlw.write_string(password);
+}
+
+types::phoneConnectionWebrtc types::phoneConnectionWebrtc::read_body(TlReader& rv) {
+    types::phoneConnectionWebrtc out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.turn = (fl_flags & (1u << 0)) != 0;
+    out.stun = (fl_flags & (1u << 1)) != 0;
+    out.id = rv.read_int64();
+    out.ip = rv.read_string();
+    out.ipv6 = rv.read_string();
+    out.port = rv.read_int32();
+    out.username = rv.read_string();
+    out.password = rv.read_string();
+    return out;
+}
+
+
+void types::phoneCallProtocol::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (udp_p2p) flags_v |= (1u << 0);
+        if (udp_reflector) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int32(min_layer);
+    tlw.write_int32(max_layer);
+    tl::write_vector(tlw, library_versions, [&](TlWriter& tlw491, const auto& e491) { tlw491.write_string(e491); });
+}
+
+types::phoneCallProtocol types::phoneCallProtocol::read_body(TlReader& rv) {
+    types::phoneCallProtocol out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.udp_p2p = (fl_flags & (1u << 0)) != 0;
+    out.udp_reflector = (fl_flags & (1u << 1)) != 0;
+    out.min_layer = rv.read_int32();
+    out.max_layer = rv.read_int32();
+    out.library_versions = tl::read_vector<std::string>(rv, [&](TlReader& r490) -> std::string { return r490.read_string(); });
+    return out;
+}
+
+
+void types::phone_phoneCall::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    phone_call->serialize(tlw);
+    tl::write_vector(tlw, users, [&](TlWriter& tlw493, const auto& e493) { e493->serialize(tlw493); });
+}
+
+types::phone_phoneCall types::phone_phoneCall::read_body(TlReader& rv) {
+    types::phone_phoneCall out;
+    out.phone_call = tl::read_boxed<tl::PhoneCall>(rv);
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r492) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r492); });
+    return out;
+}
+
+
+void types::upload_cdnFileReuploadNeeded::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bytes(request_token);
+}
+
+types::upload_cdnFileReuploadNeeded types::upload_cdnFileReuploadNeeded::read_body(TlReader& rv) {
+    types::upload_cdnFileReuploadNeeded out;
+    out.request_token = rv.read_bytes();
+    return out;
+}
+
+
+void types::upload_cdnFile::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
     tlw.write_bytes(bytes);
 }
 
-functions::auth_importAuthorization::Result functions::auth_importAuthorization::read_result(TlReader& rv) {
-    return tl::auth_Authorization::read(rv);
+types::upload_cdnFile types::upload_cdnFile::read_body(TlReader& rv) {
+    types::upload_cdnFile out;
+    out.bytes = rv.read_bytes();
+    return out;
 }
 
 
-void functions::auth_bindTempAuthKey::serialize(TlWriter& tlw) const {
+void types::cdnPublicKey::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    tlw.write_int64(perm_auth_key_id);
-    tlw.write_int64(nonce);
-    tlw.write_int32(expires_at);
-    tlw.write_bytes(encrypted_message);
-}
-
-functions::auth_bindTempAuthKey::Result functions::auth_bindTempAuthKey::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::auth_importBotAuthorization::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(flags);
-    tlw.write_int32(api_id);
-    tlw.write_string(api_hash);
-    tlw.write_string(bot_auth_token);
-}
-
-functions::auth_importBotAuthorization::Result functions::auth_importBotAuthorization::read_result(TlReader& rv) {
-    return tl::auth_Authorization::read(rv);
-}
-
-
-void functions::auth_checkPassword::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    password->serialize(tlw);
-}
-
-functions::auth_checkPassword::Result functions::auth_checkPassword::read_result(TlReader& rv) {
-    return tl::auth_Authorization::read(rv);
-}
-
-
-void functions::auth_requestPasswordRecovery::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::auth_requestPasswordRecovery::Result functions::auth_requestPasswordRecovery::read_result(TlReader& rv) {
-    return tl::auth_PasswordRecovery::read(rv);
-}
-
-
-void functions::auth_recoverPassword::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (new_settings.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(code);
-    if (new_settings.has_value()) { new_settings.value()->serialize(tlw); }
-}
-
-functions::auth_recoverPassword::Result functions::auth_recoverPassword::read_result(TlReader& rv) {
-    return tl::auth_Authorization::read(rv);
-}
-
-
-void functions::auth_resendCode::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (reason.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(phone_number);
-    tlw.write_string(phone_code_hash);
-    if (reason.has_value()) { tlw.write_string(reason.value()); }
-}
-
-functions::auth_resendCode::Result functions::auth_resendCode::read_result(TlReader& rv) {
-    return tl::auth_SentCode::read(rv);
-}
-
-
-void functions::auth_cancelCode::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(phone_number);
-    tlw.write_string(phone_code_hash);
-}
-
-functions::auth_cancelCode::Result functions::auth_cancelCode::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::auth_dropTempAuthKeys::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, except_auth_keys, [&](TlWriter& tlw1277, const auto& e1277) { tlw1277.write_int64(e1277); });
-}
-
-functions::auth_dropTempAuthKeys::Result functions::auth_dropTempAuthKeys::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::auth_exportLoginToken::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(api_id);
-    tlw.write_string(api_hash);
-    tl::write_vector(tlw, except_ids, [&](TlWriter& tlw1278, const auto& e1278) { tlw1278.write_int64(e1278); });
-}
-
-functions::auth_exportLoginToken::Result functions::auth_exportLoginToken::read_result(TlReader& rv) {
-    return tl::auth_LoginToken::read(rv);
-}
-
-
-void functions::auth_importLoginToken::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bytes(token);
-}
-
-functions::auth_importLoginToken::Result functions::auth_importLoginToken::read_result(TlReader& rv) {
-    return tl::auth_LoginToken::read(rv);
-}
-
-
-void functions::auth_acceptLoginToken::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bytes(token);
-}
-
-functions::auth_acceptLoginToken::Result functions::auth_acceptLoginToken::read_result(TlReader& rv) {
-    return tl::Authorization::read(rv);
-}
-
-
-void functions::auth_checkRecoveryPassword::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(code);
-}
-
-functions::auth_checkRecoveryPassword::Result functions::auth_checkRecoveryPassword::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::auth_importWebTokenAuthorization::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(api_id);
-    tlw.write_string(api_hash);
-    tlw.write_string(web_auth_token);
-}
-
-functions::auth_importWebTokenAuthorization::Result functions::auth_importWebTokenAuthorization::read_result(TlReader& rv) {
-    return tl::auth_Authorization::read(rv);
-}
-
-
-void functions::auth_requestFirebaseSms::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (safety_net_token.has_value()) flags_v |= (1u << 0);
-        if (play_integrity_token.has_value()) flags_v |= (1u << 2);
-        if (ios_push_secret.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(phone_number);
-    tlw.write_string(phone_code_hash);
-    if (safety_net_token.has_value()) { tlw.write_string(safety_net_token.value()); }
-    if (play_integrity_token.has_value()) { tlw.write_string(play_integrity_token.value()); }
-    if (ios_push_secret.has_value()) { tlw.write_string(ios_push_secret.value()); }
-}
-
-functions::auth_requestFirebaseSms::Result functions::auth_requestFirebaseSms::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::auth_resetLoginEmail::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(phone_number);
-    tlw.write_string(phone_code_hash);
-}
-
-functions::auth_resetLoginEmail::Result functions::auth_resetLoginEmail::read_result(TlReader& rv) {
-    return tl::auth_SentCode::read(rv);
-}
-
-
-void functions::auth_reportMissingCode::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(phone_number);
-    tlw.write_string(phone_code_hash);
-    tlw.write_string(mnc);
-}
-
-functions::auth_reportMissingCode::Result functions::auth_reportMissingCode::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::auth_checkPaidAuth::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(phone_number);
-    tlw.write_string(phone_code_hash);
-    tlw.write_int64(form_id);
-}
-
-functions::auth_checkPaidAuth::Result functions::auth_checkPaidAuth::read_result(TlReader& rv) {
-    return tl::auth_SentCode::read(rv);
-}
-
-
-void functions::auth_initPasskeyLogin::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(api_id);
-    tlw.write_string(api_hash);
-}
-
-functions::auth_initPasskeyLogin::Result functions::auth_initPasskeyLogin::read_result(TlReader& rv) {
-    return tl::auth_PasskeyLoginOptions::read(rv);
-}
-
-
-void functions::auth_finishPasskeyLogin::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (from_dc_id.has_value()) flags_v |= (1u << 0);
-        if (from_auth_key_id.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    credential->serialize(tlw);
-    if (from_dc_id.has_value()) { tlw.write_int32(from_dc_id.value()); }
-    if (from_auth_key_id.has_value()) { tlw.write_int64(from_auth_key_id.value()); }
-}
-
-functions::auth_finishPasskeyLogin::Result functions::auth_finishPasskeyLogin::read_result(TlReader& rv) {
-    return tl::auth_Authorization::read(rv);
-}
-
-
-void functions::auth_cancelWebTokenAuthorization::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(web_auth_token);
-}
-
-functions::auth_cancelWebTokenAuthorization::Result functions::auth_cancelWebTokenAuthorization::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::auth_initFirebasePnvLogin::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (except_ids.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    if (except_ids.has_value()) { tl::write_vector(tlw, except_ids.value(), [&](TlWriter& tlw1279, const auto& e1279) { tlw1279.write_int64(e1279); }); }
-    tlw.write_int32(api_id);
-    tlw.write_string(api_hash);
-}
-
-functions::auth_initFirebasePnvLogin::Result functions::auth_initFirebasePnvLogin::read_result(TlReader& rv) {
-    return tl::auth_FirebasePnvIntent::read(rv);
-}
-
-
-void functions::auth_finishFirebasePnvLogin::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(google_token);
-}
-
-functions::auth_finishFirebasePnvLogin::Result functions::auth_finishFirebasePnvLogin::read_result(TlReader& rv) {
-    return tl::auth_Authorization::read(rv);
-}
-
-
-void functions::auth_firebasePnvSignUp::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (no_joined_notifications) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(first_name);
-    tlw.write_string(last_name);
-}
-
-functions::auth_firebasePnvSignUp::Result functions::auth_firebasePnvSignUp::read_result(TlReader& rv) {
-    return tl::auth_Authorization::read(rv);
-}
-
-
-void functions::account_registerDevice::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (no_muted) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int32(token_type);
-    tlw.write_string(token);
-    tlw.write_bool(app_sandbox);
-    tlw.write_bytes(secret);
-    tl::write_vector(tlw, other_uids, [&](TlWriter& tlw1280, const auto& e1280) { tlw1280.write_int64(e1280); });
-}
-
-functions::account_registerDevice::Result functions::account_registerDevice::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_unregisterDevice::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(token_type);
-    tlw.write_string(token);
-    tl::write_vector(tlw, other_uids, [&](TlWriter& tlw1281, const auto& e1281) { tlw1281.write_int64(e1281); });
-}
-
-functions::account_unregisterDevice::Result functions::account_unregisterDevice::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_updateNotifySettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    settings->serialize(tlw);
-}
-
-functions::account_updateNotifySettings::Result functions::account_updateNotifySettings::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getNotifySettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-}
-
-functions::account_getNotifySettings::Result functions::account_getNotifySettings::read_result(TlReader& rv) {
-    return tl::PeerNotifySettings::read(rv);
-}
-
-
-void functions::account_resetNotifySettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_resetNotifySettings::Result functions::account_resetNotifySettings::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_updateProfile::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (first_name.has_value()) flags_v |= (1u << 0);
-        if (last_name.has_value()) flags_v |= (1u << 1);
-        if (about.has_value()) flags_v |= (1u << 2);
-        tlw.write_uint32(flags_v);
-    }
-    if (first_name.has_value()) { tlw.write_string(first_name.value()); }
-    if (last_name.has_value()) { tlw.write_string(last_name.value()); }
-    if (about.has_value()) { tlw.write_string(about.value()); }
-}
-
-functions::account_updateProfile::Result functions::account_updateProfile::read_result(TlReader& rv) {
-    return tl::User::read(rv);
-}
-
-
-void functions::account_updateStatus::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bool(offline);
-}
-
-functions::account_updateStatus::Result functions::account_updateStatus::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getWallPapers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::account_getWallPapers::Result functions::account_getWallPapers::read_result(TlReader& rv) {
-    return tl::account_WallPapers::read(rv);
-}
-
-
-void functions::account_reportPeer::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    reason->serialize(tlw);
-    tlw.write_string(message);
-}
-
-functions::account_reportPeer::Result functions::account_reportPeer::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_checkUsername::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(username);
-}
-
-functions::account_checkUsername::Result functions::account_checkUsername::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_updateUsername::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(username);
-}
-
-functions::account_updateUsername::Result functions::account_updateUsername::read_result(TlReader& rv) {
-    return tl::User::read(rv);
-}
-
-
-void functions::account_getPrivacy::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    key->serialize(tlw);
-}
-
-functions::account_getPrivacy::Result functions::account_getPrivacy::read_result(TlReader& rv) {
-    return tl::account_PrivacyRules::read(rv);
-}
-
-
-void functions::account_setPrivacy::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    key->serialize(tlw);
-    tl::write_vector(tlw, rules, [&](TlWriter& tlw1282, const auto& e1282) { e1282->serialize(tlw1282); });
-}
-
-functions::account_setPrivacy::Result functions::account_setPrivacy::read_result(TlReader& rv) {
-    return tl::account_PrivacyRules::read(rv);
-}
-
-
-void functions::account_deleteAccount::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (password.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(reason);
-    if (password.has_value()) { password.value()->serialize(tlw); }
-}
-
-functions::account_deleteAccount::Result functions::account_deleteAccount::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getAccountTTL::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_getAccountTTL::Result functions::account_getAccountTTL::read_result(TlReader& rv) {
-    return tl::AccountDaysTTL::read(rv);
-}
-
-
-void functions::account_setAccountTTL::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    ttl->serialize(tlw);
-}
-
-functions::account_setAccountTTL::Result functions::account_setAccountTTL::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_sendChangePhoneCode::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(phone_number);
-    settings->serialize(tlw);
-}
-
-functions::account_sendChangePhoneCode::Result functions::account_sendChangePhoneCode::read_result(TlReader& rv) {
-    return tl::auth_SentCode::read(rv);
-}
-
-
-void functions::account_changePhone::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(phone_number);
-    tlw.write_string(phone_code_hash);
-    tlw.write_string(phone_code);
-}
-
-functions::account_changePhone::Result functions::account_changePhone::read_result(TlReader& rv) {
-    return tl::User::read(rv);
-}
-
-
-void functions::account_updateDeviceLocked::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(period);
-}
-
-functions::account_updateDeviceLocked::Result functions::account_updateDeviceLocked::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getAuthorizations::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_getAuthorizations::Result functions::account_getAuthorizations::read_result(TlReader& rv) {
-    return tl::account_Authorizations::read(rv);
-}
-
-
-void functions::account_resetAuthorization::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::account_resetAuthorization::Result functions::account_resetAuthorization::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getPassword::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_getPassword::Result functions::account_getPassword::read_result(TlReader& rv) {
-    return tl::account_Password::read(rv);
-}
-
-
-void functions::account_getPasswordSettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    password->serialize(tlw);
-}
-
-functions::account_getPasswordSettings::Result functions::account_getPasswordSettings::read_result(TlReader& rv) {
-    return tl::account_PasswordSettings::read(rv);
-}
-
-
-void functions::account_updatePasswordSettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    password->serialize(tlw);
-    new_settings->serialize(tlw);
-}
-
-functions::account_updatePasswordSettings::Result functions::account_updatePasswordSettings::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_sendConfirmPhoneCode::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(hash);
-    settings->serialize(tlw);
-}
-
-functions::account_sendConfirmPhoneCode::Result functions::account_sendConfirmPhoneCode::read_result(TlReader& rv) {
-    return tl::auth_SentCode::read(rv);
-}
-
-
-void functions::account_confirmPhone::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(phone_code_hash);
-    tlw.write_string(phone_code);
-}
-
-functions::account_confirmPhone::Result functions::account_confirmPhone::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getTmpPassword::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    password->serialize(tlw);
-    tlw.write_int32(period);
-}
-
-functions::account_getTmpPassword::Result functions::account_getTmpPassword::read_result(TlReader& rv) {
-    return tl::account_TmpPassword::read(rv);
-}
-
-
-void functions::account_getWebAuthorizations::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_getWebAuthorizations::Result functions::account_getWebAuthorizations::read_result(TlReader& rv) {
-    return tl::account_WebAuthorizations::read(rv);
-}
-
-
-void functions::account_resetWebAuthorization::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::account_resetWebAuthorization::Result functions::account_resetWebAuthorization::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_resetWebAuthorizations::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_resetWebAuthorizations::Result functions::account_resetWebAuthorizations::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getAllSecureValues::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_getAllSecureValues::Result functions::account_getAllSecureValues::read_result(TlReader& rv) {
-    return tl::read_vector<std::shared_ptr<tl::SecureValue>>(rv, [&](TlReader& r1283) -> std::shared_ptr<tl::SecureValue> { return tl::read_boxed<tl::SecureValue>(r1283); });
-}
-
-
-void functions::account_getSecureValue::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, types, [&](TlWriter& tlw1285, const auto& e1285) { e1285->serialize(tlw1285); });
-}
-
-functions::account_getSecureValue::Result functions::account_getSecureValue::read_result(TlReader& rv) {
-    return tl::read_vector<std::shared_ptr<tl::SecureValue>>(rv, [&](TlReader& r1284) -> std::shared_ptr<tl::SecureValue> { return tl::read_boxed<tl::SecureValue>(r1284); });
-}
-
-
-void functions::account_saveSecureValue::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    value->serialize(tlw);
-    tlw.write_int64(secure_secret_id);
-}
-
-functions::account_saveSecureValue::Result functions::account_saveSecureValue::read_result(TlReader& rv) {
-    return tl::SecureValue::read(rv);
-}
-
-
-void functions::account_deleteSecureValue::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, types, [&](TlWriter& tlw1286, const auto& e1286) { e1286->serialize(tlw1286); });
-}
-
-functions::account_deleteSecureValue::Result functions::account_deleteSecureValue::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getAuthorizationForm::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(bot_id);
-    tlw.write_string(scope);
+    tlw.write_int32(dc_id);
     tlw.write_string(public_key);
 }
 
-functions::account_getAuthorizationForm::Result functions::account_getAuthorizationForm::read_result(TlReader& rv) {
-    return tl::account_AuthorizationForm::read(rv);
+types::cdnPublicKey types::cdnPublicKey::read_body(TlReader& rv) {
+    types::cdnPublicKey out;
+    out.dc_id = rv.read_int32();
+    out.public_key = rv.read_string();
+    return out;
 }
 
 
-void functions::account_acceptAuthorization::serialize(TlWriter& tlw) const {
+void types::cdnConfig::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    tlw.write_int64(bot_id);
-    tlw.write_string(scope);
-    tlw.write_string(public_key);
-    tl::write_vector(tlw, value_hashes, [&](TlWriter& tlw1287, const auto& e1287) { e1287->serialize(tlw1287); });
-    credentials->serialize(tlw);
+    tl::write_vector(tlw, public_keys, [&](TlWriter& tlw495, const auto& e495) { e495->serialize(tlw495); });
 }
 
-functions::account_acceptAuthorization::Result functions::account_acceptAuthorization::read_result(TlReader& rv) {
-    return rv.read_bool();
+types::cdnConfig types::cdnConfig::read_body(TlReader& rv) {
+    types::cdnConfig out;
+    out.public_keys = tl::read_vector<std::shared_ptr<tl::CdnPublicKey>>(rv, [&](TlReader& r494) -> std::shared_ptr<tl::CdnPublicKey> { return tl::read_boxed<tl::CdnPublicKey>(r494); });
+    return out;
 }
 
 
-void functions::account_sendVerifyPhoneCode::serialize(TlWriter& tlw) const {
+void types::langPackString::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    tlw.write_string(phone_number);
-    settings->serialize(tlw);
+    tlw.write_string(key);
+    tlw.write_string(value);
 }
 
-functions::account_sendVerifyPhoneCode::Result functions::account_sendVerifyPhoneCode::read_result(TlReader& rv) {
-    return tl::auth_SentCode::read(rv);
+types::langPackString types::langPackString::read_body(TlReader& rv) {
+    types::langPackString out;
+    out.key = rv.read_string();
+    out.value = rv.read_string();
+    return out;
 }
 
 
-void functions::account_verifyPhone::serialize(TlWriter& tlw) const {
+void types::langPackStringPluralized::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    tlw.write_string(phone_number);
-    tlw.write_string(phone_code_hash);
-    tlw.write_string(phone_code);
-}
-
-functions::account_verifyPhone::Result functions::account_verifyPhone::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_sendVerifyEmailCode::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    purpose->serialize(tlw);
-    tlw.write_string(email);
-}
-
-functions::account_sendVerifyEmailCode::Result functions::account_sendVerifyEmailCode::read_result(TlReader& rv) {
-    return tl::account_SentEmailCode::read(rv);
-}
-
-
-void functions::account_verifyEmail::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    purpose->serialize(tlw);
-    verification->serialize(tlw);
-}
-
-functions::account_verifyEmail::Result functions::account_verifyEmail::read_result(TlReader& rv) {
-    return tl::account_EmailVerified::read(rv);
-}
-
-
-void functions::account_initTakeoutSession::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (contacts) flags_v |= (1u << 0);
-        if (message_users) flags_v |= (1u << 1);
-        if (message_chats) flags_v |= (1u << 2);
-        if (message_megagroups) flags_v |= (1u << 3);
-        if (message_channels) flags_v |= (1u << 4);
-        if (files) flags_v |= (1u << 5);
-        if (file_max_size.has_value()) flags_v |= (1u << 5);
-        tlw.write_uint32(flags_v);
-    }
-    if (file_max_size.has_value()) { tlw.write_int64(file_max_size.value()); }
-}
-
-functions::account_initTakeoutSession::Result functions::account_initTakeoutSession::read_result(TlReader& rv) {
-    return tl::account_Takeout::read(rv);
-}
-
-
-void functions::account_finishTakeoutSession::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (success) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-}
-
-functions::account_finishTakeoutSession::Result functions::account_finishTakeoutSession::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_confirmPasswordEmail::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(code);
-}
-
-functions::account_confirmPasswordEmail::Result functions::account_confirmPasswordEmail::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_resendPasswordEmail::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_resendPasswordEmail::Result functions::account_resendPasswordEmail::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_cancelPasswordEmail::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_cancelPasswordEmail::Result functions::account_cancelPasswordEmail::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getContactSignUpNotification::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_getContactSignUpNotification::Result functions::account_getContactSignUpNotification::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_setContactSignUpNotification::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bool(silent);
-}
-
-functions::account_setContactSignUpNotification::Result functions::account_setContactSignUpNotification::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getNotifyExceptions::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (compare_sound) flags_v |= (1u << 1);
-        if (compare_stories) flags_v |= (1u << 2);
-        if (peer.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    if (peer.has_value()) { peer.value()->serialize(tlw); }
-}
-
-functions::account_getNotifyExceptions::Result functions::account_getNotifyExceptions::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::account_getWallPaper::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    wallpaper->serialize(tlw);
-}
-
-functions::account_getWallPaper::Result functions::account_getWallPaper::read_result(TlReader& rv) {
-    return tl::WallPaper::read(rv);
-}
-
-
-void functions::account_uploadWallPaper::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (for_chat) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    file->serialize(tlw);
-    tlw.write_string(mime_type);
-    settings->serialize(tlw);
-}
-
-functions::account_uploadWallPaper::Result functions::account_uploadWallPaper::read_result(TlReader& rv) {
-    return tl::WallPaper::read(rv);
-}
-
-
-void functions::account_saveWallPaper::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    wallpaper->serialize(tlw);
-    tlw.write_bool(unsave);
-    settings->serialize(tlw);
-}
-
-functions::account_saveWallPaper::Result functions::account_saveWallPaper::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_installWallPaper::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    wallpaper->serialize(tlw);
-    settings->serialize(tlw);
-}
-
-functions::account_installWallPaper::Result functions::account_installWallPaper::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_resetWallPapers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_resetWallPapers::Result functions::account_resetWallPapers::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getAutoDownloadSettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_getAutoDownloadSettings::Result functions::account_getAutoDownloadSettings::read_result(TlReader& rv) {
-    return tl::account_AutoDownloadSettings::read(rv);
-}
-
-
-void functions::account_saveAutoDownloadSettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (low) flags_v |= (1u << 0);
-        if (high) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    settings->serialize(tlw);
-}
-
-functions::account_saveAutoDownloadSettings::Result functions::account_saveAutoDownloadSettings::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_uploadTheme::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (thumb.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    file->serialize(tlw);
-    if (thumb.has_value()) { thumb.value()->serialize(tlw); }
-    tlw.write_string(file_name);
-    tlw.write_string(mime_type);
-}
-
-functions::account_uploadTheme::Result functions::account_uploadTheme::read_result(TlReader& rv) {
-    return tl::Document::read(rv);
-}
-
-
-void functions::account_createTheme::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (document.has_value()) flags_v |= (1u << 2);
-        if (settings.has_value()) flags_v |= (1u << 3);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(slug);
-    tlw.write_string(title);
-    if (document.has_value()) { document.value()->serialize(tlw); }
-    if (settings.has_value()) { tl::write_vector(tlw, settings.value(), [&](TlWriter& tlw1288, const auto& e1288) { e1288->serialize(tlw1288); }); }
-}
-
-functions::account_createTheme::Result functions::account_createTheme::read_result(TlReader& rv) {
-    return tl::Theme::read(rv);
-}
-
-
-void functions::account_updateTheme::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (slug.has_value()) flags_v |= (1u << 0);
-        if (title.has_value()) flags_v |= (1u << 1);
-        if (document.has_value()) flags_v |= (1u << 2);
-        if (settings.has_value()) flags_v |= (1u << 3);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(format);
-    theme->serialize(tlw);
-    if (slug.has_value()) { tlw.write_string(slug.value()); }
-    if (title.has_value()) { tlw.write_string(title.value()); }
-    if (document.has_value()) { document.value()->serialize(tlw); }
-    if (settings.has_value()) { tl::write_vector(tlw, settings.value(), [&](TlWriter& tlw1289, const auto& e1289) { e1289->serialize(tlw1289); }); }
-}
-
-functions::account_updateTheme::Result functions::account_updateTheme::read_result(TlReader& rv) {
-    return tl::Theme::read(rv);
-}
-
-
-void functions::account_saveTheme::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    theme->serialize(tlw);
-    tlw.write_bool(unsave);
-}
-
-functions::account_saveTheme::Result functions::account_saveTheme::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_installTheme::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (dark) flags_v |= (1u << 0);
-        if (theme.has_value()) flags_v |= (1u << 1);
-        if (format.has_value()) flags_v |= (1u << 2);
-        if (base_theme.has_value()) flags_v |= (1u << 3);
-        tlw.write_uint32(flags_v);
-    }
-    if (theme.has_value()) { theme.value()->serialize(tlw); }
-    if (format.has_value()) { tlw.write_string(format.value()); }
-    if (base_theme.has_value()) { base_theme.value()->serialize(tlw); }
-}
-
-functions::account_installTheme::Result functions::account_installTheme::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getTheme::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(format);
-    theme->serialize(tlw);
-}
-
-functions::account_getTheme::Result functions::account_getTheme::read_result(TlReader& rv) {
-    return tl::Theme::read(rv);
-}
-
-
-void functions::account_getThemes::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(format);
-    tlw.write_int64(hash);
-}
-
-functions::account_getThemes::Result functions::account_getThemes::read_result(TlReader& rv) {
-    return tl::account_Themes::read(rv);
-}
-
-
-void functions::account_setContentSettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (sensitive_enabled) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-}
-
-functions::account_setContentSettings::Result functions::account_setContentSettings::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getContentSettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_getContentSettings::Result functions::account_getContentSettings::read_result(TlReader& rv) {
-    return tl::account_ContentSettings::read(rv);
-}
-
-
-void functions::account_getMultiWallPapers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, wallpapers, [&](TlWriter& tlw1291, const auto& e1291) { e1291->serialize(tlw1291); });
-}
-
-functions::account_getMultiWallPapers::Result functions::account_getMultiWallPapers::read_result(TlReader& rv) {
-    return tl::read_vector<std::shared_ptr<tl::WallPaper>>(rv, [&](TlReader& r1290) -> std::shared_ptr<tl::WallPaper> { return tl::read_boxed<tl::WallPaper>(r1290); });
-}
-
-
-void functions::account_getGlobalPrivacySettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_getGlobalPrivacySettings::Result functions::account_getGlobalPrivacySettings::read_result(TlReader& rv) {
-    return tl::GlobalPrivacySettings::read(rv);
-}
-
-
-void functions::account_setGlobalPrivacySettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    settings->serialize(tlw);
-}
-
-functions::account_setGlobalPrivacySettings::Result functions::account_setGlobalPrivacySettings::read_result(TlReader& rv) {
-    return tl::GlobalPrivacySettings::read(rv);
-}
-
-
-void functions::account_reportProfilePhoto::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    photo_id->serialize(tlw);
-    reason->serialize(tlw);
-    tlw.write_string(message);
-}
-
-functions::account_reportProfilePhoto::Result functions::account_reportProfilePhoto::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_resetPassword::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_resetPassword::Result functions::account_resetPassword::read_result(TlReader& rv) {
-    return tl::account_ResetPasswordResult::read(rv);
-}
-
-
-void functions::account_declinePasswordReset::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_declinePasswordReset::Result functions::account_declinePasswordReset::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getChatThemes::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::account_getChatThemes::Result functions::account_getChatThemes::read_result(TlReader& rv) {
-    return tl::account_Themes::read(rv);
-}
-
-
-void functions::account_setAuthorizationTTL::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(authorization_ttl_days);
-}
-
-functions::account_setAuthorizationTTL::Result functions::account_setAuthorizationTTL::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_changeAuthorizationSettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (confirmed) flags_v |= (1u << 3);
-        if (encrypted_requests_disabled.has_value()) flags_v |= (1u << 0);
-        if (call_requests_disabled.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int64(hash);
-    if (encrypted_requests_disabled.has_value()) { tlw.write_bool(encrypted_requests_disabled.value()); }
-    if (call_requests_disabled.has_value()) { tlw.write_bool(call_requests_disabled.value()); }
-}
-
-functions::account_changeAuthorizationSettings::Result functions::account_changeAuthorizationSettings::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getSavedRingtones::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::account_getSavedRingtones::Result functions::account_getSavedRingtones::read_result(TlReader& rv) {
-    return tl::account_SavedRingtones::read(rv);
-}
-
-
-void functions::account_saveRingtone::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    id->serialize(tlw);
-    tlw.write_bool(unsave);
-}
-
-functions::account_saveRingtone::Result functions::account_saveRingtone::read_result(TlReader& rv) {
-    return tl::account_SavedRingtone::read(rv);
-}
-
-
-void functions::account_uploadRingtone::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    file->serialize(tlw);
-    tlw.write_string(file_name);
-    tlw.write_string(mime_type);
-}
-
-functions::account_uploadRingtone::Result functions::account_uploadRingtone::read_result(TlReader& rv) {
-    return tl::Document::read(rv);
-}
-
-
-void functions::account_updateEmojiStatus::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    emoji_status->serialize(tlw);
-}
-
-functions::account_updateEmojiStatus::Result functions::account_updateEmojiStatus::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getDefaultEmojiStatuses::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::account_getDefaultEmojiStatuses::Result functions::account_getDefaultEmojiStatuses::read_result(TlReader& rv) {
-    return tl::account_EmojiStatuses::read(rv);
-}
-
-
-void functions::account_getRecentEmojiStatuses::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::account_getRecentEmojiStatuses::Result functions::account_getRecentEmojiStatuses::read_result(TlReader& rv) {
-    return tl::account_EmojiStatuses::read(rv);
-}
-
-
-void functions::account_clearRecentEmojiStatuses::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_clearRecentEmojiStatuses::Result functions::account_clearRecentEmojiStatuses::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_reorderUsernames::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, order, [&](TlWriter& tlw1292, const auto& e1292) { tlw1292.write_string(e1292); });
-}
-
-functions::account_reorderUsernames::Result functions::account_reorderUsernames::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_toggleUsername::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(username);
-    tlw.write_bool(active);
-}
-
-functions::account_toggleUsername::Result functions::account_toggleUsername::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getDefaultProfilePhotoEmojis::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::account_getDefaultProfilePhotoEmojis::Result functions::account_getDefaultProfilePhotoEmojis::read_result(TlReader& rv) {
-    return tl::EmojiList::read(rv);
-}
-
-
-void functions::account_getDefaultGroupPhotoEmojis::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::account_getDefaultGroupPhotoEmojis::Result functions::account_getDefaultGroupPhotoEmojis::read_result(TlReader& rv) {
-    return tl::EmojiList::read(rv);
-}
-
-
-void functions::account_getAutoSaveSettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_getAutoSaveSettings::Result functions::account_getAutoSaveSettings::read_result(TlReader& rv) {
-    return tl::account_AutoSaveSettings::read(rv);
-}
-
-
-void functions::account_saveAutoSaveSettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (users) flags_v |= (1u << 0);
-        if (chats) flags_v |= (1u << 1);
-        if (broadcasts) flags_v |= (1u << 2);
-        if (peer.has_value()) flags_v |= (1u << 3);
-        tlw.write_uint32(flags_v);
-    }
-    if (peer.has_value()) { peer.value()->serialize(tlw); }
-    settings->serialize(tlw);
-}
-
-functions::account_saveAutoSaveSettings::Result functions::account_saveAutoSaveSettings::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_deleteAutoSaveExceptions::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_deleteAutoSaveExceptions::Result functions::account_deleteAutoSaveExceptions::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_invalidateSignInCodes::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, codes, [&](TlWriter& tlw1293, const auto& e1293) { tlw1293.write_string(e1293); });
-}
-
-functions::account_invalidateSignInCodes::Result functions::account_invalidateSignInCodes::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_updateColor::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (for_profile) flags_v |= (1u << 1);
-        if (color.has_value()) flags_v |= (1u << 2);
-        tlw.write_uint32(flags_v);
-    }
-    if (color.has_value()) { color.value()->serialize(tlw); }
-}
-
-functions::account_updateColor::Result functions::account_updateColor::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getDefaultBackgroundEmojis::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::account_getDefaultBackgroundEmojis::Result functions::account_getDefaultBackgroundEmojis::read_result(TlReader& rv) {
-    return tl::EmojiList::read(rv);
-}
-
-
-void functions::account_getChannelDefaultEmojiStatuses::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::account_getChannelDefaultEmojiStatuses::Result functions::account_getChannelDefaultEmojiStatuses::read_result(TlReader& rv) {
-    return tl::account_EmojiStatuses::read(rv);
-}
-
-
-void functions::account_getChannelRestrictedStatusEmojis::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::account_getChannelRestrictedStatusEmojis::Result functions::account_getChannelRestrictedStatusEmojis::read_result(TlReader& rv) {
-    return tl::EmojiList::read(rv);
-}
-
-
-void functions::account_updateBusinessWorkHours::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (business_work_hours.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    if (business_work_hours.has_value()) { business_work_hours.value()->serialize(tlw); }
-}
-
-functions::account_updateBusinessWorkHours::Result functions::account_updateBusinessWorkHours::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_updateBusinessLocation::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (geo_point.has_value()) flags_v |= (1u << 1);
-        if (address.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    if (geo_point.has_value()) { geo_point.value()->serialize(tlw); }
-    if (address.has_value()) { tlw.write_string(address.value()); }
-}
-
-functions::account_updateBusinessLocation::Result functions::account_updateBusinessLocation::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_updateBusinessGreetingMessage::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (message.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    if (message.has_value()) { message.value()->serialize(tlw); }
-}
-
-functions::account_updateBusinessGreetingMessage::Result functions::account_updateBusinessGreetingMessage::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_updateBusinessAwayMessage::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (message.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    if (message.has_value()) { message.value()->serialize(tlw); }
-}
-
-functions::account_updateBusinessAwayMessage::Result functions::account_updateBusinessAwayMessage::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_updateConnectedBot::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (deleted) flags_v |= (1u << 1);
-        if (rights.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    if (rights.has_value()) { rights.value()->serialize(tlw); }
-    bot->serialize(tlw);
-    recipients->serialize(tlw);
-}
-
-functions::account_updateConnectedBot::Result functions::account_updateConnectedBot::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::account_getConnectedBots::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_getConnectedBots::Result functions::account_getConnectedBots::read_result(TlReader& rv) {
-    return tl::account_ConnectedBots::read(rv);
-}
-
-
-void functions::account_getBotBusinessConnection::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(connection_id);
-}
-
-functions::account_getBotBusinessConnection::Result functions::account_getBotBusinessConnection::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::account_updateBusinessIntro::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (intro.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    if (intro.has_value()) { intro.value()->serialize(tlw); }
-}
-
-functions::account_updateBusinessIntro::Result functions::account_updateBusinessIntro::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_toggleConnectedBotPaused::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_bool(paused);
-}
-
-functions::account_toggleConnectedBotPaused::Result functions::account_toggleConnectedBotPaused::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_disablePeerConnectedBot::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-}
-
-functions::account_disablePeerConnectedBot::Result functions::account_disablePeerConnectedBot::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_updateBirthday::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (birthday.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    if (birthday.has_value()) { birthday.value()->serialize(tlw); }
-}
-
-functions::account_updateBirthday::Result functions::account_updateBirthday::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_createBusinessChatLink::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    link->serialize(tlw);
-}
-
-functions::account_createBusinessChatLink::Result functions::account_createBusinessChatLink::read_result(TlReader& rv) {
-    return tl::BusinessChatLink::read(rv);
-}
-
-
-void functions::account_editBusinessChatLink::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(slug);
-    link->serialize(tlw);
-}
-
-functions::account_editBusinessChatLink::Result functions::account_editBusinessChatLink::read_result(TlReader& rv) {
-    return tl::BusinessChatLink::read(rv);
-}
-
-
-void functions::account_deleteBusinessChatLink::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(slug);
-}
-
-functions::account_deleteBusinessChatLink::Result functions::account_deleteBusinessChatLink::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getBusinessChatLinks::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_getBusinessChatLinks::Result functions::account_getBusinessChatLinks::read_result(TlReader& rv) {
-    return tl::account_BusinessChatLinks::read(rv);
-}
-
-
-void functions::account_resolveBusinessChatLink::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(slug);
-}
-
-functions::account_resolveBusinessChatLink::Result functions::account_resolveBusinessChatLink::read_result(TlReader& rv) {
-    return tl::account_ResolvedBusinessChatLinks::read(rv);
-}
-
-
-void functions::account_updatePersonalChannel::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    channel->serialize(tlw);
-}
-
-functions::account_updatePersonalChannel::Result functions::account_updatePersonalChannel::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_toggleSponsoredMessages::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bool(enabled);
-}
-
-functions::account_toggleSponsoredMessages::Result functions::account_toggleSponsoredMessages::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getReactionsNotifySettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_getReactionsNotifySettings::Result functions::account_getReactionsNotifySettings::read_result(TlReader& rv) {
-    return tl::ReactionsNotifySettings::read(rv);
-}
-
-
-void functions::account_setReactionsNotifySettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    settings->serialize(tlw);
-}
-
-functions::account_setReactionsNotifySettings::Result functions::account_setReactionsNotifySettings::read_result(TlReader& rv) {
-    return tl::ReactionsNotifySettings::read(rv);
-}
-
-
-void functions::account_getCollectibleEmojiStatuses::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::account_getCollectibleEmojiStatuses::Result functions::account_getCollectibleEmojiStatuses::read_result(TlReader& rv) {
-    return tl::account_EmojiStatuses::read(rv);
-}
-
-
-void functions::account_getPaidMessagesRevenue::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (parent_peer.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    if (parent_peer.has_value()) { parent_peer.value()->serialize(tlw); }
-    user_id->serialize(tlw);
-}
-
-functions::account_getPaidMessagesRevenue::Result functions::account_getPaidMessagesRevenue::read_result(TlReader& rv) {
-    return tl::account_PaidMessagesRevenue::read(rv);
-}
-
-
-void functions::account_toggleNoPaidMessagesException::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (refund_charged) flags_v |= (1u << 0);
-        if (require_payment) flags_v |= (1u << 2);
-        if (parent_peer.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    if (parent_peer.has_value()) { parent_peer.value()->serialize(tlw); }
-    user_id->serialize(tlw);
-}
-
-functions::account_toggleNoPaidMessagesException::Result functions::account_toggleNoPaidMessagesException::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_setMainProfileTab::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tab->serialize(tlw);
-}
-
-functions::account_setMainProfileTab::Result functions::account_setMainProfileTab::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_saveMusic::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (unsave) flags_v |= (1u << 0);
-        if (after_id.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    id->serialize(tlw);
-    if (after_id.has_value()) { after_id.value()->serialize(tlw); }
-}
-
-functions::account_saveMusic::Result functions::account_saveMusic::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getSavedMusicIds::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::account_getSavedMusicIds::Result functions::account_getSavedMusicIds::read_result(TlReader& rv) {
-    return tl::account_SavedMusicIds::read(rv);
-}
-
-
-void functions::account_getUniqueGiftChatThemes::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(offset);
-    tlw.write_int32(limit);
-    tlw.write_int64(hash);
-}
-
-functions::account_getUniqueGiftChatThemes::Result functions::account_getUniqueGiftChatThemes::read_result(TlReader& rv) {
-    return tl::account_ChatThemes::read(rv);
-}
-
-
-void functions::account_initPasskeyRegistration::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_initPasskeyRegistration::Result functions::account_initPasskeyRegistration::read_result(TlReader& rv) {
-    return tl::account_PasskeyRegistrationOptions::read(rv);
-}
-
-
-void functions::account_registerPasskey::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    credential->serialize(tlw);
-}
-
-functions::account_registerPasskey::Result functions::account_registerPasskey::read_result(TlReader& rv) {
-    return tl::Passkey::read(rv);
-}
-
-
-void functions::account_getPasskeys::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_getPasskeys::Result functions::account_getPasskeys::read_result(TlReader& rv) {
-    return tl::account_Passkeys::read(rv);
-}
-
-
-void functions::account_deletePasskey::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(id);
-}
-
-functions::account_deletePasskey::Result functions::account_deletePasskey::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_confirmBotConnection::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    bot_id->serialize(tlw);
-}
-
-functions::account_confirmBotConnection::Result functions::account_confirmBotConnection::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::account_getWebBrowserSettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::account_getWebBrowserSettings::Result functions::account_getWebBrowserSettings::read_result(TlReader& rv) {
-    return tl::account_WebBrowserSettings::read(rv);
-}
-
-
-void functions::account_updateWebBrowserSettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (open_external_browser) flags_v |= (1u << 0);
-        if (display_close_button) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-}
-
-functions::account_updateWebBrowserSettings::Result functions::account_updateWebBrowserSettings::read_result(TlReader& rv) {
-    return tl::account_WebBrowserSettings::read(rv);
-}
-
-
-void functions::account_toggleWebBrowserSettingsException::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (delete_) flags_v |= (1u << 1);
-        if (open_external_browser.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    if (open_external_browser.has_value()) { tlw.write_bool(open_external_browser.value()); }
-    tlw.write_string(url);
-}
-
-functions::account_toggleWebBrowserSettingsException::Result functions::account_toggleWebBrowserSettingsException::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::account_deleteWebBrowserSettingsExceptions::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::account_deleteWebBrowserSettingsExceptions::Result functions::account_deleteWebBrowserSettingsExceptions::read_result(TlReader& rv) {
-    return tl::account_WebBrowserSettings::read(rv);
-}
-
-
-void functions::users_getUsers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1295, const auto& e1295) { e1295->serialize(tlw1295); });
-}
-
-functions::users_getUsers::Result functions::users_getUsers::read_result(TlReader& rv) {
-    return tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r1294) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r1294); });
-}
-
-
-void functions::users_getFullUser::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    id->serialize(tlw);
-}
-
-functions::users_getFullUser::Result functions::users_getFullUser::read_result(TlReader& rv) {
-    return tl::users_UserFull::read(rv);
-}
-
-
-void functions::users_setSecureValueErrors::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    id->serialize(tlw);
-    tl::write_vector(tlw, errors, [&](TlWriter& tlw1296, const auto& e1296) { e1296->serialize(tlw1296); });
-}
-
-functions::users_setSecureValueErrors::Result functions::users_setSecureValueErrors::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::users_getRequirementsToContact::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1298, const auto& e1298) { e1298->serialize(tlw1298); });
-}
-
-functions::users_getRequirementsToContact::Result functions::users_getRequirementsToContact::read_result(TlReader& rv) {
-    return tl::read_vector<std::shared_ptr<tl::RequirementToContact>>(rv, [&](TlReader& r1297) -> std::shared_ptr<tl::RequirementToContact> { return tl::read_boxed<tl::RequirementToContact>(r1297); });
-}
-
-
-void functions::users_getSavedMusic::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    id->serialize(tlw);
-    tlw.write_int32(offset);
-    tlw.write_int32(limit);
-    tlw.write_int64(hash);
-}
-
-functions::users_getSavedMusic::Result functions::users_getSavedMusic::read_result(TlReader& rv) {
-    return tl::users_SavedMusic::read(rv);
-}
-
-
-void functions::users_getSavedMusicByID::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    id->serialize(tlw);
-    tl::write_vector(tlw, documents, [&](TlWriter& tlw1299, const auto& e1299) { e1299->serialize(tlw1299); });
-}
-
-functions::users_getSavedMusicByID::Result functions::users_getSavedMusicByID::read_result(TlReader& rv) {
-    return tl::users_SavedMusic::read(rv);
-}
-
-
-void functions::users_suggestBirthday::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    id->serialize(tlw);
-    birthday->serialize(tlw);
-}
-
-functions::users_suggestBirthday::Result functions::users_suggestBirthday::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::contacts_getContactIDs::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::contacts_getContactIDs::Result functions::contacts_getContactIDs::read_result(TlReader& rv) {
-    return tl::read_vector<std::int32_t>(rv, [&](TlReader& r1300) -> std::int32_t { return r1300.read_int32(); });
-}
-
-
-void functions::contacts_getStatuses::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::contacts_getStatuses::Result functions::contacts_getStatuses::read_result(TlReader& rv) {
-    return tl::read_vector<std::shared_ptr<tl::ContactStatus>>(rv, [&](TlReader& r1301) -> std::shared_ptr<tl::ContactStatus> { return tl::read_boxed<tl::ContactStatus>(r1301); });
-}
-
-
-void functions::contacts_getContacts::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::contacts_getContacts::Result functions::contacts_getContacts::read_result(TlReader& rv) {
-    return tl::contacts_Contacts::read(rv);
-}
-
-
-void functions::contacts_importContacts::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, contacts, [&](TlWriter& tlw1302, const auto& e1302) { e1302->serialize(tlw1302); });
-}
-
-functions::contacts_importContacts::Result functions::contacts_importContacts::read_result(TlReader& rv) {
-    return tl::contacts_ImportedContacts::read(rv);
-}
-
-
-void functions::contacts_deleteContacts::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1303, const auto& e1303) { e1303->serialize(tlw1303); });
-}
-
-functions::contacts_deleteContacts::Result functions::contacts_deleteContacts::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::contacts_deleteByPhones::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, phones, [&](TlWriter& tlw1304, const auto& e1304) { tlw1304.write_string(e1304); });
-}
-
-functions::contacts_deleteByPhones::Result functions::contacts_deleteByPhones::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::contacts_block::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (my_stories_from) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    id->serialize(tlw);
-}
-
-functions::contacts_block::Result functions::contacts_block::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::contacts_unblock::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (my_stories_from) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    id->serialize(tlw);
-}
-
-functions::contacts_unblock::Result functions::contacts_unblock::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::contacts_getBlocked::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (my_stories_from) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int32(offset);
-    tlw.write_int32(limit);
-}
-
-functions::contacts_getBlocked::Result functions::contacts_getBlocked::read_result(TlReader& rv) {
-    return tl::contacts_Blocked::read(rv);
-}
-
-
-void functions::contacts_search::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (broadcasts) flags_v |= (1u << 0);
-        if (bots) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(q);
-    tlw.write_int32(limit);
-}
-
-functions::contacts_search::Result functions::contacts_search::read_result(TlReader& rv) {
-    return tl::contacts_Found::read(rv);
-}
-
-
-void functions::contacts_resolveUsername::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (referer.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(username);
-    if (referer.has_value()) { tlw.write_string(referer.value()); }
-}
-
-functions::contacts_resolveUsername::Result functions::contacts_resolveUsername::read_result(TlReader& rv) {
-    return tl::contacts_ResolvedPeer::read(rv);
-}
-
-
-void functions::contacts_getTopPeers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (correspondents) flags_v |= (1u << 0);
-        if (bots_pm) flags_v |= (1u << 1);
-        if (bots_inline) flags_v |= (1u << 2);
-        if (phone_calls) flags_v |= (1u << 3);
-        if (forward_users) flags_v |= (1u << 4);
-        if (forward_chats) flags_v |= (1u << 5);
-        if (groups) flags_v |= (1u << 10);
-        if (channels) flags_v |= (1u << 15);
-        if (bots_app) flags_v |= (1u << 16);
-        if (bots_guestchat) flags_v |= (1u << 17);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int32(offset);
-    tlw.write_int32(limit);
-    tlw.write_int64(hash);
-}
-
-functions::contacts_getTopPeers::Result functions::contacts_getTopPeers::read_result(TlReader& rv) {
-    return tl::contacts_TopPeers::read(rv);
-}
-
-
-void functions::contacts_resetTopPeerRating::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    category->serialize(tlw);
-    peer->serialize(tlw);
-}
-
-functions::contacts_resetTopPeerRating::Result functions::contacts_resetTopPeerRating::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::contacts_resetSaved::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::contacts_resetSaved::Result functions::contacts_resetSaved::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::contacts_getSaved::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::contacts_getSaved::Result functions::contacts_getSaved::read_result(TlReader& rv) {
-    return tl::read_vector<std::shared_ptr<tl::SavedContact>>(rv, [&](TlReader& r1305) -> std::shared_ptr<tl::SavedContact> { return tl::read_boxed<tl::SavedContact>(r1305); });
-}
-
-
-void functions::contacts_toggleTopPeers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bool(enabled);
-}
-
-functions::contacts_toggleTopPeers::Result functions::contacts_toggleTopPeers::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::contacts_addContact::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (add_phone_privacy_exception) flags_v |= (1u << 0);
-        if (note.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    id->serialize(tlw);
-    tlw.write_string(first_name);
-    tlw.write_string(last_name);
-    tlw.write_string(phone);
-    if (note.has_value()) { note.value()->serialize(tlw); }
-}
-
-functions::contacts_addContact::Result functions::contacts_addContact::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::contacts_acceptContact::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    id->serialize(tlw);
-}
-
-functions::contacts_acceptContact::Result functions::contacts_acceptContact::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::contacts_getLocated::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (background) flags_v |= (1u << 1);
-        if (self_expires.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    geo_point->serialize(tlw);
-    if (self_expires.has_value()) { tlw.write_int32(self_expires.value()); }
-}
-
-functions::contacts_getLocated::Result functions::contacts_getLocated::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::contacts_blockFromReplies::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (delete_message) flags_v |= (1u << 0);
-        if (delete_history) flags_v |= (1u << 1);
-        if (report_spam) flags_v |= (1u << 2);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int32(msg_id);
-}
-
-functions::contacts_blockFromReplies::Result functions::contacts_blockFromReplies::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::contacts_resolvePhone::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(phone);
-}
-
-functions::contacts_resolvePhone::Result functions::contacts_resolvePhone::read_result(TlReader& rv) {
-    return tl::contacts_ResolvedPeer::read(rv);
-}
-
-
-void functions::contacts_exportContactToken::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::contacts_exportContactToken::Result functions::contacts_exportContactToken::read_result(TlReader& rv) {
-    return tl::ExportedContactToken::read(rv);
-}
-
-
-void functions::contacts_importContactToken::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(token);
-}
-
-functions::contacts_importContactToken::Result functions::contacts_importContactToken::read_result(TlReader& rv) {
-    return tl::User::read(rv);
-}
-
-
-void functions::contacts_editCloseFriends::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1306, const auto& e1306) { tlw1306.write_int64(e1306); });
-}
-
-functions::contacts_editCloseFriends::Result functions::contacts_editCloseFriends::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::contacts_setBlocked::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (my_stories_from) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1307, const auto& e1307) { e1307->serialize(tlw1307); });
-    tlw.write_int32(limit);
-}
-
-functions::contacts_setBlocked::Result functions::contacts_setBlocked::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::contacts_getBirthdays::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::contacts_getBirthdays::Result functions::contacts_getBirthdays::read_result(TlReader& rv) {
-    return tl::contacts_ContactBirthdays::read(rv);
-}
-
-
-void functions::contacts_getSponsoredPeers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(q);
-}
-
-functions::contacts_getSponsoredPeers::Result functions::contacts_getSponsoredPeers::read_result(TlReader& rv) {
-    return tl::contacts_SponsoredPeers::read(rv);
-}
-
-
-void functions::contacts_updateContactNote::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    id->serialize(tlw);
-    note->serialize(tlw);
-}
-
-functions::contacts_updateContactNote::Result functions::contacts_updateContactNote::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::contacts_exportNoPaidMessagesToken::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (revoke) flags_v |= (1u << 0);
-        if (temporary) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-}
-
-functions::contacts_exportNoPaidMessagesToken::Result functions::contacts_exportNoPaidMessagesToken::read_result(TlReader& rv) {
-    return tl::ExportedNoPaidMessagesToken::read(rv);
-}
-
-
-void functions::contacts_importNoPaidMessagesToken::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    user_id->serialize(tlw);
-    tlw.write_string(token);
-}
-
-functions::contacts_importNoPaidMessagesToken::Result functions::contacts_importNoPaidMessagesToken::read_result(TlReader& rv) {
-    return tl::User::read(rv);
-}
-
-
-void functions::messages_getMessages::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1308, const auto& e1308) { e1308->serialize(tlw1308); });
-}
-
-functions::messages_getMessages::Result functions::messages_getMessages::read_result(TlReader& rv) {
-    return tl::messages_Messages::read(rv);
-}
-
-
-void functions::messages_getDialogs::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (exclude_pinned) flags_v |= (1u << 0);
-        if (folder_id.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    if (folder_id.has_value()) { tlw.write_int32(folder_id.value()); }
-    tlw.write_int32(offset_date);
-    tlw.write_int32(offset_id);
-    offset_peer->serialize(tlw);
-    tlw.write_int32(limit);
-    tlw.write_int64(hash);
-}
-
-functions::messages_getDialogs::Result functions::messages_getDialogs::read_result(TlReader& rv) {
-    return tl::messages_Dialogs::read(rv);
-}
-
-
-void functions::messages_getHistory::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_int32(offset_id);
-    tlw.write_int32(offset_date);
-    tlw.write_int32(add_offset);
-    tlw.write_int32(limit);
-    tlw.write_int32(max_id);
-    tlw.write_int32(min_id);
-    tlw.write_int64(hash);
-}
-
-functions::messages_getHistory::Result functions::messages_getHistory::read_result(TlReader& rv) {
-    return tl::messages_Messages::read(rv);
-}
-
-
-void functions::messages_search::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (from_id.has_value()) flags_v |= (1u << 0);
-        if (saved_peer_id.has_value()) flags_v |= (1u << 2);
-        if (saved_reaction.has_value()) flags_v |= (1u << 3);
-        if (top_msg_id.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    tlw.write_string(q);
-    if (from_id.has_value()) { from_id.value()->serialize(tlw); }
-    if (saved_peer_id.has_value()) { saved_peer_id.value()->serialize(tlw); }
-    if (saved_reaction.has_value()) { tl::write_vector(tlw, saved_reaction.value(), [&](TlWriter& tlw1309, const auto& e1309) { e1309->serialize(tlw1309); }); }
-    if (top_msg_id.has_value()) { tlw.write_int32(top_msg_id.value()); }
-    filter->serialize(tlw);
-    tlw.write_int32(min_date);
-    tlw.write_int32(max_date);
-    tlw.write_int32(offset_id);
-    tlw.write_int32(add_offset);
-    tlw.write_int32(limit);
-    tlw.write_int32(max_id);
-    tlw.write_int32(min_id);
-    tlw.write_int64(hash);
-}
-
-functions::messages_search::Result functions::messages_search::read_result(TlReader& rv) {
-    return tl::messages_Messages::read(rv);
-}
-
-
-void functions::messages_readHistory::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_int32(max_id);
-}
-
-functions::messages_readHistory::Result functions::messages_readHistory::read_result(TlReader& rv) {
-    return tl::messages_AffectedMessages::read(rv);
-}
-
-
-void functions::messages_deleteHistory::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (just_clear) flags_v |= (1u << 0);
-        if (revoke) flags_v |= (1u << 1);
-        if (min_date.has_value()) flags_v |= (1u << 2);
-        if (max_date.has_value()) flags_v |= (1u << 3);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    tlw.write_int32(max_id);
-    if (min_date.has_value()) { tlw.write_int32(min_date.value()); }
-    if (max_date.has_value()) { tlw.write_int32(max_date.value()); }
-}
-
-functions::messages_deleteHistory::Result functions::messages_deleteHistory::read_result(TlReader& rv) {
-    return tl::messages_AffectedHistory::read(rv);
-}
-
-
-void functions::messages_deleteMessages::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (revoke) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1310, const auto& e1310) { tlw1310.write_int32(e1310); });
-}
-
-functions::messages_deleteMessages::Result functions::messages_deleteMessages::read_result(TlReader& rv) {
-    return tl::messages_AffectedMessages::read(rv);
-}
-
-
-void functions::messages_receivedMessages::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(max_id);
-}
-
-functions::messages_receivedMessages::Result functions::messages_receivedMessages::read_result(TlReader& rv) {
-    return tl::read_vector<std::shared_ptr<tl::ReceivedNotifyMessage>>(rv, [&](TlReader& r1311) -> std::shared_ptr<tl::ReceivedNotifyMessage> { return tl::read_boxed<tl::ReceivedNotifyMessage>(r1311); });
-}
-
-
-void functions::messages_setTyping::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (top_msg_id.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    if (top_msg_id.has_value()) { tlw.write_int32(top_msg_id.value()); }
-    action->serialize(tlw);
-}
-
-functions::messages_setTyping::Result functions::messages_setTyping::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_sendMessage::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (no_webpage) flags_v |= (1u << 1);
-        if (silent) flags_v |= (1u << 5);
-        if (background) flags_v |= (1u << 6);
-        if (clear_draft) flags_v |= (1u << 7);
-        if (noforwards) flags_v |= (1u << 14);
-        if (update_stickersets_order) flags_v |= (1u << 15);
-        if (invert_media) flags_v |= (1u << 16);
-        if (allow_paid_floodskip) flags_v |= (1u << 19);
-        if (reply_to.has_value()) flags_v |= (1u << 0);
-        if (reply_markup.has_value()) flags_v |= (1u << 2);
-        if (entities.has_value()) flags_v |= (1u << 3);
-        if (schedule_date.has_value()) flags_v |= (1u << 10);
-        if (schedule_repeat_period.has_value()) flags_v |= (1u << 24);
-        if (send_as.has_value()) flags_v |= (1u << 13);
-        if (quick_reply_shortcut.has_value()) flags_v |= (1u << 17);
-        if (effect.has_value()) flags_v |= (1u << 18);
-        if (allow_paid_stars.has_value()) flags_v |= (1u << 21);
-        if (suggested_post.has_value()) flags_v |= (1u << 22);
-        if (rich_message.has_value()) flags_v |= (1u << 23);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    if (reply_to.has_value()) { reply_to.value()->serialize(tlw); }
-    tlw.write_string(message);
-    tlw.write_int64(random_id);
-    if (reply_markup.has_value()) { reply_markup.value()->serialize(tlw); }
-    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw1312, const auto& e1312) { e1312->serialize(tlw1312); }); }
-    if (schedule_date.has_value()) { tlw.write_int32(schedule_date.value()); }
-    if (schedule_repeat_period.has_value()) { tlw.write_int32(schedule_repeat_period.value()); }
-    if (send_as.has_value()) { send_as.value()->serialize(tlw); }
-    if (quick_reply_shortcut.has_value()) { quick_reply_shortcut.value()->serialize(tlw); }
-    if (effect.has_value()) { tlw.write_int64(effect.value()); }
-    if (allow_paid_stars.has_value()) { tlw.write_int64(allow_paid_stars.value()); }
-    if (suggested_post.has_value()) { suggested_post.value()->serialize(tlw); }
-    if (rich_message.has_value()) { rich_message.value()->serialize(tlw); }
-}
-
-functions::messages_sendMessage::Result functions::messages_sendMessage::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_sendMedia::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (silent) flags_v |= (1u << 5);
-        if (background) flags_v |= (1u << 6);
-        if (clear_draft) flags_v |= (1u << 7);
-        if (noforwards) flags_v |= (1u << 14);
-        if (update_stickersets_order) flags_v |= (1u << 15);
-        if (invert_media) flags_v |= (1u << 16);
-        if (allow_paid_floodskip) flags_v |= (1u << 19);
-        if (reply_to.has_value()) flags_v |= (1u << 0);
-        if (reply_markup.has_value()) flags_v |= (1u << 2);
-        if (entities.has_value()) flags_v |= (1u << 3);
-        if (schedule_date.has_value()) flags_v |= (1u << 10);
-        if (schedule_repeat_period.has_value()) flags_v |= (1u << 24);
-        if (send_as.has_value()) flags_v |= (1u << 13);
-        if (quick_reply_shortcut.has_value()) flags_v |= (1u << 17);
-        if (effect.has_value()) flags_v |= (1u << 18);
-        if (allow_paid_stars.has_value()) flags_v |= (1u << 21);
-        if (suggested_post.has_value()) flags_v |= (1u << 22);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    if (reply_to.has_value()) { reply_to.value()->serialize(tlw); }
-    media->serialize(tlw);
-    tlw.write_string(message);
-    tlw.write_int64(random_id);
-    if (reply_markup.has_value()) { reply_markup.value()->serialize(tlw); }
-    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw1313, const auto& e1313) { e1313->serialize(tlw1313); }); }
-    if (schedule_date.has_value()) { tlw.write_int32(schedule_date.value()); }
-    if (schedule_repeat_period.has_value()) { tlw.write_int32(schedule_repeat_period.value()); }
-    if (send_as.has_value()) { send_as.value()->serialize(tlw); }
-    if (quick_reply_shortcut.has_value()) { quick_reply_shortcut.value()->serialize(tlw); }
-    if (effect.has_value()) { tlw.write_int64(effect.value()); }
-    if (allow_paid_stars.has_value()) { tlw.write_int64(allow_paid_stars.value()); }
-    if (suggested_post.has_value()) { suggested_post.value()->serialize(tlw); }
-}
-
-functions::messages_sendMedia::Result functions::messages_sendMedia::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_forwardMessages::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (silent) flags_v |= (1u << 5);
-        if (background) flags_v |= (1u << 6);
-        if (with_my_score) flags_v |= (1u << 8);
-        if (drop_author) flags_v |= (1u << 11);
-        if (drop_media_captions) flags_v |= (1u << 12);
-        if (noforwards) flags_v |= (1u << 14);
-        if (allow_paid_floodskip) flags_v |= (1u << 19);
-        if (from_ephemeral) flags_v |= (1u << 25);
-        if (top_msg_id.has_value()) flags_v |= (1u << 9);
-        if (reply_to.has_value()) flags_v |= (1u << 22);
-        if (schedule_date.has_value()) flags_v |= (1u << 10);
-        if (schedule_repeat_period.has_value()) flags_v |= (1u << 24);
-        if (send_as.has_value()) flags_v |= (1u << 13);
-        if (quick_reply_shortcut.has_value()) flags_v |= (1u << 17);
-        if (effect.has_value()) flags_v |= (1u << 18);
-        if (video_timestamp.has_value()) flags_v |= (1u << 20);
-        if (allow_paid_stars.has_value()) flags_v |= (1u << 21);
-        if (suggested_post.has_value()) flags_v |= (1u << 23);
-        tlw.write_uint32(flags_v);
-    }
-    from_peer->serialize(tlw);
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1314, const auto& e1314) { tlw1314.write_int32(e1314); });
-    tl::write_vector(tlw, random_id, [&](TlWriter& tlw1315, const auto& e1315) { tlw1315.write_int64(e1315); });
-    to_peer->serialize(tlw);
-    if (top_msg_id.has_value()) { tlw.write_int32(top_msg_id.value()); }
-    if (reply_to.has_value()) { reply_to.value()->serialize(tlw); }
-    if (schedule_date.has_value()) { tlw.write_int32(schedule_date.value()); }
-    if (schedule_repeat_period.has_value()) { tlw.write_int32(schedule_repeat_period.value()); }
-    if (send_as.has_value()) { send_as.value()->serialize(tlw); }
-    if (quick_reply_shortcut.has_value()) { quick_reply_shortcut.value()->serialize(tlw); }
-    if (effect.has_value()) { tlw.write_int64(effect.value()); }
-    if (video_timestamp.has_value()) { tlw.write_int32(video_timestamp.value()); }
-    if (allow_paid_stars.has_value()) { tlw.write_int64(allow_paid_stars.value()); }
-    if (suggested_post.has_value()) { suggested_post.value()->serialize(tlw); }
-}
-
-functions::messages_forwardMessages::Result functions::messages_forwardMessages::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_reportSpam::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-}
-
-functions::messages_reportSpam::Result functions::messages_reportSpam::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_getPeerSettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-}
-
-functions::messages_getPeerSettings::Result functions::messages_getPeerSettings::read_result(TlReader& rv) {
-    return tl::messages_PeerSettings::read(rv);
-}
-
-
-void functions::messages_report::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1316, const auto& e1316) { tlw1316.write_int32(e1316); });
-    tlw.write_bytes(option);
-    tlw.write_string(message);
-}
-
-functions::messages_report::Result functions::messages_report::read_result(TlReader& rv) {
-    return tl::ReportResult::read(rv);
-}
-
-
-void functions::messages_getChats::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1317, const auto& e1317) { tlw1317.write_int64(e1317); });
-}
-
-functions::messages_getChats::Result functions::messages_getChats::read_result(TlReader& rv) {
-    return tl::messages_Chats::read(rv);
-}
-
-
-void functions::messages_getFullChat::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(chat_id);
-}
-
-functions::messages_getFullChat::Result functions::messages_getFullChat::read_result(TlReader& rv) {
-    return tl::messages_ChatFull::read(rv);
-}
-
-
-void functions::messages_editChatTitle::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(chat_id);
-    tlw.write_string(title);
-}
-
-functions::messages_editChatTitle::Result functions::messages_editChatTitle::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_editChatPhoto::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(chat_id);
-    photo->serialize(tlw);
-}
-
-functions::messages_editChatPhoto::Result functions::messages_editChatPhoto::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_addChatUser::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(chat_id);
-    user_id->serialize(tlw);
-    tlw.write_int32(fwd_limit);
-}
-
-functions::messages_addChatUser::Result functions::messages_addChatUser::read_result(TlReader& rv) {
-    return tl::messages_InvitedUsers::read(rv);
-}
-
-
-void functions::messages_deleteChatUser::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (revoke_history) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int64(chat_id);
-    user_id->serialize(tlw);
-}
-
-functions::messages_deleteChatUser::Result functions::messages_deleteChatUser::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_createChat::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (ttl_period.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tl::write_vector(tlw, users, [&](TlWriter& tlw1318, const auto& e1318) { e1318->serialize(tlw1318); });
-    tlw.write_string(title);
-    if (ttl_period.has_value()) { tlw.write_int32(ttl_period.value()); }
-}
-
-functions::messages_createChat::Result functions::messages_createChat::read_result(TlReader& rv) {
-    return tl::messages_InvitedUsers::read(rv);
-}
-
-
-void functions::messages_getDhConfig::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(version);
-    tlw.write_int32(random_length);
-}
-
-functions::messages_getDhConfig::Result functions::messages_getDhConfig::read_result(TlReader& rv) {
-    return tl::messages_DhConfig::read(rv);
-}
-
-
-void functions::messages_requestEncryption::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    user_id->serialize(tlw);
-    tlw.write_int32(random_id);
-    tlw.write_bytes(g_a);
-}
-
-functions::messages_requestEncryption::Result functions::messages_requestEncryption::read_result(TlReader& rv) {
-    return tl::EncryptedChat::read(rv);
-}
-
-
-void functions::messages_acceptEncryption::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_bytes(g_b);
-    tlw.write_int64(key_fingerprint);
-}
-
-functions::messages_acceptEncryption::Result functions::messages_acceptEncryption::read_result(TlReader& rv) {
-    return tl::EncryptedChat::read(rv);
-}
-
-
-void functions::messages_discardEncryption::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (delete_history) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int32(chat_id);
-}
-
-functions::messages_discardEncryption::Result functions::messages_discardEncryption::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_setEncryptedTyping::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_bool(typing);
-}
-
-functions::messages_setEncryptedTyping::Result functions::messages_setEncryptedTyping::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_readEncryptedHistory::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_int32(max_date);
-}
-
-functions::messages_readEncryptedHistory::Result functions::messages_readEncryptedHistory::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_sendEncrypted::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (silent) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    tlw.write_int64(random_id);
-    tlw.write_bytes(data);
-}
-
-functions::messages_sendEncrypted::Result functions::messages_sendEncrypted::read_result(TlReader& rv) {
-    return tl::messages_SentEncryptedMessage::read(rv);
-}
-
-
-void functions::messages_sendEncryptedFile::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (silent) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    tlw.write_int64(random_id);
-    tlw.write_bytes(data);
-    file->serialize(tlw);
-}
-
-functions::messages_sendEncryptedFile::Result functions::messages_sendEncryptedFile::read_result(TlReader& rv) {
-    return tl::messages_SentEncryptedMessage::read(rv);
-}
-
-
-void functions::messages_sendEncryptedService::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_int64(random_id);
-    tlw.write_bytes(data);
-}
-
-functions::messages_sendEncryptedService::Result functions::messages_sendEncryptedService::read_result(TlReader& rv) {
-    return tl::messages_SentEncryptedMessage::read(rv);
-}
-
-
-void functions::messages_receivedQueue::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(max_qts);
-}
-
-functions::messages_receivedQueue::Result functions::messages_receivedQueue::read_result(TlReader& rv) {
-    return tl::read_vector<std::int64_t>(rv, [&](TlReader& r1319) -> std::int64_t { return r1319.read_int64(); });
-}
-
-
-void functions::messages_reportEncryptedSpam::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-}
-
-functions::messages_reportEncryptedSpam::Result functions::messages_reportEncryptedSpam::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_readMessageContents::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1320, const auto& e1320) { tlw1320.write_int32(e1320); });
-}
-
-functions::messages_readMessageContents::Result functions::messages_readMessageContents::read_result(TlReader& rv) {
-    return tl::messages_AffectedMessages::read(rv);
-}
-
-
-void functions::messages_getStickers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(emoticon);
-    tlw.write_int64(hash);
-}
-
-functions::messages_getStickers::Result functions::messages_getStickers::read_result(TlReader& rv) {
-    return tl::messages_Stickers::read(rv);
-}
-
-
-void functions::messages_getAllStickers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::messages_getAllStickers::Result functions::messages_getAllStickers::read_result(TlReader& rv) {
-    return tl::messages_AllStickers::read(rv);
-}
-
-
-void functions::messages_getWebPagePreview::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (entities.has_value()) flags_v |= (1u << 3);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(message);
-    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw1321, const auto& e1321) { e1321->serialize(tlw1321); }); }
-}
-
-functions::messages_getWebPagePreview::Result functions::messages_getWebPagePreview::read_result(TlReader& rv) {
-    return tl::messages_WebPagePreview::read(rv);
-}
-
-
-void functions::messages_exportChatInvite::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (legacy_revoke_permanent) flags_v |= (1u << 2);
-        if (request_needed) flags_v |= (1u << 3);
-        if (expire_date.has_value()) flags_v |= (1u << 0);
-        if (usage_limit.has_value()) flags_v |= (1u << 1);
-        if (title.has_value()) flags_v |= (1u << 4);
-        if (subscription_pricing.has_value()) flags_v |= (1u << 5);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    if (expire_date.has_value()) { tlw.write_int32(expire_date.value()); }
-    if (usage_limit.has_value()) { tlw.write_int32(usage_limit.value()); }
-    if (title.has_value()) { tlw.write_string(title.value()); }
-    if (subscription_pricing.has_value()) { subscription_pricing.value()->serialize(tlw); }
-}
-
-functions::messages_exportChatInvite::Result functions::messages_exportChatInvite::read_result(TlReader& rv) {
-    return tl::ExportedChatInvite::read(rv);
-}
-
-
-void functions::messages_checkChatInvite::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(hash);
-}
-
-functions::messages_checkChatInvite::Result functions::messages_checkChatInvite::read_result(TlReader& rv) {
-    return tl::ChatInvite::read(rv);
-}
-
-
-void functions::messages_importChatInvite::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(hash);
-}
-
-functions::messages_importChatInvite::Result functions::messages_importChatInvite::read_result(TlReader& rv) {
-    return tl::messages_ChatInviteJoinResult::read(rv);
-}
-
-
-void functions::messages_getStickerSet::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    stickerset->serialize(tlw);
-    tlw.write_int32(hash);
-}
-
-functions::messages_getStickerSet::Result functions::messages_getStickerSet::read_result(TlReader& rv) {
-    return tl::messages_StickerSet::read(rv);
-}
-
-
-void functions::messages_installStickerSet::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    stickerset->serialize(tlw);
-    tlw.write_bool(archived);
-}
-
-functions::messages_installStickerSet::Result functions::messages_installStickerSet::read_result(TlReader& rv) {
-    return tl::messages_StickerSetInstallResult::read(rv);
-}
-
-
-void functions::messages_uninstallStickerSet::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    stickerset->serialize(tlw);
-}
-
-functions::messages_uninstallStickerSet::Result functions::messages_uninstallStickerSet::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_startBot::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    bot->serialize(tlw);
-    peer->serialize(tlw);
-    tlw.write_int64(random_id);
-    tlw.write_string(start_param);
-}
-
-functions::messages_startBot::Result functions::messages_startBot::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_getMessagesViews::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1322, const auto& e1322) { tlw1322.write_int32(e1322); });
-    tlw.write_bool(increment);
-}
-
-functions::messages_getMessagesViews::Result functions::messages_getMessagesViews::read_result(TlReader& rv) {
-    return tl::messages_MessageViews::read(rv);
-}
-
-
-void functions::messages_editChatAdmin::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(chat_id);
-    user_id->serialize(tlw);
-    tlw.write_bool(is_admin);
-}
-
-functions::messages_editChatAdmin::Result functions::messages_editChatAdmin::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_migrateChat::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(chat_id);
-}
-
-functions::messages_migrateChat::Result functions::messages_migrateChat::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_searchGlobal::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (broadcasts_only) flags_v |= (1u << 1);
-        if (groups_only) flags_v |= (1u << 2);
-        if (users_only) flags_v |= (1u << 3);
-        if (folder_id.has_value()) flags_v |= (1u << 0);
-        if (community.has_value()) flags_v |= (1u << 4);
-        tlw.write_uint32(flags_v);
-    }
-    if (folder_id.has_value()) { tlw.write_int32(folder_id.value()); }
-    if (community.has_value()) { community.value()->serialize(tlw); }
-    tlw.write_string(q);
-    filter->serialize(tlw);
-    tlw.write_int32(min_date);
-    tlw.write_int32(max_date);
-    tlw.write_int32(offset_rate);
-    offset_peer->serialize(tlw);
-    tlw.write_int32(offset_id);
-    tlw.write_int32(limit);
-}
-
-functions::messages_searchGlobal::Result functions::messages_searchGlobal::read_result(TlReader& rv) {
-    return tl::messages_Messages::read(rv);
-}
-
-
-void functions::messages_reorderStickerSets::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (masks) flags_v |= (1u << 0);
-        if (emojis) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    tl::write_vector(tlw, order, [&](TlWriter& tlw1323, const auto& e1323) { tlw1323.write_int64(e1323); });
-}
-
-functions::messages_reorderStickerSets::Result functions::messages_reorderStickerSets::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_getDocumentByHash::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bytes(sha256);
-    tlw.write_int64(size);
-    tlw.write_string(mime_type);
-}
-
-functions::messages_getDocumentByHash::Result functions::messages_getDocumentByHash::read_result(TlReader& rv) {
-    return tl::Document::read(rv);
-}
-
-
-void functions::messages_getSavedGifs::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::messages_getSavedGifs::Result functions::messages_getSavedGifs::read_result(TlReader& rv) {
-    return tl::messages_SavedGifs::read(rv);
-}
-
-
-void functions::messages_saveGif::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    id->serialize(tlw);
-    tlw.write_bool(unsave);
-}
-
-functions::messages_saveGif::Result functions::messages_saveGif::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_getInlineBotResults::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (geo_point.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    bot->serialize(tlw);
-    peer->serialize(tlw);
-    if (geo_point.has_value()) { geo_point.value()->serialize(tlw); }
-    tlw.write_string(query);
-    tlw.write_string(offset);
-}
-
-functions::messages_getInlineBotResults::Result functions::messages_getInlineBotResults::read_result(TlReader& rv) {
-    return tl::messages_BotResults::read(rv);
-}
-
-
-void functions::messages_setInlineBotResults::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (gallery) flags_v |= (1u << 0);
-        if (private_) flags_v |= (1u << 1);
-        if (next_offset.has_value()) flags_v |= (1u << 2);
-        if (switch_pm.has_value()) flags_v |= (1u << 3);
-        if (switch_webview.has_value()) flags_v |= (1u << 4);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int64(query_id);
-    tl::write_vector(tlw, results, [&](TlWriter& tlw1324, const auto& e1324) { e1324->serialize(tlw1324); });
-    tlw.write_int32(cache_time);
-    if (next_offset.has_value()) { tlw.write_string(next_offset.value()); }
-    if (switch_pm.has_value()) { switch_pm.value()->serialize(tlw); }
-    if (switch_webview.has_value()) { switch_webview.value()->serialize(tlw); }
-}
-
-functions::messages_setInlineBotResults::Result functions::messages_setInlineBotResults::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_sendInlineBotResult::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (silent) flags_v |= (1u << 5);
-        if (background) flags_v |= (1u << 6);
-        if (clear_draft) flags_v |= (1u << 7);
-        if (hide_via) flags_v |= (1u << 11);
-        if (reply_to.has_value()) flags_v |= (1u << 0);
-        if (schedule_date.has_value()) flags_v |= (1u << 10);
-        if (send_as.has_value()) flags_v |= (1u << 13);
-        if (quick_reply_shortcut.has_value()) flags_v |= (1u << 17);
-        if (allow_paid_stars.has_value()) flags_v |= (1u << 21);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    if (reply_to.has_value()) { reply_to.value()->serialize(tlw); }
-    tlw.write_int64(random_id);
-    tlw.write_int64(query_id);
-    tlw.write_string(id);
-    if (schedule_date.has_value()) { tlw.write_int32(schedule_date.value()); }
-    if (send_as.has_value()) { send_as.value()->serialize(tlw); }
-    if (quick_reply_shortcut.has_value()) { quick_reply_shortcut.value()->serialize(tlw); }
-    if (allow_paid_stars.has_value()) { tlw.write_int64(allow_paid_stars.value()); }
-}
-
-functions::messages_sendInlineBotResult::Result functions::messages_sendInlineBotResult::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_getMessageEditData::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_int32(id);
-}
-
-functions::messages_getMessageEditData::Result functions::messages_getMessageEditData::read_result(TlReader& rv) {
-    return tl::messages_MessageEditData::read(rv);
-}
-
-
-void functions::messages_editMessage::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (no_webpage) flags_v |= (1u << 1);
-        if (invert_media) flags_v |= (1u << 16);
-        if (message.has_value()) flags_v |= (1u << 11);
-        if (media.has_value()) flags_v |= (1u << 14);
-        if (reply_markup.has_value()) flags_v |= (1u << 2);
-        if (entities.has_value()) flags_v |= (1u << 3);
-        if (schedule_date.has_value()) flags_v |= (1u << 15);
-        if (schedule_repeat_period.has_value()) flags_v |= (1u << 18);
-        if (quick_reply_shortcut_id.has_value()) flags_v |= (1u << 17);
-        if (rich_message.has_value()) flags_v |= (1u << 23);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    tlw.write_int32(id);
-    if (message.has_value()) { tlw.write_string(message.value()); }
-    if (media.has_value()) { media.value()->serialize(tlw); }
-    if (reply_markup.has_value()) { reply_markup.value()->serialize(tlw); }
-    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw1325, const auto& e1325) { e1325->serialize(tlw1325); }); }
-    if (schedule_date.has_value()) { tlw.write_int32(schedule_date.value()); }
-    if (schedule_repeat_period.has_value()) { tlw.write_int32(schedule_repeat_period.value()); }
-    if (quick_reply_shortcut_id.has_value()) { tlw.write_int32(quick_reply_shortcut_id.value()); }
-    if (rich_message.has_value()) { rich_message.value()->serialize(tlw); }
-}
-
-functions::messages_editMessage::Result functions::messages_editMessage::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_editInlineBotMessage::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (no_webpage) flags_v |= (1u << 1);
-        if (invert_media) flags_v |= (1u << 16);
-        if (message.has_value()) flags_v |= (1u << 11);
-        if (media.has_value()) flags_v |= (1u << 14);
-        if (reply_markup.has_value()) flags_v |= (1u << 2);
-        if (entities.has_value()) flags_v |= (1u << 3);
-        if (rich_message.has_value()) flags_v |= (1u << 23);
-        tlw.write_uint32(flags_v);
-    }
-    id->serialize(tlw);
-    if (message.has_value()) { tlw.write_string(message.value()); }
-    if (media.has_value()) { media.value()->serialize(tlw); }
-    if (reply_markup.has_value()) { reply_markup.value()->serialize(tlw); }
-    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw1326, const auto& e1326) { e1326->serialize(tlw1326); }); }
-    if (rich_message.has_value()) { rich_message.value()->serialize(tlw); }
-}
-
-functions::messages_editInlineBotMessage::Result functions::messages_editInlineBotMessage::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_getBotCallbackAnswer::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (game) flags_v |= (1u << 1);
-        if (data.has_value()) flags_v |= (1u << 0);
-        if (password.has_value()) flags_v |= (1u << 2);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    tlw.write_int32(msg_id);
-    if (data.has_value()) { tlw.write_bytes(data.value()); }
-    if (password.has_value()) { password.value()->serialize(tlw); }
-}
-
-functions::messages_getBotCallbackAnswer::Result functions::messages_getBotCallbackAnswer::read_result(TlReader& rv) {
-    return tl::messages_BotCallbackAnswer::read(rv);
-}
-
-
-void functions::messages_setBotCallbackAnswer::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (alert) flags_v |= (1u << 1);
-        if (message.has_value()) flags_v |= (1u << 0);
-        if (url.has_value()) flags_v |= (1u << 2);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int64(query_id);
-    if (message.has_value()) { tlw.write_string(message.value()); }
-    if (url.has_value()) { tlw.write_string(url.value()); }
-    tlw.write_int32(cache_time);
-}
-
-functions::messages_setBotCallbackAnswer::Result functions::messages_setBotCallbackAnswer::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_getPeerDialogs::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, peers, [&](TlWriter& tlw1327, const auto& e1327) { e1327->serialize(tlw1327); });
-}
-
-functions::messages_getPeerDialogs::Result functions::messages_getPeerDialogs::read_result(TlReader& rv) {
-    return tl::messages_PeerDialogs::read(rv);
-}
-
-
-void functions::messages_saveDraft::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (no_webpage) flags_v |= (1u << 1);
-        if (invert_media) flags_v |= (1u << 6);
-        if (reply_to.has_value()) flags_v |= (1u << 4);
-        if (entities.has_value()) flags_v |= (1u << 3);
-        if (media.has_value()) flags_v |= (1u << 5);
-        if (effect.has_value()) flags_v |= (1u << 7);
-        if (suggested_post.has_value()) flags_v |= (1u << 8);
-        if (rich_message.has_value()) flags_v |= (1u << 9);
-        tlw.write_uint32(flags_v);
-    }
-    if (reply_to.has_value()) { reply_to.value()->serialize(tlw); }
-    peer->serialize(tlw);
-    tlw.write_string(message);
-    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw1328, const auto& e1328) { e1328->serialize(tlw1328); }); }
-    if (media.has_value()) { media.value()->serialize(tlw); }
-    if (effect.has_value()) { tlw.write_int64(effect.value()); }
-    if (suggested_post.has_value()) { suggested_post.value()->serialize(tlw); }
-    if (rich_message.has_value()) { rich_message.value()->serialize(tlw); }
-}
-
-functions::messages_saveDraft::Result functions::messages_saveDraft::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_getAllDrafts::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::messages_getAllDrafts::Result functions::messages_getAllDrafts::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_getFeaturedStickers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::messages_getFeaturedStickers::Result functions::messages_getFeaturedStickers::read_result(TlReader& rv) {
-    return tl::messages_FeaturedStickers::read(rv);
-}
-
-
-void functions::messages_readFeaturedStickers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1329, const auto& e1329) { tlw1329.write_int64(e1329); });
-}
-
-functions::messages_readFeaturedStickers::Result functions::messages_readFeaturedStickers::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_getRecentStickers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (attached) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int64(hash);
-}
-
-functions::messages_getRecentStickers::Result functions::messages_getRecentStickers::read_result(TlReader& rv) {
-    return tl::messages_RecentStickers::read(rv);
-}
-
-
-void functions::messages_saveRecentSticker::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (attached) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    id->serialize(tlw);
-    tlw.write_bool(unsave);
-}
-
-functions::messages_saveRecentSticker::Result functions::messages_saveRecentSticker::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_clearRecentStickers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (attached) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-}
-
-functions::messages_clearRecentStickers::Result functions::messages_clearRecentStickers::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_getArchivedStickers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (masks) flags_v |= (1u << 0);
-        if (emojis) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int64(offset_id);
-    tlw.write_int32(limit);
-}
-
-functions::messages_getArchivedStickers::Result functions::messages_getArchivedStickers::read_result(TlReader& rv) {
-    return tl::messages_ArchivedStickers::read(rv);
-}
-
-
-void functions::messages_getMaskStickers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::messages_getMaskStickers::Result functions::messages_getMaskStickers::read_result(TlReader& rv) {
-    return tl::messages_AllStickers::read(rv);
-}
-
-
-void functions::messages_getAttachedStickers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    media->serialize(tlw);
-}
-
-functions::messages_getAttachedStickers::Result functions::messages_getAttachedStickers::read_result(TlReader& rv) {
-    return tl::read_vector<std::shared_ptr<tl::StickerSetCovered>>(rv, [&](TlReader& r1330) -> std::shared_ptr<tl::StickerSetCovered> { return tl::read_boxed<tl::StickerSetCovered>(r1330); });
-}
-
-
-void functions::messages_setGameScore::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (edit_message) flags_v |= (1u << 0);
-        if (force) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    tlw.write_int32(id);
-    user_id->serialize(tlw);
-    tlw.write_int32(score);
-}
-
-functions::messages_setGameScore::Result functions::messages_setGameScore::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_setInlineGameScore::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (edit_message) flags_v |= (1u << 0);
-        if (force) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    id->serialize(tlw);
-    user_id->serialize(tlw);
-    tlw.write_int32(score);
-}
-
-functions::messages_setInlineGameScore::Result functions::messages_setInlineGameScore::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_getGameHighScores::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_int32(id);
-    user_id->serialize(tlw);
-}
-
-functions::messages_getGameHighScores::Result functions::messages_getGameHighScores::read_result(TlReader& rv) {
-    return tl::messages_HighScores::read(rv);
-}
-
-
-void functions::messages_getInlineGameHighScores::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    id->serialize(tlw);
-    user_id->serialize(tlw);
-}
-
-functions::messages_getInlineGameHighScores::Result functions::messages_getInlineGameHighScores::read_result(TlReader& rv) {
-    return tl::messages_HighScores::read(rv);
-}
-
-
-void functions::messages_getCommonChats::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    user_id->serialize(tlw);
-    tlw.write_int64(max_id);
-    tlw.write_int32(limit);
-}
-
-functions::messages_getCommonChats::Result functions::messages_getCommonChats::read_result(TlReader& rv) {
-    return tl::messages_Chats::read(rv);
-}
-
-
-void functions::messages_getWebPage::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(url);
-    tlw.write_int32(hash);
-}
-
-functions::messages_getWebPage::Result functions::messages_getWebPage::read_result(TlReader& rv) {
-    return tl::messages_WebPage::read(rv);
-}
-
-
-void functions::messages_toggleDialogPin::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (pinned) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-}
-
-functions::messages_toggleDialogPin::Result functions::messages_toggleDialogPin::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_reorderPinnedDialogs::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (force) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int32(folder_id);
-    tl::write_vector(tlw, order, [&](TlWriter& tlw1331, const auto& e1331) { e1331->serialize(tlw1331); });
-}
-
-functions::messages_reorderPinnedDialogs::Result functions::messages_reorderPinnedDialogs::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_getPinnedDialogs::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(folder_id);
-}
-
-functions::messages_getPinnedDialogs::Result functions::messages_getPinnedDialogs::read_result(TlReader& rv) {
-    return tl::messages_PeerDialogs::read(rv);
-}
-
-
-void functions::messages_setBotShippingResults::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (error_.has_value()) flags_v |= (1u << 0);
-        if (shipping_options.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int64(query_id);
-    if (error_.has_value()) { tlw.write_string(error_.value()); }
-    if (shipping_options.has_value()) { tl::write_vector(tlw, shipping_options.value(), [&](TlWriter& tlw1332, const auto& e1332) { e1332->serialize(tlw1332); }); }
-}
-
-functions::messages_setBotShippingResults::Result functions::messages_setBotShippingResults::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_setBotPrecheckoutResults::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (success) flags_v |= (1u << 1);
-        if (error_.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int64(query_id);
-    if (error_.has_value()) { tlw.write_string(error_.value()); }
-}
-
-functions::messages_setBotPrecheckoutResults::Result functions::messages_setBotPrecheckoutResults::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_uploadMedia::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (business_connection_id.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    if (business_connection_id.has_value()) { tlw.write_string(business_connection_id.value()); }
-    peer->serialize(tlw);
-    media->serialize(tlw);
-}
-
-functions::messages_uploadMedia::Result functions::messages_uploadMedia::read_result(TlReader& rv) {
-    return tl::MessageMedia::read(rv);
-}
-
-
-void functions::messages_sendScreenshotNotification::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    reply_to->serialize(tlw);
-    tlw.write_int64(random_id);
-}
-
-functions::messages_sendScreenshotNotification::Result functions::messages_sendScreenshotNotification::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_getFavedStickers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-}
-
-functions::messages_getFavedStickers::Result functions::messages_getFavedStickers::read_result(TlReader& rv) {
-    return tl::messages_FavedStickers::read(rv);
-}
-
-
-void functions::messages_faveSticker::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    id->serialize(tlw);
-    tlw.write_bool(unfave);
-}
-
-functions::messages_faveSticker::Result functions::messages_faveSticker::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_getUnreadMentions::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (top_msg_id.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    if (top_msg_id.has_value()) { tlw.write_int32(top_msg_id.value()); }
-    tlw.write_int32(offset_id);
-    tlw.write_int32(add_offset);
-    tlw.write_int32(limit);
-    tlw.write_int32(max_id);
-    tlw.write_int32(min_id);
-}
-
-functions::messages_getUnreadMentions::Result functions::messages_getUnreadMentions::read_result(TlReader& rv) {
-    return tl::messages_Messages::read(rv);
-}
-
-
-void functions::messages_readMentions::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (top_msg_id.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    if (top_msg_id.has_value()) { tlw.write_int32(top_msg_id.value()); }
-}
-
-functions::messages_readMentions::Result functions::messages_readMentions::read_result(TlReader& rv) {
-    return tl::messages_AffectedHistory::read(rv);
-}
-
-
-void functions::messages_getRecentLocations::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_int32(limit);
-    tlw.write_int64(hash);
-}
-
-functions::messages_getRecentLocations::Result functions::messages_getRecentLocations::read_result(TlReader& rv) {
-    return tl::messages_Messages::read(rv);
-}
-
-
-void functions::messages_sendMultiMedia::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (silent) flags_v |= (1u << 5);
-        if (background) flags_v |= (1u << 6);
-        if (clear_draft) flags_v |= (1u << 7);
-        if (noforwards) flags_v |= (1u << 14);
-        if (update_stickersets_order) flags_v |= (1u << 15);
-        if (invert_media) flags_v |= (1u << 16);
-        if (allow_paid_floodskip) flags_v |= (1u << 19);
-        if (reply_to.has_value()) flags_v |= (1u << 0);
-        if (schedule_date.has_value()) flags_v |= (1u << 10);
-        if (send_as.has_value()) flags_v |= (1u << 13);
-        if (quick_reply_shortcut.has_value()) flags_v |= (1u << 17);
-        if (effect.has_value()) flags_v |= (1u << 18);
-        if (allow_paid_stars.has_value()) flags_v |= (1u << 21);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    if (reply_to.has_value()) { reply_to.value()->serialize(tlw); }
-    tl::write_vector(tlw, multi_media, [&](TlWriter& tlw1333, const auto& e1333) { e1333->serialize(tlw1333); });
-    if (schedule_date.has_value()) { tlw.write_int32(schedule_date.value()); }
-    if (send_as.has_value()) { send_as.value()->serialize(tlw); }
-    if (quick_reply_shortcut.has_value()) { quick_reply_shortcut.value()->serialize(tlw); }
-    if (effect.has_value()) { tlw.write_int64(effect.value()); }
-    if (allow_paid_stars.has_value()) { tlw.write_int64(allow_paid_stars.value()); }
-}
-
-functions::messages_sendMultiMedia::Result functions::messages_sendMultiMedia::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_uploadEncryptedFile::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    file->serialize(tlw);
-}
-
-functions::messages_uploadEncryptedFile::Result functions::messages_uploadEncryptedFile::read_result(TlReader& rv) {
-    return tl::EncryptedFile::read(rv);
-}
-
-
-void functions::messages_searchStickerSets::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (exclude_featured) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(q);
-    tlw.write_int64(hash);
-}
-
-functions::messages_searchStickerSets::Result functions::messages_searchStickerSets::read_result(TlReader& rv) {
-    return tl::messages_FoundStickerSets::read(rv);
-}
-
-
-void functions::messages_getSplitRanges::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::messages_getSplitRanges::Result functions::messages_getSplitRanges::read_result(TlReader& rv) {
-    return tl::read_vector<std::shared_ptr<tl::MessageRange>>(rv, [&](TlReader& r1334) -> std::shared_ptr<tl::MessageRange> { return tl::read_boxed<tl::MessageRange>(r1334); });
-}
-
-
-void functions::messages_markDialogUnread::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (unread) flags_v |= (1u << 0);
-        if (parent_peer.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    if (parent_peer.has_value()) { parent_peer.value()->serialize(tlw); }
-    peer->serialize(tlw);
-}
-
-functions::messages_markDialogUnread::Result functions::messages_markDialogUnread::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_getDialogUnreadMarks::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (parent_peer.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    if (parent_peer.has_value()) { parent_peer.value()->serialize(tlw); }
-}
-
-functions::messages_getDialogUnreadMarks::Result functions::messages_getDialogUnreadMarks::read_result(TlReader& rv) {
-    return tl::read_vector<std::shared_ptr<tl::DialogPeer>>(rv, [&](TlReader& r1335) -> std::shared_ptr<tl::DialogPeer> { return tl::read_boxed<tl::DialogPeer>(r1335); });
-}
-
-
-void functions::messages_clearAllDrafts::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::messages_clearAllDrafts::Result functions::messages_clearAllDrafts::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_updatePinnedMessage::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (silent) flags_v |= (1u << 0);
-        if (unpin) flags_v |= (1u << 1);
-        if (pm_oneside) flags_v |= (1u << 2);
+        if (zero_value.has_value()) flags_v |= (1u << 0);
+        if (one_value.has_value()) flags_v |= (1u << 1);
+        if (two_value.has_value()) flags_v |= (1u << 2);
+        if (few_value.has_value()) flags_v |= (1u << 3);
+        if (many_value.has_value()) flags_v |= (1u << 4);
         tlw.write_uint32(flags_v);
     }
-    peer->serialize(tlw);
-    tlw.write_int32(id);
-}
-
-functions::messages_updatePinnedMessage::Result functions::messages_updatePinnedMessage::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_sendVote::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_int32(msg_id);
-    tl::write_vector(tlw, options, [&](TlWriter& tlw1336, const auto& e1336) { tlw1336.write_bytes(e1336); });
-}
-
-functions::messages_sendVote::Result functions::messages_sendVote::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_getPollResults::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_int32(msg_id);
-    tlw.write_int64(poll_hash);
-}
-
-functions::messages_getPollResults::Result functions::messages_getPollResults::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_getOnlines::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-}
-
-functions::messages_getOnlines::Result functions::messages_getOnlines::read_result(TlReader& rv) {
-    return tl::ChatOnlines::read(rv);
-}
-
-
-void functions::messages_editChatAbout::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_string(about);
-}
-
-functions::messages_editChatAbout::Result functions::messages_editChatAbout::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_editChatDefaultBannedRights::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    banned_rights->serialize(tlw);
+    tlw.write_string(key);
+    if (zero_value.has_value()) { tlw.write_string(zero_value.value()); }
+    if (one_value.has_value()) { tlw.write_string(one_value.value()); }
+    if (two_value.has_value()) { tlw.write_string(two_value.value()); }
+    if (few_value.has_value()) { tlw.write_string(few_value.value()); }
+    if (many_value.has_value()) { tlw.write_string(many_value.value()); }
+    tlw.write_string(other_value);
 }
 
-functions::messages_editChatDefaultBannedRights::Result functions::messages_editChatDefaultBannedRights::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
+types::langPackStringPluralized types::langPackStringPluralized::read_body(TlReader& rv) {
+    types::langPackStringPluralized out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.key = rv.read_string();
+    if ((fl_flags & (1u << 0)) != 0) { out.zero_value = rv.read_string(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.one_value = rv.read_string(); }
+    if ((fl_flags & (1u << 2)) != 0) { out.two_value = rv.read_string(); }
+    if ((fl_flags & (1u << 3)) != 0) { out.few_value = rv.read_string(); }
+    if ((fl_flags & (1u << 4)) != 0) { out.many_value = rv.read_string(); }
+    out.other_value = rv.read_string();
+    return out;
 }
 
 
-void functions::messages_getEmojiKeywords::serialize(TlWriter& tlw) const {
+void types::langPackStringDeleted::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    tlw.write_string(lang_code);
+    tlw.write_string(key);
 }
 
-functions::messages_getEmojiKeywords::Result functions::messages_getEmojiKeywords::read_result(TlReader& rv) {
-    return tl::EmojiKeywordsDifference::read(rv);
+types::langPackStringDeleted types::langPackStringDeleted::read_body(TlReader& rv) {
+    types::langPackStringDeleted out;
+    out.key = rv.read_string();
+    return out;
 }
 
 
-void functions::messages_getEmojiKeywordsDifference::serialize(TlWriter& tlw) const {
+void types::langPackDifference::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     tlw.write_string(lang_code);
     tlw.write_int32(from_version);
+    tlw.write_int32(version);
+    tl::write_vector(tlw, strings, [&](TlWriter& tlw497, const auto& e497) { e497->serialize(tlw497); });
 }
 
-functions::messages_getEmojiKeywordsDifference::Result functions::messages_getEmojiKeywordsDifference::read_result(TlReader& rv) {
-    return tl::EmojiKeywordsDifference::read(rv);
+types::langPackDifference types::langPackDifference::read_body(TlReader& rv) {
+    types::langPackDifference out;
+    out.lang_code = rv.read_string();
+    out.from_version = rv.read_int32();
+    out.version = rv.read_int32();
+    out.strings = tl::read_vector<std::shared_ptr<tl::LangPackString>>(rv, [&](TlReader& r496) -> std::shared_ptr<tl::LangPackString> { return tl::read_boxed<tl::LangPackString>(r496); });
+    return out;
 }
 
 
-void functions::messages_getEmojiKeywordsLanguages::serialize(TlWriter& tlw) const {
+void types::langPackLanguage::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    tl::write_vector(tlw, lang_codes, [&](TlWriter& tlw1338, const auto& e1338) { tlw1338.write_string(e1338); });
-}
-
-functions::messages_getEmojiKeywordsLanguages::Result functions::messages_getEmojiKeywordsLanguages::read_result(TlReader& rv) {
-    return tl::read_vector<std::shared_ptr<tl::EmojiLanguage>>(rv, [&](TlReader& r1337) -> std::shared_ptr<tl::EmojiLanguage> { return tl::read_boxed<tl::EmojiLanguage>(r1337); });
-}
-
-
-void functions::messages_getEmojiURL::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (official) flags_v |= (1u << 0);
+        if (rtl) flags_v |= (1u << 2);
+        if (beta) flags_v |= (1u << 3);
+        if (base_lang_code.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(name);
+    tlw.write_string(native_name);
     tlw.write_string(lang_code);
+    if (base_lang_code.has_value()) { tlw.write_string(base_lang_code.value()); }
+    tlw.write_string(plural_code);
+    tlw.write_int32(strings_count);
+    tlw.write_int32(translated_count);
+    tlw.write_string(translations_url);
 }
 
-functions::messages_getEmojiURL::Result functions::messages_getEmojiURL::read_result(TlReader& rv) {
-    return tl::EmojiURL::read(rv);
+types::langPackLanguage types::langPackLanguage::read_body(TlReader& rv) {
+    types::langPackLanguage out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.official = (fl_flags & (1u << 0)) != 0;
+    out.rtl = (fl_flags & (1u << 2)) != 0;
+    out.beta = (fl_flags & (1u << 3)) != 0;
+    out.name = rv.read_string();
+    out.native_name = rv.read_string();
+    out.lang_code = rv.read_string();
+    if ((fl_flags & (1u << 1)) != 0) { out.base_lang_code = rv.read_string(); }
+    out.plural_code = rv.read_string();
+    out.strings_count = rv.read_int32();
+    out.translated_count = rv.read_int32();
+    out.translations_url = rv.read_string();
+    return out;
 }
 
 
-void functions::messages_getSearchCounters::serialize(TlWriter& tlw) const {
+void types::channelAdminLogEventActionChangeTitle::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(prev_value);
+    tlw.write_string(new_value);
+}
+
+types::channelAdminLogEventActionChangeTitle types::channelAdminLogEventActionChangeTitle::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionChangeTitle out;
+    out.prev_value = rv.read_string();
+    out.new_value = rv.read_string();
+    return out;
+}
+
+
+void types::channelAdminLogEventActionChangeAbout::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(prev_value);
+    tlw.write_string(new_value);
+}
+
+types::channelAdminLogEventActionChangeAbout types::channelAdminLogEventActionChangeAbout::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionChangeAbout out;
+    out.prev_value = rv.read_string();
+    out.new_value = rv.read_string();
+    return out;
+}
+
+
+void types::channelAdminLogEventActionChangeUsername::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(prev_value);
+    tlw.write_string(new_value);
+}
+
+types::channelAdminLogEventActionChangeUsername types::channelAdminLogEventActionChangeUsername::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionChangeUsername out;
+    out.prev_value = rv.read_string();
+    out.new_value = rv.read_string();
+    return out;
+}
+
+
+void types::channelAdminLogEventActionChangePhoto::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    prev_photo->serialize(tlw);
+    new_photo->serialize(tlw);
+}
+
+types::channelAdminLogEventActionChangePhoto types::channelAdminLogEventActionChangePhoto::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionChangePhoto out;
+    out.prev_photo = tl::read_boxed<tl::Photo>(rv);
+    out.new_photo = tl::read_boxed<tl::Photo>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionToggleInvites::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bool(new_value);
+}
+
+types::channelAdminLogEventActionToggleInvites types::channelAdminLogEventActionToggleInvites::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionToggleInvites out;
+    out.new_value = rv.read_bool();
+    return out;
+}
+
+
+void types::channelAdminLogEventActionToggleSignatures::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bool(new_value);
+}
+
+types::channelAdminLogEventActionToggleSignatures types::channelAdminLogEventActionToggleSignatures::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionToggleSignatures out;
+    out.new_value = rv.read_bool();
+    return out;
+}
+
+
+void types::channelAdminLogEventActionUpdatePinned::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    message->serialize(tlw);
+}
+
+types::channelAdminLogEventActionUpdatePinned types::channelAdminLogEventActionUpdatePinned::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionUpdatePinned out;
+    out.message = tl::read_boxed<tl::Message>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionEditMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    prev_message->serialize(tlw);
+    new_message->serialize(tlw);
+}
+
+types::channelAdminLogEventActionEditMessage types::channelAdminLogEventActionEditMessage::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionEditMessage out;
+    out.prev_message = tl::read_boxed<tl::Message>(rv);
+    out.new_message = tl::read_boxed<tl::Message>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionDeleteMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    message->serialize(tlw);
+}
+
+types::channelAdminLogEventActionDeleteMessage types::channelAdminLogEventActionDeleteMessage::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionDeleteMessage out;
+    out.message = tl::read_boxed<tl::Message>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionParticipantJoin::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::channelAdminLogEventActionParticipantJoin types::channelAdminLogEventActionParticipantJoin::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionParticipantJoin out;
+    return out;
+}
+
+
+void types::channelAdminLogEventActionParticipantLeave::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::channelAdminLogEventActionParticipantLeave types::channelAdminLogEventActionParticipantLeave::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionParticipantLeave out;
+    return out;
+}
+
+
+void types::channelAdminLogEventActionParticipantInvite::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    participant->serialize(tlw);
+}
+
+types::channelAdminLogEventActionParticipantInvite types::channelAdminLogEventActionParticipantInvite::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionParticipantInvite out;
+    out.participant = tl::read_boxed<tl::ChannelParticipant>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionParticipantToggleBan::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    prev_participant->serialize(tlw);
+    new_participant->serialize(tlw);
+}
+
+types::channelAdminLogEventActionParticipantToggleBan types::channelAdminLogEventActionParticipantToggleBan::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionParticipantToggleBan out;
+    out.prev_participant = tl::read_boxed<tl::ChannelParticipant>(rv);
+    out.new_participant = tl::read_boxed<tl::ChannelParticipant>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionParticipantToggleAdmin::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    prev_participant->serialize(tlw);
+    new_participant->serialize(tlw);
+}
+
+types::channelAdminLogEventActionParticipantToggleAdmin types::channelAdminLogEventActionParticipantToggleAdmin::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionParticipantToggleAdmin out;
+    out.prev_participant = tl::read_boxed<tl::ChannelParticipant>(rv);
+    out.new_participant = tl::read_boxed<tl::ChannelParticipant>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionChangeStickerSet::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    prev_stickerset->serialize(tlw);
+    new_stickerset->serialize(tlw);
+}
+
+types::channelAdminLogEventActionChangeStickerSet types::channelAdminLogEventActionChangeStickerSet::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionChangeStickerSet out;
+    out.prev_stickerset = tl::read_boxed<tl::InputStickerSet>(rv);
+    out.new_stickerset = tl::read_boxed<tl::InputStickerSet>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionTogglePreHistoryHidden::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bool(new_value);
+}
+
+types::channelAdminLogEventActionTogglePreHistoryHidden types::channelAdminLogEventActionTogglePreHistoryHidden::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionTogglePreHistoryHidden out;
+    out.new_value = rv.read_bool();
+    return out;
+}
+
+
+void types::channelAdminLogEventActionDefaultBannedRights::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    prev_banned_rights->serialize(tlw);
+    new_banned_rights->serialize(tlw);
+}
+
+types::channelAdminLogEventActionDefaultBannedRights types::channelAdminLogEventActionDefaultBannedRights::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionDefaultBannedRights out;
+    out.prev_banned_rights = tl::read_boxed<tl::ChatBannedRights>(rv);
+    out.new_banned_rights = tl::read_boxed<tl::ChatBannedRights>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionStopPoll::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    message->serialize(tlw);
+}
+
+types::channelAdminLogEventActionStopPoll types::channelAdminLogEventActionStopPoll::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionStopPoll out;
+    out.message = tl::read_boxed<tl::Message>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionChangeLinkedChat::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(prev_value);
+    tlw.write_int64(new_value);
+}
+
+types::channelAdminLogEventActionChangeLinkedChat types::channelAdminLogEventActionChangeLinkedChat::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionChangeLinkedChat out;
+    out.prev_value = rv.read_int64();
+    out.new_value = rv.read_int64();
+    return out;
+}
+
+
+void types::channelAdminLogEventActionChangeLocation::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    prev_value->serialize(tlw);
+    new_value->serialize(tlw);
+}
+
+types::channelAdminLogEventActionChangeLocation types::channelAdminLogEventActionChangeLocation::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionChangeLocation out;
+    out.prev_value = tl::read_boxed<tl::ChannelLocation>(rv);
+    out.new_value = tl::read_boxed<tl::ChannelLocation>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionToggleSlowMode::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(prev_value);
+    tlw.write_int32(new_value);
+}
+
+types::channelAdminLogEventActionToggleSlowMode types::channelAdminLogEventActionToggleSlowMode::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionToggleSlowMode out;
+    out.prev_value = rv.read_int32();
+    out.new_value = rv.read_int32();
+    return out;
+}
+
+
+void types::channelAdminLogEventActionStartGroupCall::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    call->serialize(tlw);
+}
+
+types::channelAdminLogEventActionStartGroupCall types::channelAdminLogEventActionStartGroupCall::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionStartGroupCall out;
+    out.call = tl::read_boxed<tl::InputGroupCall>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionDiscardGroupCall::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    call->serialize(tlw);
+}
+
+types::channelAdminLogEventActionDiscardGroupCall types::channelAdminLogEventActionDiscardGroupCall::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionDiscardGroupCall out;
+    out.call = tl::read_boxed<tl::InputGroupCall>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionParticipantMute::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    participant->serialize(tlw);
+}
+
+types::channelAdminLogEventActionParticipantMute types::channelAdminLogEventActionParticipantMute::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionParticipantMute out;
+    out.participant = tl::read_boxed<tl::GroupCallParticipant>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionParticipantUnmute::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    participant->serialize(tlw);
+}
+
+types::channelAdminLogEventActionParticipantUnmute types::channelAdminLogEventActionParticipantUnmute::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionParticipantUnmute out;
+    out.participant = tl::read_boxed<tl::GroupCallParticipant>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionToggleGroupCallSetting::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bool(join_muted);
+}
+
+types::channelAdminLogEventActionToggleGroupCallSetting types::channelAdminLogEventActionToggleGroupCallSetting::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionToggleGroupCallSetting out;
+    out.join_muted = rv.read_bool();
+    return out;
+}
+
+
+void types::channelAdminLogEventActionParticipantJoinByInvite::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (saved_peer_id.has_value()) flags_v |= (1u << 2);
-        if (top_msg_id.has_value()) flags_v |= (1u << 0);
+        if (via_chatlist) flags_v |= (1u << 0);
         tlw.write_uint32(flags_v);
     }
-    peer->serialize(tlw);
-    if (saved_peer_id.has_value()) { saved_peer_id.value()->serialize(tlw); }
-    if (top_msg_id.has_value()) { tlw.write_int32(top_msg_id.value()); }
-    tl::write_vector(tlw, filters, [&](TlWriter& tlw1340, const auto& e1340) { e1340->serialize(tlw1340); });
+    invite->serialize(tlw);
 }
 
-functions::messages_getSearchCounters::Result functions::messages_getSearchCounters::read_result(TlReader& rv) {
-    return tl::read_vector<std::shared_ptr<tl::messages_SearchCounter>>(rv, [&](TlReader& r1339) -> std::shared_ptr<tl::messages_SearchCounter> { return tl::read_boxed<tl::messages_SearchCounter>(r1339); });
+types::channelAdminLogEventActionParticipantJoinByInvite types::channelAdminLogEventActionParticipantJoinByInvite::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionParticipantJoinByInvite out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.via_chatlist = (fl_flags & (1u << 0)) != 0;
+    out.invite = tl::read_boxed<tl::ExportedChatInvite>(rv);
+    return out;
 }
 
 
-void functions::messages_requestUrlAuth::serialize(TlWriter& tlw) const {
+void types::channelAdminLogEventActionExportedInviteDelete::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    invite->serialize(tlw);
+}
+
+types::channelAdminLogEventActionExportedInviteDelete types::channelAdminLogEventActionExportedInviteDelete::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionExportedInviteDelete out;
+    out.invite = tl::read_boxed<tl::ExportedChatInvite>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionExportedInviteRevoke::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    invite->serialize(tlw);
+}
+
+types::channelAdminLogEventActionExportedInviteRevoke types::channelAdminLogEventActionExportedInviteRevoke::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionExportedInviteRevoke out;
+    out.invite = tl::read_boxed<tl::ExportedChatInvite>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionExportedInviteEdit::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    prev_invite->serialize(tlw);
+    new_invite->serialize(tlw);
+}
+
+types::channelAdminLogEventActionExportedInviteEdit types::channelAdminLogEventActionExportedInviteEdit::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionExportedInviteEdit out;
+    out.prev_invite = tl::read_boxed<tl::ExportedChatInvite>(rv);
+    out.new_invite = tl::read_boxed<tl::ExportedChatInvite>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionParticipantVolume::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    participant->serialize(tlw);
+}
+
+types::channelAdminLogEventActionParticipantVolume types::channelAdminLogEventActionParticipantVolume::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionParticipantVolume out;
+    out.participant = tl::read_boxed<tl::GroupCallParticipant>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionChangeHistoryTTL::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(prev_value);
+    tlw.write_int32(new_value);
+}
+
+types::channelAdminLogEventActionChangeHistoryTTL types::channelAdminLogEventActionChangeHistoryTTL::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionChangeHistoryTTL out;
+    out.prev_value = rv.read_int32();
+    out.new_value = rv.read_int32();
+    return out;
+}
+
+
+void types::channelAdminLogEventActionParticipantJoinByRequest::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    invite->serialize(tlw);
+    tlw.write_int64(approved_by);
+}
+
+types::channelAdminLogEventActionParticipantJoinByRequest types::channelAdminLogEventActionParticipantJoinByRequest::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionParticipantJoinByRequest out;
+    out.invite = tl::read_boxed<tl::ExportedChatInvite>(rv);
+    out.approved_by = rv.read_int64();
+    return out;
+}
+
+
+void types::channelAdminLogEventActionToggleNoForwards::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bool(new_value);
+}
+
+types::channelAdminLogEventActionToggleNoForwards types::channelAdminLogEventActionToggleNoForwards::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionToggleNoForwards out;
+    out.new_value = rv.read_bool();
+    return out;
+}
+
+
+void types::channelAdminLogEventActionSendMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    message->serialize(tlw);
+}
+
+types::channelAdminLogEventActionSendMessage types::channelAdminLogEventActionSendMessage::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionSendMessage out;
+    out.message = tl::read_boxed<tl::Message>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionChangeAvailableReactions::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    prev_value->serialize(tlw);
+    new_value->serialize(tlw);
+}
+
+types::channelAdminLogEventActionChangeAvailableReactions types::channelAdminLogEventActionChangeAvailableReactions::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionChangeAvailableReactions out;
+    out.prev_value = tl::read_boxed<tl::ChatReactions>(rv);
+    out.new_value = tl::read_boxed<tl::ChatReactions>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionChangeUsernames::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, prev_value, [&](TlWriter& tlw500, const auto& e500) { tlw500.write_string(e500); });
+    tl::write_vector(tlw, new_value, [&](TlWriter& tlw501, const auto& e501) { tlw501.write_string(e501); });
+}
+
+types::channelAdminLogEventActionChangeUsernames types::channelAdminLogEventActionChangeUsernames::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionChangeUsernames out;
+    out.prev_value = tl::read_vector<std::string>(rv, [&](TlReader& r498) -> std::string { return r498.read_string(); });
+    out.new_value = tl::read_vector<std::string>(rv, [&](TlReader& r499) -> std::string { return r499.read_string(); });
+    return out;
+}
+
+
+void types::channelAdminLogEventActionToggleForum::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bool(new_value);
+}
+
+types::channelAdminLogEventActionToggleForum types::channelAdminLogEventActionToggleForum::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionToggleForum out;
+    out.new_value = rv.read_bool();
+    return out;
+}
+
+
+void types::channelAdminLogEventActionCreateTopic::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    topic->serialize(tlw);
+}
+
+types::channelAdminLogEventActionCreateTopic types::channelAdminLogEventActionCreateTopic::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionCreateTopic out;
+    out.topic = tl::read_boxed<tl::ForumTopic>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionEditTopic::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    prev_topic->serialize(tlw);
+    new_topic->serialize(tlw);
+}
+
+types::channelAdminLogEventActionEditTopic types::channelAdminLogEventActionEditTopic::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionEditTopic out;
+    out.prev_topic = tl::read_boxed<tl::ForumTopic>(rv);
+    out.new_topic = tl::read_boxed<tl::ForumTopic>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionDeleteTopic::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    topic->serialize(tlw);
+}
+
+types::channelAdminLogEventActionDeleteTopic types::channelAdminLogEventActionDeleteTopic::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionDeleteTopic out;
+    out.topic = tl::read_boxed<tl::ForumTopic>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionPinTopic::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (peer.has_value()) flags_v |= (1u << 1);
-        if (msg_id.has_value()) flags_v |= (1u << 1);
-        if (button_id.has_value()) flags_v |= (1u << 1);
-        if (url.has_value()) flags_v |= (1u << 2);
-        if (in_app_origin.has_value()) flags_v |= (1u << 3);
+        if (prev_topic.has_value()) flags_v |= (1u << 0);
+        if (new_topic.has_value()) flags_v |= (1u << 1);
         tlw.write_uint32(flags_v);
     }
-    if (peer.has_value()) { peer.value()->serialize(tlw); }
-    if (msg_id.has_value()) { tlw.write_int32(msg_id.value()); }
-    if (button_id.has_value()) { tlw.write_int32(button_id.value()); }
-    if (url.has_value()) { tlw.write_string(url.value()); }
-    if (in_app_origin.has_value()) { tlw.write_string(in_app_origin.value()); }
+    if (prev_topic.has_value()) { prev_topic.value()->serialize(tlw); }
+    if (new_topic.has_value()) { new_topic.value()->serialize(tlw); }
 }
 
-functions::messages_requestUrlAuth::Result functions::messages_requestUrlAuth::read_result(TlReader& rv) {
-    return tl::UrlAuthResult::read(rv);
+types::channelAdminLogEventActionPinTopic types::channelAdminLogEventActionPinTopic::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionPinTopic out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    if ((fl_flags & (1u << 0)) != 0) { out.prev_topic = tl::read_boxed<tl::ForumTopic>(rv); }
+    if ((fl_flags & (1u << 1)) != 0) { out.new_topic = tl::read_boxed<tl::ForumTopic>(rv); }
+    return out;
 }
 
 
-void functions::messages_acceptUrlAuth::serialize(TlWriter& tlw) const {
+void types::channelAdminLogEventActionToggleAntiSpam::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bool(new_value);
+}
+
+types::channelAdminLogEventActionToggleAntiSpam types::channelAdminLogEventActionToggleAntiSpam::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionToggleAntiSpam out;
+    out.new_value = rv.read_bool();
+    return out;
+}
+
+
+void types::channelAdminLogEventActionChangePeerColor::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    prev_value->serialize(tlw);
+    new_value->serialize(tlw);
+}
+
+types::channelAdminLogEventActionChangePeerColor types::channelAdminLogEventActionChangePeerColor::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionChangePeerColor out;
+    out.prev_value = tl::read_boxed<tl::PeerColor>(rv);
+    out.new_value = tl::read_boxed<tl::PeerColor>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionChangeProfilePeerColor::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    prev_value->serialize(tlw);
+    new_value->serialize(tlw);
+}
+
+types::channelAdminLogEventActionChangeProfilePeerColor types::channelAdminLogEventActionChangeProfilePeerColor::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionChangeProfilePeerColor out;
+    out.prev_value = tl::read_boxed<tl::PeerColor>(rv);
+    out.new_value = tl::read_boxed<tl::PeerColor>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionChangeWallpaper::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    prev_value->serialize(tlw);
+    new_value->serialize(tlw);
+}
+
+types::channelAdminLogEventActionChangeWallpaper types::channelAdminLogEventActionChangeWallpaper::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionChangeWallpaper out;
+    out.prev_value = tl::read_boxed<tl::WallPaper>(rv);
+    out.new_value = tl::read_boxed<tl::WallPaper>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionChangeEmojiStatus::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    prev_value->serialize(tlw);
+    new_value->serialize(tlw);
+}
+
+types::channelAdminLogEventActionChangeEmojiStatus types::channelAdminLogEventActionChangeEmojiStatus::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionChangeEmojiStatus out;
+    out.prev_value = tl::read_boxed<tl::EmojiStatus>(rv);
+    out.new_value = tl::read_boxed<tl::EmojiStatus>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionChangeEmojiStickerSet::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    prev_stickerset->serialize(tlw);
+    new_stickerset->serialize(tlw);
+}
+
+types::channelAdminLogEventActionChangeEmojiStickerSet types::channelAdminLogEventActionChangeEmojiStickerSet::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionChangeEmojiStickerSet out;
+    out.prev_stickerset = tl::read_boxed<tl::InputStickerSet>(rv);
+    out.new_stickerset = tl::read_boxed<tl::InputStickerSet>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionToggleSignatureProfiles::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bool(new_value);
+}
+
+types::channelAdminLogEventActionToggleSignatureProfiles types::channelAdminLogEventActionToggleSignatureProfiles::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionToggleSignatureProfiles out;
+    out.new_value = rv.read_bool();
+    return out;
+}
+
+
+void types::channelAdminLogEventActionParticipantSubExtend::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    prev_participant->serialize(tlw);
+    new_participant->serialize(tlw);
+}
+
+types::channelAdminLogEventActionParticipantSubExtend types::channelAdminLogEventActionParticipantSubExtend::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionParticipantSubExtend out;
+    out.prev_participant = tl::read_boxed<tl::ChannelParticipant>(rv);
+    out.new_participant = tl::read_boxed<tl::ChannelParticipant>(rv);
+    return out;
+}
+
+
+void types::channelAdminLogEventActionToggleAutotranslation::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bool(new_value);
+}
+
+types::channelAdminLogEventActionToggleAutotranslation types::channelAdminLogEventActionToggleAutotranslation::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionToggleAutotranslation out;
+    out.new_value = rv.read_bool();
+    return out;
+}
+
+
+void types::channelAdminLogEventActionParticipantEditRank::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(user_id);
+    tlw.write_string(prev_rank);
+    tlw.write_string(new_rank);
+}
+
+types::channelAdminLogEventActionParticipantEditRank types::channelAdminLogEventActionParticipantEditRank::read_body(TlReader& rv) {
+    types::channelAdminLogEventActionParticipantEditRank out;
+    out.user_id = rv.read_int64();
+    out.prev_rank = rv.read_string();
+    out.new_rank = rv.read_string();
+    return out;
+}
+
+
+void types::channelAdminLogEvent::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(id);
+    tlw.write_int32(date);
+    tlw.write_int64(user_id);
+    action->serialize(tlw);
+}
+
+types::channelAdminLogEvent types::channelAdminLogEvent::read_body(TlReader& rv) {
+    types::channelAdminLogEvent out;
+    out.id = rv.read_int64();
+    out.date = rv.read_int32();
+    out.user_id = rv.read_int64();
+    out.action = tl::read_boxed<tl::ChannelAdminLogEventAction>(rv);
+    return out;
+}
+
+
+void types::channels_adminLogResults::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, events, [&](TlWriter& tlw505, const auto& e505) { e505->serialize(tlw505); });
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw506, const auto& e506) { e506->serialize(tlw506); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw507, const auto& e507) { e507->serialize(tlw507); });
+}
+
+types::channels_adminLogResults types::channels_adminLogResults::read_body(TlReader& rv) {
+    types::channels_adminLogResults out;
+    out.events = tl::read_vector<std::shared_ptr<tl::ChannelAdminLogEvent>>(rv, [&](TlReader& r502) -> std::shared_ptr<tl::ChannelAdminLogEvent> { return tl::read_boxed<tl::ChannelAdminLogEvent>(r502); });
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r503) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r503); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r504) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r504); });
+    return out;
+}
+
+
+void types::channelAdminLogEventsFilter::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (write_allowed) flags_v |= (1u << 0);
-        if (share_phone_number) flags_v |= (1u << 3);
-        if (peer.has_value()) flags_v |= (1u << 1);
-        if (msg_id.has_value()) flags_v |= (1u << 1);
-        if (button_id.has_value()) flags_v |= (1u << 1);
-        if (url.has_value()) flags_v |= (1u << 2);
-        if (match_code.has_value()) flags_v |= (1u << 4);
-        if (tonconnect_session.has_value()) flags_v |= (1u << 5);
+        if (join) flags_v |= (1u << 0);
+        if (leave) flags_v |= (1u << 1);
+        if (invite) flags_v |= (1u << 2);
+        if (ban) flags_v |= (1u << 3);
+        if (unban) flags_v |= (1u << 4);
+        if (kick) flags_v |= (1u << 5);
+        if (unkick) flags_v |= (1u << 6);
+        if (promote) flags_v |= (1u << 7);
+        if (demote) flags_v |= (1u << 8);
+        if (info) flags_v |= (1u << 9);
+        if (settings) flags_v |= (1u << 10);
+        if (pinned) flags_v |= (1u << 11);
+        if (edit) flags_v |= (1u << 12);
+        if (delete_) flags_v |= (1u << 13);
+        if (group_call) flags_v |= (1u << 14);
+        if (invites) flags_v |= (1u << 15);
+        if (send) flags_v |= (1u << 16);
+        if (forums) flags_v |= (1u << 17);
+        if (sub_extend) flags_v |= (1u << 18);
+        if (edit_rank) flags_v |= (1u << 19);
         tlw.write_uint32(flags_v);
     }
-    if (peer.has_value()) { peer.value()->serialize(tlw); }
-    if (msg_id.has_value()) { tlw.write_int32(msg_id.value()); }
-    if (button_id.has_value()) { tlw.write_int32(button_id.value()); }
-    if (url.has_value()) { tlw.write_string(url.value()); }
-    if (match_code.has_value()) { tlw.write_string(match_code.value()); }
-    if (tonconnect_session.has_value()) { tonconnect_session.value()->serialize(tlw); }
 }
 
-functions::messages_acceptUrlAuth::Result functions::messages_acceptUrlAuth::read_result(TlReader& rv) {
-    return tl::UrlAuthResult::read(rv);
+types::channelAdminLogEventsFilter types::channelAdminLogEventsFilter::read_body(TlReader& rv) {
+    types::channelAdminLogEventsFilter out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.join = (fl_flags & (1u << 0)) != 0;
+    out.leave = (fl_flags & (1u << 1)) != 0;
+    out.invite = (fl_flags & (1u << 2)) != 0;
+    out.ban = (fl_flags & (1u << 3)) != 0;
+    out.unban = (fl_flags & (1u << 4)) != 0;
+    out.kick = (fl_flags & (1u << 5)) != 0;
+    out.unkick = (fl_flags & (1u << 6)) != 0;
+    out.promote = (fl_flags & (1u << 7)) != 0;
+    out.demote = (fl_flags & (1u << 8)) != 0;
+    out.info = (fl_flags & (1u << 9)) != 0;
+    out.settings = (fl_flags & (1u << 10)) != 0;
+    out.pinned = (fl_flags & (1u << 11)) != 0;
+    out.edit = (fl_flags & (1u << 12)) != 0;
+    out.delete_ = (fl_flags & (1u << 13)) != 0;
+    out.group_call = (fl_flags & (1u << 14)) != 0;
+    out.invites = (fl_flags & (1u << 15)) != 0;
+    out.send = (fl_flags & (1u << 16)) != 0;
+    out.forums = (fl_flags & (1u << 17)) != 0;
+    out.sub_extend = (fl_flags & (1u << 18)) != 0;
+    out.edit_rank = (fl_flags & (1u << 19)) != 0;
+    return out;
 }
 
 
-void functions::messages_hidePeerSettingsBar::serialize(TlWriter& tlw) const {
+void types::popularContact::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    peer->serialize(tlw);
+    tlw.write_int64(client_id);
+    tlw.write_int32(importers);
 }
 
-functions::messages_hidePeerSettingsBar::Result functions::messages_hidePeerSettingsBar::read_result(TlReader& rv) {
-    return rv.read_bool();
+types::popularContact types::popularContact::read_body(TlReader& rv) {
+    types::popularContact out;
+    out.client_id = rv.read_int64();
+    out.importers = rv.read_int32();
+    return out;
 }
 
 
-void functions::messages_getScheduledHistory::serialize(TlWriter& tlw) const {
+void types::messages_favedStickersNotModified::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    peer->serialize(tlw);
+}
+
+types::messages_favedStickersNotModified types::messages_favedStickersNotModified::read_body(TlReader& rv) {
+    types::messages_favedStickersNotModified out;
+    return out;
+}
+
+
+void types::messages_favedStickers::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
     tlw.write_int64(hash);
+    tl::write_vector(tlw, packs, [&](TlWriter& tlw510, const auto& e510) { e510->serialize(tlw510); });
+    tl::write_vector(tlw, stickers, [&](TlWriter& tlw511, const auto& e511) { e511->serialize(tlw511); });
 }
 
-functions::messages_getScheduledHistory::Result functions::messages_getScheduledHistory::read_result(TlReader& rv) {
-    return tl::messages_Messages::read(rv);
+types::messages_favedStickers types::messages_favedStickers::read_body(TlReader& rv) {
+    types::messages_favedStickers out;
+    out.hash = rv.read_int64();
+    out.packs = tl::read_vector<std::shared_ptr<tl::StickerPack>>(rv, [&](TlReader& r508) -> std::shared_ptr<tl::StickerPack> { return tl::read_boxed<tl::StickerPack>(r508); });
+    out.stickers = tl::read_vector<std::shared_ptr<tl::Document>>(rv, [&](TlReader& r509) -> std::shared_ptr<tl::Document> { return tl::read_boxed<tl::Document>(r509); });
+    return out;
 }
 
 
-void functions::messages_getScheduledMessages::serialize(TlWriter& tlw) const {
+void types::recentMeUrlUnknown::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1341, const auto& e1341) { tlw1341.write_int32(e1341); });
+    tlw.write_string(url);
 }
 
-functions::messages_getScheduledMessages::Result functions::messages_getScheduledMessages::read_result(TlReader& rv) {
-    return tl::messages_Messages::read(rv);
+types::recentMeUrlUnknown types::recentMeUrlUnknown::read_body(TlReader& rv) {
+    types::recentMeUrlUnknown out;
+    out.url = rv.read_string();
+    return out;
 }
 
 
-void functions::messages_sendScheduledMessages::serialize(TlWriter& tlw) const {
+void types::recentMeUrlUser::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1342, const auto& e1342) { tlw1342.write_int32(e1342); });
+    tlw.write_string(url);
+    tlw.write_int64(user_id);
 }
 
-functions::messages_sendScheduledMessages::Result functions::messages_sendScheduledMessages::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
+types::recentMeUrlUser types::recentMeUrlUser::read_body(TlReader& rv) {
+    types::recentMeUrlUser out;
+    out.url = rv.read_string();
+    out.user_id = rv.read_int64();
+    return out;
 }
 
 
-void functions::messages_deleteScheduledMessages::serialize(TlWriter& tlw) const {
+void types::recentMeUrlChat::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1343, const auto& e1343) { tlw1343.write_int32(e1343); });
-}
-
-functions::messages_deleteScheduledMessages::Result functions::messages_deleteScheduledMessages::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_getPollVotes::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (option.has_value()) flags_v |= (1u << 0);
-        if (offset.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    tlw.write_int32(id);
-    if (option.has_value()) { tlw.write_bytes(option.value()); }
-    if (offset.has_value()) { tlw.write_string(offset.value()); }
-    tlw.write_int32(limit);
-}
-
-functions::messages_getPollVotes::Result functions::messages_getPollVotes::read_result(TlReader& rv) {
-    return tl::messages_VotesList::read(rv);
-}
-
-
-void functions::messages_toggleStickerSets::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (uninstall) flags_v |= (1u << 0);
-        if (archive) flags_v |= (1u << 1);
-        if (unarchive) flags_v |= (1u << 2);
-        tlw.write_uint32(flags_v);
-    }
-    tl::write_vector(tlw, stickersets, [&](TlWriter& tlw1344, const auto& e1344) { e1344->serialize(tlw1344); });
-}
-
-functions::messages_toggleStickerSets::Result functions::messages_toggleStickerSets::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_getDialogFilters::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::messages_getDialogFilters::Result functions::messages_getDialogFilters::read_result(TlReader& rv) {
-    return tl::messages_DialogFilters::read(rv);
-}
-
-
-void functions::messages_getSuggestedDialogFilters::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-functions::messages_getSuggestedDialogFilters::Result functions::messages_getSuggestedDialogFilters::read_result(TlReader& rv) {
-    return tl::read_vector<std::shared_ptr<tl::DialogFilterSuggested>>(rv, [&](TlReader& r1345) -> std::shared_ptr<tl::DialogFilterSuggested> { return tl::read_boxed<tl::DialogFilterSuggested>(r1345); });
-}
-
-
-void functions::messages_updateDialogFilter::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (filter.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int32(id);
-    if (filter.has_value()) { filter.value()->serialize(tlw); }
-}
-
-functions::messages_updateDialogFilter::Result functions::messages_updateDialogFilter::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_updateDialogFiltersOrder::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, order, [&](TlWriter& tlw1346, const auto& e1346) { tlw1346.write_int32(e1346); });
-}
-
-functions::messages_updateDialogFiltersOrder::Result functions::messages_updateDialogFiltersOrder::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_getOldFeaturedStickers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(offset);
-    tlw.write_int32(limit);
-    tlw.write_int64(hash);
-}
-
-functions::messages_getOldFeaturedStickers::Result functions::messages_getOldFeaturedStickers::read_result(TlReader& rv) {
-    return tl::messages_FeaturedStickers::read(rv);
-}
-
-
-void functions::messages_getReplies::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_int32(msg_id);
-    tlw.write_int32(offset_id);
-    tlw.write_int32(offset_date);
-    tlw.write_int32(add_offset);
-    tlw.write_int32(limit);
-    tlw.write_int32(max_id);
-    tlw.write_int32(min_id);
-    tlw.write_int64(hash);
-}
-
-functions::messages_getReplies::Result functions::messages_getReplies::read_result(TlReader& rv) {
-    return tl::messages_Messages::read(rv);
-}
-
-
-void functions::messages_getDiscussionMessage::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_int32(msg_id);
-}
-
-functions::messages_getDiscussionMessage::Result functions::messages_getDiscussionMessage::read_result(TlReader& rv) {
-    return tl::messages_DiscussionMessage::read(rv);
-}
-
-
-void functions::messages_readDiscussion::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_int32(msg_id);
-    tlw.write_int32(read_max_id);
-}
-
-functions::messages_readDiscussion::Result functions::messages_readDiscussion::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_unpinAllMessages::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (top_msg_id.has_value()) flags_v |= (1u << 0);
-        if (saved_peer_id.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    if (top_msg_id.has_value()) { tlw.write_int32(top_msg_id.value()); }
-    if (saved_peer_id.has_value()) { saved_peer_id.value()->serialize(tlw); }
-}
-
-functions::messages_unpinAllMessages::Result functions::messages_unpinAllMessages::read_result(TlReader& rv) {
-    return tl::messages_AffectedHistory::read(rv);
-}
-
-
-void functions::messages_deleteChat::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
+    tlw.write_string(url);
     tlw.write_int64(chat_id);
 }
 
-functions::messages_deleteChat::Result functions::messages_deleteChat::read_result(TlReader& rv) {
-    return rv.read_bool();
+types::recentMeUrlChat types::recentMeUrlChat::read_body(TlReader& rv) {
+    types::recentMeUrlChat out;
+    out.url = rv.read_string();
+    out.chat_id = rv.read_int64();
+    return out;
 }
 
 
-void functions::messages_deletePhoneCallHistory::serialize(TlWriter& tlw) const {
+void types::recentMeUrlChatInvite::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(url);
+    chat_invite->serialize(tlw);
+}
+
+types::recentMeUrlChatInvite types::recentMeUrlChatInvite::read_body(TlReader& rv) {
+    types::recentMeUrlChatInvite out;
+    out.url = rv.read_string();
+    out.chat_invite = tl::read_boxed<tl::ChatInvite>(rv);
+    return out;
+}
+
+
+void types::recentMeUrlStickerSet::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(url);
+    set->serialize(tlw);
+}
+
+types::recentMeUrlStickerSet types::recentMeUrlStickerSet::read_body(TlReader& rv) {
+    types::recentMeUrlStickerSet out;
+    out.url = rv.read_string();
+    out.set = tl::read_boxed<tl::StickerSetCovered>(rv);
+    return out;
+}
+
+
+void types::help_recentMeUrls::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, urls, [&](TlWriter& tlw515, const auto& e515) { e515->serialize(tlw515); });
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw516, const auto& e516) { e516->serialize(tlw516); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw517, const auto& e517) { e517->serialize(tlw517); });
+}
+
+types::help_recentMeUrls types::help_recentMeUrls::read_body(TlReader& rv) {
+    types::help_recentMeUrls out;
+    out.urls = tl::read_vector<std::shared_ptr<tl::RecentMeUrl>>(rv, [&](TlReader& r512) -> std::shared_ptr<tl::RecentMeUrl> { return tl::read_boxed<tl::RecentMeUrl>(r512); });
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r513) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r513); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r514) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r514); });
+    return out;
+}
+
+
+void types::inputSingleMedia::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (revoke) flags_v |= (1u << 0);
+        if (entities.has_value()) flags_v |= (1u << 0);
         tlw.write_uint32(flags_v);
     }
-}
-
-functions::messages_deletePhoneCallHistory::Result functions::messages_deletePhoneCallHistory::read_result(TlReader& rv) {
-    return tl::messages_AffectedFoundMessages::read(rv);
-}
-
-
-void functions::messages_checkHistoryImport::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(import_head);
-}
-
-functions::messages_checkHistoryImport::Result functions::messages_checkHistoryImport::read_result(TlReader& rv) {
-    return tl::messages_HistoryImportParsed::read(rv);
-}
-
-
-void functions::messages_initHistoryImport::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    file->serialize(tlw);
-    tlw.write_int32(media_count);
-}
-
-functions::messages_initHistoryImport::Result functions::messages_initHistoryImport::read_result(TlReader& rv) {
-    return tl::messages_HistoryImport::read(rv);
-}
-
-
-void functions::messages_uploadImportedMedia::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_int64(import_id);
-    tlw.write_string(file_name);
     media->serialize(tlw);
+    tlw.write_int64(random_id);
+    tlw.write_string(message);
+    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw519, const auto& e519) { e519->serialize(tlw519); }); }
 }
 
-functions::messages_uploadImportedMedia::Result functions::messages_uploadImportedMedia::read_result(TlReader& rv) {
-    return tl::MessageMedia::read(rv);
+types::inputSingleMedia types::inputSingleMedia::read_body(TlReader& rv) {
+    types::inputSingleMedia out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.media = tl::read_boxed<tl::InputMedia>(rv);
+    out.random_id = rv.read_int64();
+    out.message = rv.read_string();
+    if ((fl_flags & (1u << 0)) != 0) { out.entities = tl::read_vector<std::shared_ptr<tl::MessageEntity>>(rv, [&](TlReader& r518) -> std::shared_ptr<tl::MessageEntity> { return tl::read_boxed<tl::MessageEntity>(r518); }); }
+    return out;
 }
 
 
-void functions::messages_startHistoryImport::serialize(TlWriter& tlw) const {
+void types::webAuthorization::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_int64(import_id);
+    tlw.write_int64(hash);
+    tlw.write_int64(bot_id);
+    tlw.write_string(domain);
+    tlw.write_string(browser);
+    tlw.write_string(platform);
+    tlw.write_int32(date_created);
+    tlw.write_int32(date_active);
+    tlw.write_string(ip);
+    tlw.write_string(region);
 }
 
-functions::messages_startHistoryImport::Result functions::messages_startHistoryImport::read_result(TlReader& rv) {
-    return rv.read_bool();
+types::webAuthorization types::webAuthorization::read_body(TlReader& rv) {
+    types::webAuthorization out;
+    out.hash = rv.read_int64();
+    out.bot_id = rv.read_int64();
+    out.domain = rv.read_string();
+    out.browser = rv.read_string();
+    out.platform = rv.read_string();
+    out.date_created = rv.read_int32();
+    out.date_active = rv.read_int32();
+    out.ip = rv.read_string();
+    out.region = rv.read_string();
+    return out;
 }
 
 
-void functions::messages_getExportedChatInvites::serialize(TlWriter& tlw) const {
+void types::account_webAuthorizations::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (revoked) flags_v |= (1u << 3);
-        if (offset_date.has_value()) flags_v |= (1u << 2);
-        if (offset_link.has_value()) flags_v |= (1u << 2);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    admin_id->serialize(tlw);
-    if (offset_date.has_value()) { tlw.write_int32(offset_date.value()); }
-    if (offset_link.has_value()) { tlw.write_string(offset_link.value()); }
-    tlw.write_int32(limit);
+    tl::write_vector(tlw, authorizations, [&](TlWriter& tlw522, const auto& e522) { e522->serialize(tlw522); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw523, const auto& e523) { e523->serialize(tlw523); });
 }
 
-functions::messages_getExportedChatInvites::Result functions::messages_getExportedChatInvites::read_result(TlReader& rv) {
-    return tl::messages_ExportedChatInvites::read(rv);
+types::account_webAuthorizations types::account_webAuthorizations::read_body(TlReader& rv) {
+    types::account_webAuthorizations out;
+    out.authorizations = tl::read_vector<std::shared_ptr<tl::WebAuthorization>>(rv, [&](TlReader& r520) -> std::shared_ptr<tl::WebAuthorization> { return tl::read_boxed<tl::WebAuthorization>(r520); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r521) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r521); });
+    return out;
 }
 
 
-void functions::messages_getExportedChatInvite::serialize(TlWriter& tlw) const {
+void types::inputMessageID::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_string(link);
-}
-
-functions::messages_getExportedChatInvite::Result functions::messages_getExportedChatInvite::read_result(TlReader& rv) {
-    return tl::messages_ExportedChatInvite::read(rv);
-}
-
-
-void functions::messages_editExportedChatInvite::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (revoked) flags_v |= (1u << 2);
-        if (expire_date.has_value()) flags_v |= (1u << 0);
-        if (usage_limit.has_value()) flags_v |= (1u << 1);
-        if (request_needed.has_value()) flags_v |= (1u << 3);
-        if (title.has_value()) flags_v |= (1u << 4);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    tlw.write_string(link);
-    if (expire_date.has_value()) { tlw.write_int32(expire_date.value()); }
-    if (usage_limit.has_value()) { tlw.write_int32(usage_limit.value()); }
-    if (request_needed.has_value()) { tlw.write_bool(request_needed.value()); }
-    if (title.has_value()) { tlw.write_string(title.value()); }
-}
-
-functions::messages_editExportedChatInvite::Result functions::messages_editExportedChatInvite::read_result(TlReader& rv) {
-    return tl::messages_ExportedChatInvite::read(rv);
-}
-
-
-void functions::messages_deleteRevokedExportedChatInvites::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    admin_id->serialize(tlw);
-}
-
-functions::messages_deleteRevokedExportedChatInvites::Result functions::messages_deleteRevokedExportedChatInvites::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_deleteExportedChatInvite::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_string(link);
-}
-
-functions::messages_deleteExportedChatInvite::Result functions::messages_deleteExportedChatInvite::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_getAdminsWithInvites::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-}
-
-functions::messages_getAdminsWithInvites::Result functions::messages_getAdminsWithInvites::read_result(TlReader& rv) {
-    return tl::messages_ChatAdminsWithInvites::read(rv);
-}
-
-
-void functions::messages_getChatInviteImporters::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (requested) flags_v |= (1u << 0);
-        if (subscription_expired) flags_v |= (1u << 3);
-        if (link.has_value()) flags_v |= (1u << 1);
-        if (q.has_value()) flags_v |= (1u << 2);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    if (link.has_value()) { tlw.write_string(link.value()); }
-    if (q.has_value()) { tlw.write_string(q.value()); }
-    tlw.write_int32(offset_date);
-    offset_user->serialize(tlw);
-    tlw.write_int32(limit);
-}
-
-functions::messages_getChatInviteImporters::Result functions::messages_getChatInviteImporters::read_result(TlReader& rv) {
-    return tl::messages_ChatInviteImporters::read(rv);
-}
-
-
-void functions::messages_setHistoryTTL::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_int32(period);
-}
-
-functions::messages_setHistoryTTL::Result functions::messages_setHistoryTTL::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_checkHistoryImportPeer::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-}
-
-functions::messages_checkHistoryImportPeer::Result functions::messages_checkHistoryImportPeer::read_result(TlReader& rv) {
-    return tl::messages_CheckedHistoryImportPeer::read(rv);
-}
-
-
-void functions::messages_setChatTheme::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    theme->serialize(tlw);
-}
-
-functions::messages_setChatTheme::Result functions::messages_setChatTheme::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_getMessageReadParticipants::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_int32(msg_id);
-}
-
-functions::messages_getMessageReadParticipants::Result functions::messages_getMessageReadParticipants::read_result(TlReader& rv) {
-    return tl::read_vector<std::shared_ptr<tl::ReadParticipantDate>>(rv, [&](TlReader& r1347) -> std::shared_ptr<tl::ReadParticipantDate> { return tl::read_boxed<tl::ReadParticipantDate>(r1347); });
-}
-
-
-void functions::messages_getSearchResultsCalendar::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (saved_peer_id.has_value()) flags_v |= (1u << 2);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    if (saved_peer_id.has_value()) { saved_peer_id.value()->serialize(tlw); }
-    filter->serialize(tlw);
-    tlw.write_int32(offset_id);
-    tlw.write_int32(offset_date);
-}
-
-functions::messages_getSearchResultsCalendar::Result functions::messages_getSearchResultsCalendar::read_result(TlReader& rv) {
-    return tl::messages_SearchResultsCalendar::read(rv);
-}
-
-
-void functions::messages_getSearchResultsPositions::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (saved_peer_id.has_value()) flags_v |= (1u << 2);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    if (saved_peer_id.has_value()) { saved_peer_id.value()->serialize(tlw); }
-    filter->serialize(tlw);
-    tlw.write_int32(offset_id);
-    tlw.write_int32(limit);
-}
-
-functions::messages_getSearchResultsPositions::Result functions::messages_getSearchResultsPositions::read_result(TlReader& rv) {
-    return tl::messages_SearchResultsPositions::read(rv);
-}
-
-
-void functions::messages_hideChatJoinRequest::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (approved) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    user_id->serialize(tlw);
-}
-
-functions::messages_hideChatJoinRequest::Result functions::messages_hideChatJoinRequest::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_hideAllChatJoinRequests::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (approved) flags_v |= (1u << 0);
-        if (link.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    if (link.has_value()) { tlw.write_string(link.value()); }
-}
-
-functions::messages_hideAllChatJoinRequests::Result functions::messages_hideAllChatJoinRequests::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_toggleNoForwards::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (request_msg_id.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    tlw.write_bool(enabled);
-    if (request_msg_id.has_value()) { tlw.write_int32(request_msg_id.value()); }
-}
-
-functions::messages_toggleNoForwards::Result functions::messages_toggleNoForwards::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_saveDefaultSendAs::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    send_as->serialize(tlw);
-}
-
-functions::messages_saveDefaultSendAs::Result functions::messages_saveDefaultSendAs::read_result(TlReader& rv) {
-    return rv.read_bool();
-}
-
-
-void functions::messages_sendReaction::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (big) flags_v |= (1u << 1);
-        if (add_to_recent) flags_v |= (1u << 2);
-        if (reaction.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
-    tlw.write_int32(msg_id);
-    if (reaction.has_value()) { tl::write_vector(tlw, reaction.value(), [&](TlWriter& tlw1348, const auto& e1348) { e1348->serialize(tlw1348); }); }
-}
-
-functions::messages_sendReaction::Result functions::messages_sendReaction::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_getMessagesReactions::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tl::write_vector(tlw, id, [&](TlWriter& tlw1349, const auto& e1349) { tlw1349.write_int32(e1349); });
-}
-
-functions::messages_getMessagesReactions::Result functions::messages_getMessagesReactions::read_result(TlReader& rv) {
-    return tl::Updates::read(rv);
-}
-
-
-void functions::messages_getMessageReactionsList::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (reaction.has_value()) flags_v |= (1u << 0);
-        if (offset.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    peer->serialize(tlw);
     tlw.write_int32(id);
-    if (reaction.has_value()) { reaction.value()->serialize(tlw); }
-    if (offset.has_value()) { tlw.write_string(offset.value()); }
-    tlw.write_int32(limit);
 }
 
-functions::messages_getMessageReactionsList::Result functions::messages_getMessageReactionsList::read_result(TlReader& rv) {
-    return tl::messages_MessageReactionsList::read(rv);
+types::inputMessageID types::inputMessageID::read_body(TlReader& rv) {
+    types::inputMessageID out;
+    out.id = rv.read_int32();
+    return out;
+}
+
+
+void types::inputMessageReplyTo::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(id);
+}
+
+types::inputMessageReplyTo types::inputMessageReplyTo::read_body(TlReader& rv) {
+    types::inputMessageReplyTo out;
+    out.id = rv.read_int32();
+    return out;
+}
+
+
+void types::inputMessagePinned::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::inputMessagePinned types::inputMessagePinned::read_body(TlReader& rv) {
+    types::inputMessagePinned out;
+    return out;
+}
+
+
+void types::inputMessageCallbackQuery::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(id);
+    tlw.write_int64(query_id);
+}
+
+types::inputMessageCallbackQuery types::inputMessageCallbackQuery::read_body(TlReader& rv) {
+    types::inputMessageCallbackQuery out;
+    out.id = rv.read_int32();
+    out.query_id = rv.read_int64();
+    return out;
+}
+
+
+void types::inputDialogPeer::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+}
+
+types::inputDialogPeer types::inputDialogPeer::read_body(TlReader& rv) {
+    types::inputDialogPeer out;
+    out.peer = tl::read_boxed<tl::InputPeer>(rv);
+    return out;
+}
+
+
+void types::inputDialogPeerFolder::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(folder_id);
+}
+
+types::inputDialogPeerFolder types::inputDialogPeerFolder::read_body(TlReader& rv) {
+    types::inputDialogPeerFolder out;
+    out.folder_id = rv.read_int32();
+    return out;
+}
+
+
+void types::inputDialogPeerCommunity::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    community->serialize(tlw);
+}
+
+types::inputDialogPeerCommunity types::inputDialogPeerCommunity::read_body(TlReader& rv) {
+    types::inputDialogPeerCommunity out;
+    out.community = tl::read_boxed<tl::InputChannel>(rv);
+    return out;
+}
+
+
+void types::dialogPeer::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+}
+
+types::dialogPeer types::dialogPeer::read_body(TlReader& rv) {
+    types::dialogPeer out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    return out;
+}
+
+
+void types::dialogPeerFolder::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(folder_id);
+}
+
+types::dialogPeerFolder types::dialogPeerFolder::read_body(TlReader& rv) {
+    types::dialogPeerFolder out;
+    out.folder_id = rv.read_int32();
+    return out;
+}
+
+
+void types::dialogPeerCommunity::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(community_id);
+}
+
+types::dialogPeerCommunity types::dialogPeerCommunity::read_body(TlReader& rv) {
+    types::dialogPeerCommunity out;
+    out.community_id = rv.read_int64();
+    return out;
+}
+
+
+void types::messages_foundStickerSetsNotModified::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::messages_foundStickerSetsNotModified types::messages_foundStickerSetsNotModified::read_body(TlReader& rv) {
+    types::messages_foundStickerSetsNotModified out;
+    return out;
+}
+
+
+void types::messages_foundStickerSets::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(hash);
+    tl::write_vector(tlw, sets, [&](TlWriter& tlw525, const auto& e525) { e525->serialize(tlw525); });
+}
+
+types::messages_foundStickerSets types::messages_foundStickerSets::read_body(TlReader& rv) {
+    types::messages_foundStickerSets out;
+    out.hash = rv.read_int64();
+    out.sets = tl::read_vector<std::shared_ptr<tl::StickerSetCovered>>(rv, [&](TlReader& r524) -> std::shared_ptr<tl::StickerSetCovered> { return tl::read_boxed<tl::StickerSetCovered>(r524); });
+    return out;
+}
+
+
+void types::fileHash::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(offset);
+    tlw.write_int32(limit);
+    tlw.write_bytes(hash);
+}
+
+types::fileHash types::fileHash::read_body(TlReader& rv) {
+    types::fileHash out;
+    out.offset = rv.read_int64();
+    out.limit = rv.read_int32();
+    out.hash = rv.read_bytes();
+    return out;
+}
+
+
+void types::inputClientProxy::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(address);
+    tlw.write_int32(port);
+}
+
+types::inputClientProxy types::inputClientProxy::read_body(TlReader& rv) {
+    types::inputClientProxy out;
+    out.address = rv.read_string();
+    out.port = rv.read_int32();
+    return out;
+}
+
+
+void types::help_termsOfServiceUpdateEmpty::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(expires);
+}
+
+types::help_termsOfServiceUpdateEmpty types::help_termsOfServiceUpdateEmpty::read_body(TlReader& rv) {
+    types::help_termsOfServiceUpdateEmpty out;
+    out.expires = rv.read_int32();
+    return out;
+}
+
+
+void types::help_termsOfServiceUpdate::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(expires);
+    terms_of_service->serialize(tlw);
+}
+
+types::help_termsOfServiceUpdate types::help_termsOfServiceUpdate::read_body(TlReader& rv) {
+    types::help_termsOfServiceUpdate out;
+    out.expires = rv.read_int32();
+    out.terms_of_service = tl::read_boxed<tl::help_TermsOfService>(rv);
+    return out;
+}
+
+
+void types::inputSecureFileUploaded::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(id);
+    tlw.write_int32(parts);
+    tlw.write_string(md5_checksum);
+    tlw.write_bytes(file_hash);
+    tlw.write_bytes(secret);
+}
+
+types::inputSecureFileUploaded types::inputSecureFileUploaded::read_body(TlReader& rv) {
+    types::inputSecureFileUploaded out;
+    out.id = rv.read_int64();
+    out.parts = rv.read_int32();
+    out.md5_checksum = rv.read_string();
+    out.file_hash = rv.read_bytes();
+    out.secret = rv.read_bytes();
+    return out;
+}
+
+
+void types::inputSecureFile::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(id);
+    tlw.write_int64(access_hash);
+}
+
+types::inputSecureFile types::inputSecureFile::read_body(TlReader& rv) {
+    types::inputSecureFile out;
+    out.id = rv.read_int64();
+    out.access_hash = rv.read_int64();
+    return out;
+}
+
+
+void types::secureFileEmpty::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::secureFileEmpty types::secureFileEmpty::read_body(TlReader& rv) {
+    types::secureFileEmpty out;
+    return out;
+}
+
+
+void types::secureFile::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(id);
+    tlw.write_int64(access_hash);
+    tlw.write_int64(size);
+    tlw.write_int32(dc_id);
+    tlw.write_int32(date);
+    tlw.write_bytes(file_hash);
+    tlw.write_bytes(secret);
+}
+
+types::secureFile types::secureFile::read_body(TlReader& rv) {
+    types::secureFile out;
+    out.id = rv.read_int64();
+    out.access_hash = rv.read_int64();
+    out.size = rv.read_int64();
+    out.dc_id = rv.read_int32();
+    out.date = rv.read_int32();
+    out.file_hash = rv.read_bytes();
+    out.secret = rv.read_bytes();
+    return out;
+}
+
+
+void types::secureData::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bytes(data);
+    tlw.write_bytes(data_hash);
+    tlw.write_bytes(secret);
+}
+
+types::secureData types::secureData::read_body(TlReader& rv) {
+    types::secureData out;
+    out.data = rv.read_bytes();
+    out.data_hash = rv.read_bytes();
+    out.secret = rv.read_bytes();
+    return out;
+}
+
+
+void types::securePlainPhone::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(phone);
+}
+
+types::securePlainPhone types::securePlainPhone::read_body(TlReader& rv) {
+    types::securePlainPhone out;
+    out.phone = rv.read_string();
+    return out;
+}
+
+
+void types::securePlainEmail::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(email);
+}
+
+types::securePlainEmail types::securePlainEmail::read_body(TlReader& rv) {
+    types::securePlainEmail out;
+    out.email = rv.read_string();
+    return out;
+}
+
+
+void types::secureValueTypePersonalDetails::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::secureValueTypePersonalDetails types::secureValueTypePersonalDetails::read_body(TlReader& rv) {
+    types::secureValueTypePersonalDetails out;
+    return out;
+}
+
+
+void types::secureValueTypePassport::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::secureValueTypePassport types::secureValueTypePassport::read_body(TlReader& rv) {
+    types::secureValueTypePassport out;
+    return out;
+}
+
+
+void types::secureValueTypeDriverLicense::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::secureValueTypeDriverLicense types::secureValueTypeDriverLicense::read_body(TlReader& rv) {
+    types::secureValueTypeDriverLicense out;
+    return out;
+}
+
+
+void types::secureValueTypeIdentityCard::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::secureValueTypeIdentityCard types::secureValueTypeIdentityCard::read_body(TlReader& rv) {
+    types::secureValueTypeIdentityCard out;
+    return out;
+}
+
+
+void types::secureValueTypeInternalPassport::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::secureValueTypeInternalPassport types::secureValueTypeInternalPassport::read_body(TlReader& rv) {
+    types::secureValueTypeInternalPassport out;
+    return out;
+}
+
+
+void types::secureValueTypeAddress::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::secureValueTypeAddress types::secureValueTypeAddress::read_body(TlReader& rv) {
+    types::secureValueTypeAddress out;
+    return out;
+}
+
+
+void types::secureValueTypeUtilityBill::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::secureValueTypeUtilityBill types::secureValueTypeUtilityBill::read_body(TlReader& rv) {
+    types::secureValueTypeUtilityBill out;
+    return out;
+}
+
+
+void types::secureValueTypeBankStatement::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::secureValueTypeBankStatement types::secureValueTypeBankStatement::read_body(TlReader& rv) {
+    types::secureValueTypeBankStatement out;
+    return out;
+}
+
+
+void types::secureValueTypeRentalAgreement::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::secureValueTypeRentalAgreement types::secureValueTypeRentalAgreement::read_body(TlReader& rv) {
+    types::secureValueTypeRentalAgreement out;
+    return out;
+}
+
+
+void types::secureValueTypePassportRegistration::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::secureValueTypePassportRegistration types::secureValueTypePassportRegistration::read_body(TlReader& rv) {
+    types::secureValueTypePassportRegistration out;
+    return out;
+}
+
+
+void types::secureValueTypeTemporaryRegistration::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::secureValueTypeTemporaryRegistration types::secureValueTypeTemporaryRegistration::read_body(TlReader& rv) {
+    types::secureValueTypeTemporaryRegistration out;
+    return out;
+}
+
+
+void types::secureValueTypePhone::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::secureValueTypePhone types::secureValueTypePhone::read_body(TlReader& rv) {
+    types::secureValueTypePhone out;
+    return out;
+}
+
+
+void types::secureValueTypeEmail::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::secureValueTypeEmail types::secureValueTypeEmail::read_body(TlReader& rv) {
+    types::secureValueTypeEmail out;
+    return out;
+}
+
+
+void types::secureValue::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (data.has_value()) flags_v |= (1u << 0);
+        if (front_side.has_value()) flags_v |= (1u << 1);
+        if (reverse_side.has_value()) flags_v |= (1u << 2);
+        if (selfie.has_value()) flags_v |= (1u << 3);
+        if (translation.has_value()) flags_v |= (1u << 6);
+        if (files.has_value()) flags_v |= (1u << 4);
+        if (plain_data.has_value()) flags_v |= (1u << 5);
+        tlw.write_uint32(flags_v);
+    }
+    type->serialize(tlw);
+    if (data.has_value()) { data.value()->serialize(tlw); }
+    if (front_side.has_value()) { front_side.value()->serialize(tlw); }
+    if (reverse_side.has_value()) { reverse_side.value()->serialize(tlw); }
+    if (selfie.has_value()) { selfie.value()->serialize(tlw); }
+    if (translation.has_value()) { tl::write_vector(tlw, translation.value(), [&](TlWriter& tlw528, const auto& e528) { e528->serialize(tlw528); }); }
+    if (files.has_value()) { tl::write_vector(tlw, files.value(), [&](TlWriter& tlw529, const auto& e529) { e529->serialize(tlw529); }); }
+    if (plain_data.has_value()) { plain_data.value()->serialize(tlw); }
+    tlw.write_bytes(hash);
+}
+
+types::secureValue types::secureValue::read_body(TlReader& rv) {
+    types::secureValue out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.type = tl::read_boxed<tl::SecureValueType>(rv);
+    if ((fl_flags & (1u << 0)) != 0) { out.data = tl::read_boxed<tl::SecureData>(rv); }
+    if ((fl_flags & (1u << 1)) != 0) { out.front_side = tl::read_boxed<tl::SecureFile>(rv); }
+    if ((fl_flags & (1u << 2)) != 0) { out.reverse_side = tl::read_boxed<tl::SecureFile>(rv); }
+    if ((fl_flags & (1u << 3)) != 0) { out.selfie = tl::read_boxed<tl::SecureFile>(rv); }
+    if ((fl_flags & (1u << 6)) != 0) { out.translation = tl::read_vector<std::shared_ptr<tl::SecureFile>>(rv, [&](TlReader& r526) -> std::shared_ptr<tl::SecureFile> { return tl::read_boxed<tl::SecureFile>(r526); }); }
+    if ((fl_flags & (1u << 4)) != 0) { out.files = tl::read_vector<std::shared_ptr<tl::SecureFile>>(rv, [&](TlReader& r527) -> std::shared_ptr<tl::SecureFile> { return tl::read_boxed<tl::SecureFile>(r527); }); }
+    if ((fl_flags & (1u << 5)) != 0) { out.plain_data = tl::read_boxed<tl::SecurePlainData>(rv); }
+    out.hash = rv.read_bytes();
+    return out;
+}
+
+
+void types::inputSecureValue::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (data.has_value()) flags_v |= (1u << 0);
+        if (front_side.has_value()) flags_v |= (1u << 1);
+        if (reverse_side.has_value()) flags_v |= (1u << 2);
+        if (selfie.has_value()) flags_v |= (1u << 3);
+        if (translation.has_value()) flags_v |= (1u << 6);
+        if (files.has_value()) flags_v |= (1u << 4);
+        if (plain_data.has_value()) flags_v |= (1u << 5);
+        tlw.write_uint32(flags_v);
+    }
+    type->serialize(tlw);
+    if (data.has_value()) { data.value()->serialize(tlw); }
+    if (front_side.has_value()) { front_side.value()->serialize(tlw); }
+    if (reverse_side.has_value()) { reverse_side.value()->serialize(tlw); }
+    if (selfie.has_value()) { selfie.value()->serialize(tlw); }
+    if (translation.has_value()) { tl::write_vector(tlw, translation.value(), [&](TlWriter& tlw532, const auto& e532) { e532->serialize(tlw532); }); }
+    if (files.has_value()) { tl::write_vector(tlw, files.value(), [&](TlWriter& tlw533, const auto& e533) { e533->serialize(tlw533); }); }
+    if (plain_data.has_value()) { plain_data.value()->serialize(tlw); }
+}
+
+types::inputSecureValue types::inputSecureValue::read_body(TlReader& rv) {
+    types::inputSecureValue out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.type = tl::read_boxed<tl::SecureValueType>(rv);
+    if ((fl_flags & (1u << 0)) != 0) { out.data = tl::read_boxed<tl::SecureData>(rv); }
+    if ((fl_flags & (1u << 1)) != 0) { out.front_side = tl::read_boxed<tl::InputSecureFile>(rv); }
+    if ((fl_flags & (1u << 2)) != 0) { out.reverse_side = tl::read_boxed<tl::InputSecureFile>(rv); }
+    if ((fl_flags & (1u << 3)) != 0) { out.selfie = tl::read_boxed<tl::InputSecureFile>(rv); }
+    if ((fl_flags & (1u << 6)) != 0) { out.translation = tl::read_vector<std::shared_ptr<tl::InputSecureFile>>(rv, [&](TlReader& r530) -> std::shared_ptr<tl::InputSecureFile> { return tl::read_boxed<tl::InputSecureFile>(r530); }); }
+    if ((fl_flags & (1u << 4)) != 0) { out.files = tl::read_vector<std::shared_ptr<tl::InputSecureFile>>(rv, [&](TlReader& r531) -> std::shared_ptr<tl::InputSecureFile> { return tl::read_boxed<tl::InputSecureFile>(r531); }); }
+    if ((fl_flags & (1u << 5)) != 0) { out.plain_data = tl::read_boxed<tl::SecurePlainData>(rv); }
+    return out;
+}
+
+
+void types::secureValueHash::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    type->serialize(tlw);
+    tlw.write_bytes(hash);
+}
+
+types::secureValueHash types::secureValueHash::read_body(TlReader& rv) {
+    types::secureValueHash out;
+    out.type = tl::read_boxed<tl::SecureValueType>(rv);
+    out.hash = rv.read_bytes();
+    return out;
+}
+
+
+void types::secureValueErrorData::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    type->serialize(tlw);
+    tlw.write_bytes(data_hash);
+    tlw.write_string(field);
+    tlw.write_string(text);
+}
+
+types::secureValueErrorData types::secureValueErrorData::read_body(TlReader& rv) {
+    types::secureValueErrorData out;
+    out.type = tl::read_boxed<tl::SecureValueType>(rv);
+    out.data_hash = rv.read_bytes();
+    out.field = rv.read_string();
+    out.text = rv.read_string();
+    return out;
+}
+
+
+void types::secureValueErrorFrontSide::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    type->serialize(tlw);
+    tlw.write_bytes(file_hash);
+    tlw.write_string(text);
+}
+
+types::secureValueErrorFrontSide types::secureValueErrorFrontSide::read_body(TlReader& rv) {
+    types::secureValueErrorFrontSide out;
+    out.type = tl::read_boxed<tl::SecureValueType>(rv);
+    out.file_hash = rv.read_bytes();
+    out.text = rv.read_string();
+    return out;
+}
+
+
+void types::secureValueErrorReverseSide::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    type->serialize(tlw);
+    tlw.write_bytes(file_hash);
+    tlw.write_string(text);
+}
+
+types::secureValueErrorReverseSide types::secureValueErrorReverseSide::read_body(TlReader& rv) {
+    types::secureValueErrorReverseSide out;
+    out.type = tl::read_boxed<tl::SecureValueType>(rv);
+    out.file_hash = rv.read_bytes();
+    out.text = rv.read_string();
+    return out;
+}
+
+
+void types::secureValueErrorSelfie::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    type->serialize(tlw);
+    tlw.write_bytes(file_hash);
+    tlw.write_string(text);
+}
+
+types::secureValueErrorSelfie types::secureValueErrorSelfie::read_body(TlReader& rv) {
+    types::secureValueErrorSelfie out;
+    out.type = tl::read_boxed<tl::SecureValueType>(rv);
+    out.file_hash = rv.read_bytes();
+    out.text = rv.read_string();
+    return out;
+}
+
+
+void types::secureValueErrorFile::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    type->serialize(tlw);
+    tlw.write_bytes(file_hash);
+    tlw.write_string(text);
+}
+
+types::secureValueErrorFile types::secureValueErrorFile::read_body(TlReader& rv) {
+    types::secureValueErrorFile out;
+    out.type = tl::read_boxed<tl::SecureValueType>(rv);
+    out.file_hash = rv.read_bytes();
+    out.text = rv.read_string();
+    return out;
+}
+
+
+void types::secureValueErrorFiles::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    type->serialize(tlw);
+    tl::write_vector(tlw, file_hash, [&](TlWriter& tlw535, const auto& e535) { tlw535.write_bytes(e535); });
+    tlw.write_string(text);
+}
+
+types::secureValueErrorFiles types::secureValueErrorFiles::read_body(TlReader& rv) {
+    types::secureValueErrorFiles out;
+    out.type = tl::read_boxed<tl::SecureValueType>(rv);
+    out.file_hash = tl::read_vector<Bytes>(rv, [&](TlReader& r534) -> Bytes { return r534.read_bytes(); });
+    out.text = rv.read_string();
+    return out;
+}
+
+
+void types::secureValueError::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    type->serialize(tlw);
+    tlw.write_bytes(hash);
+    tlw.write_string(text);
+}
+
+types::secureValueError types::secureValueError::read_body(TlReader& rv) {
+    types::secureValueError out;
+    out.type = tl::read_boxed<tl::SecureValueType>(rv);
+    out.hash = rv.read_bytes();
+    out.text = rv.read_string();
+    return out;
+}
+
+
+void types::secureValueErrorTranslationFile::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    type->serialize(tlw);
+    tlw.write_bytes(file_hash);
+    tlw.write_string(text);
+}
+
+types::secureValueErrorTranslationFile types::secureValueErrorTranslationFile::read_body(TlReader& rv) {
+    types::secureValueErrorTranslationFile out;
+    out.type = tl::read_boxed<tl::SecureValueType>(rv);
+    out.file_hash = rv.read_bytes();
+    out.text = rv.read_string();
+    return out;
+}
+
+
+void types::secureValueErrorTranslationFiles::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    type->serialize(tlw);
+    tl::write_vector(tlw, file_hash, [&](TlWriter& tlw537, const auto& e537) { tlw537.write_bytes(e537); });
+    tlw.write_string(text);
+}
+
+types::secureValueErrorTranslationFiles types::secureValueErrorTranslationFiles::read_body(TlReader& rv) {
+    types::secureValueErrorTranslationFiles out;
+    out.type = tl::read_boxed<tl::SecureValueType>(rv);
+    out.file_hash = tl::read_vector<Bytes>(rv, [&](TlReader& r536) -> Bytes { return r536.read_bytes(); });
+    out.text = rv.read_string();
+    return out;
+}
+
+
+void types::secureCredentialsEncrypted::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bytes(data);
+    tlw.write_bytes(hash);
+    tlw.write_bytes(secret);
+}
+
+types::secureCredentialsEncrypted types::secureCredentialsEncrypted::read_body(TlReader& rv) {
+    types::secureCredentialsEncrypted out;
+    out.data = rv.read_bytes();
+    out.hash = rv.read_bytes();
+    out.secret = rv.read_bytes();
+    return out;
+}
+
+
+void types::account_authorizationForm::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (privacy_policy_url.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tl::write_vector(tlw, required_types, [&](TlWriter& tlw542, const auto& e542) { e542->serialize(tlw542); });
+    tl::write_vector(tlw, values, [&](TlWriter& tlw543, const auto& e543) { e543->serialize(tlw543); });
+    tl::write_vector(tlw, errors, [&](TlWriter& tlw544, const auto& e544) { e544->serialize(tlw544); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw545, const auto& e545) { e545->serialize(tlw545); });
+    if (privacy_policy_url.has_value()) { tlw.write_string(privacy_policy_url.value()); }
+}
+
+types::account_authorizationForm types::account_authorizationForm::read_body(TlReader& rv) {
+    types::account_authorizationForm out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.required_types = tl::read_vector<std::shared_ptr<tl::SecureRequiredType>>(rv, [&](TlReader& r538) -> std::shared_ptr<tl::SecureRequiredType> { return tl::read_boxed<tl::SecureRequiredType>(r538); });
+    out.values = tl::read_vector<std::shared_ptr<tl::SecureValue>>(rv, [&](TlReader& r539) -> std::shared_ptr<tl::SecureValue> { return tl::read_boxed<tl::SecureValue>(r539); });
+    out.errors = tl::read_vector<std::shared_ptr<tl::SecureValueError>>(rv, [&](TlReader& r540) -> std::shared_ptr<tl::SecureValueError> { return tl::read_boxed<tl::SecureValueError>(r540); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r541) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r541); });
+    if ((fl_flags & (1u << 0)) != 0) { out.privacy_policy_url = rv.read_string(); }
+    return out;
+}
+
+
+void types::account_sentEmailCode::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(email_pattern);
+    tlw.write_int32(length);
+}
+
+types::account_sentEmailCode types::account_sentEmailCode::read_body(TlReader& rv) {
+    types::account_sentEmailCode out;
+    out.email_pattern = rv.read_string();
+    out.length = rv.read_int32();
+    return out;
+}
+
+
+void types::help_deepLinkInfoEmpty::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::help_deepLinkInfoEmpty types::help_deepLinkInfoEmpty::read_body(TlReader& rv) {
+    types::help_deepLinkInfoEmpty out;
+    return out;
+}
+
+
+void types::help_deepLinkInfo::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (update_app) flags_v |= (1u << 0);
+        if (entities.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(message);
+    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw547, const auto& e547) { e547->serialize(tlw547); }); }
+}
+
+types::help_deepLinkInfo types::help_deepLinkInfo::read_body(TlReader& rv) {
+    types::help_deepLinkInfo out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.update_app = (fl_flags & (1u << 0)) != 0;
+    out.message = rv.read_string();
+    if ((fl_flags & (1u << 1)) != 0) { out.entities = tl::read_vector<std::shared_ptr<tl::MessageEntity>>(rv, [&](TlReader& r546) -> std::shared_ptr<tl::MessageEntity> { return tl::read_boxed<tl::MessageEntity>(r546); }); }
+    return out;
+}
+
+
+void types::savedPhoneContact::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(phone);
+    tlw.write_string(first_name);
+    tlw.write_string(last_name);
+    tlw.write_int32(date);
+}
+
+types::savedPhoneContact types::savedPhoneContact::read_body(TlReader& rv) {
+    types::savedPhoneContact out;
+    out.phone = rv.read_string();
+    out.first_name = rv.read_string();
+    out.last_name = rv.read_string();
+    out.date = rv.read_int32();
+    return out;
+}
+
+
+void types::account_takeout::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(id);
+}
+
+types::account_takeout types::account_takeout::read_body(TlReader& rv) {
+    types::account_takeout out;
+    out.id = rv.read_int64();
+    return out;
+}
+
+
+void types::passwordKdfAlgoUnknown::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::passwordKdfAlgoUnknown types::passwordKdfAlgoUnknown::read_body(TlReader& rv) {
+    types::passwordKdfAlgoUnknown out;
+    return out;
+}
+
+
+void types::passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bytes(salt1);
+    tlw.write_bytes(salt2);
+    tlw.write_int32(g);
+    tlw.write_bytes(p);
+}
+
+types::passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow types::passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow::read_body(TlReader& rv) {
+    types::passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow out;
+    out.salt1 = rv.read_bytes();
+    out.salt2 = rv.read_bytes();
+    out.g = rv.read_int32();
+    out.p = rv.read_bytes();
+    return out;
+}
+
+
+void types::securePasswordKdfAlgoUnknown::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::securePasswordKdfAlgoUnknown types::securePasswordKdfAlgoUnknown::read_body(TlReader& rv) {
+    types::securePasswordKdfAlgoUnknown out;
+    return out;
+}
+
+
+void types::securePasswordKdfAlgoPBKDF2HMACSHA512iter100000::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bytes(salt);
+}
+
+types::securePasswordKdfAlgoPBKDF2HMACSHA512iter100000 types::securePasswordKdfAlgoPBKDF2HMACSHA512iter100000::read_body(TlReader& rv) {
+    types::securePasswordKdfAlgoPBKDF2HMACSHA512iter100000 out;
+    out.salt = rv.read_bytes();
+    return out;
+}
+
+
+void types::securePasswordKdfAlgoSHA512::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bytes(salt);
+}
+
+types::securePasswordKdfAlgoSHA512 types::securePasswordKdfAlgoSHA512::read_body(TlReader& rv) {
+    types::securePasswordKdfAlgoSHA512 out;
+    out.salt = rv.read_bytes();
+    return out;
+}
+
+
+void types::secureSecretSettings::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    secure_algo->serialize(tlw);
+    tlw.write_bytes(secure_secret);
+    tlw.write_int64(secure_secret_id);
+}
+
+types::secureSecretSettings types::secureSecretSettings::read_body(TlReader& rv) {
+    types::secureSecretSettings out;
+    out.secure_algo = tl::read_boxed<tl::SecurePasswordKdfAlgo>(rv);
+    out.secure_secret = rv.read_bytes();
+    out.secure_secret_id = rv.read_int64();
+    return out;
+}
+
+
+void types::inputCheckPasswordEmpty::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::inputCheckPasswordEmpty types::inputCheckPasswordEmpty::read_body(TlReader& rv) {
+    types::inputCheckPasswordEmpty out;
+    return out;
+}
+
+
+void types::inputCheckPasswordSRP::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(srp_id);
+    tlw.write_bytes(A);
+    tlw.write_bytes(M1);
+}
+
+types::inputCheckPasswordSRP types::inputCheckPasswordSRP::read_body(TlReader& rv) {
+    types::inputCheckPasswordSRP out;
+    out.srp_id = rv.read_int64();
+    out.A = rv.read_bytes();
+    out.M1 = rv.read_bytes();
+    return out;
+}
+
+
+void types::secureRequiredType::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (native_names) flags_v |= (1u << 0);
+        if (selfie_required) flags_v |= (1u << 1);
+        if (translation_required) flags_v |= (1u << 2);
+        tlw.write_uint32(flags_v);
+    }
+    type->serialize(tlw);
+}
+
+types::secureRequiredType types::secureRequiredType::read_body(TlReader& rv) {
+    types::secureRequiredType out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.native_names = (fl_flags & (1u << 0)) != 0;
+    out.selfie_required = (fl_flags & (1u << 1)) != 0;
+    out.translation_required = (fl_flags & (1u << 2)) != 0;
+    out.type = tl::read_boxed<tl::SecureValueType>(rv);
+    return out;
+}
+
+
+void types::secureRequiredTypeOneOf::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, types, [&](TlWriter& tlw549, const auto& e549) { e549->serialize(tlw549); });
+}
+
+types::secureRequiredTypeOneOf types::secureRequiredTypeOneOf::read_body(TlReader& rv) {
+    types::secureRequiredTypeOneOf out;
+    out.types = tl::read_vector<std::shared_ptr<tl::SecureRequiredType>>(rv, [&](TlReader& r548) -> std::shared_ptr<tl::SecureRequiredType> { return tl::read_boxed<tl::SecureRequiredType>(r548); });
+    return out;
+}
+
+
+void types::help_passportConfigNotModified::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::help_passportConfigNotModified types::help_passportConfigNotModified::read_body(TlReader& rv) {
+    types::help_passportConfigNotModified out;
+    return out;
+}
+
+
+void types::help_passportConfig::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(hash);
+    countries_langs->serialize(tlw);
+}
+
+types::help_passportConfig types::help_passportConfig::read_body(TlReader& rv) {
+    types::help_passportConfig out;
+    out.hash = rv.read_int32();
+    out.countries_langs = tl::read_boxed<tl::DataJSON>(rv);
+    return out;
+}
+
+
+void types::inputAppEvent::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_double(time);
+    tlw.write_string(type);
+    tlw.write_int64(peer);
+    data->serialize(tlw);
+}
+
+types::inputAppEvent types::inputAppEvent::read_body(TlReader& rv) {
+    types::inputAppEvent out;
+    out.time = rv.read_double();
+    out.type = rv.read_string();
+    out.peer = rv.read_int64();
+    out.data = tl::read_boxed<tl::JSONValue>(rv);
+    return out;
+}
+
+
+void types::jsonObjectValue::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(key);
+    value->serialize(tlw);
+}
+
+types::jsonObjectValue types::jsonObjectValue::read_body(TlReader& rv) {
+    types::jsonObjectValue out;
+    out.key = rv.read_string();
+    out.value = tl::read_boxed<tl::JSONValue>(rv);
+    return out;
+}
+
+
+void types::jsonNull::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::jsonNull types::jsonNull::read_body(TlReader& rv) {
+    types::jsonNull out;
+    return out;
+}
+
+
+void types::jsonBool::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bool(value);
+}
+
+types::jsonBool types::jsonBool::read_body(TlReader& rv) {
+    types::jsonBool out;
+    out.value = rv.read_bool();
+    return out;
+}
+
+
+void types::jsonNumber::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_double(value);
+}
+
+types::jsonNumber types::jsonNumber::read_body(TlReader& rv) {
+    types::jsonNumber out;
+    out.value = rv.read_double();
+    return out;
+}
+
+
+void types::jsonString::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(value);
+}
+
+types::jsonString types::jsonString::read_body(TlReader& rv) {
+    types::jsonString out;
+    out.value = rv.read_string();
+    return out;
+}
+
+
+void types::jsonArray::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, value, [&](TlWriter& tlw551, const auto& e551) { e551->serialize(tlw551); });
+}
+
+types::jsonArray types::jsonArray::read_body(TlReader& rv) {
+    types::jsonArray out;
+    out.value = tl::read_vector<std::shared_ptr<tl::JSONValue>>(rv, [&](TlReader& r550) -> std::shared_ptr<tl::JSONValue> { return tl::read_boxed<tl::JSONValue>(r550); });
+    return out;
+}
+
+
+void types::jsonObject::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, value, [&](TlWriter& tlw553, const auto& e553) { e553->serialize(tlw553); });
+}
+
+types::jsonObject types::jsonObject::read_body(TlReader& rv) {
+    types::jsonObject out;
+    out.value = tl::read_vector<std::shared_ptr<tl::JSONObjectValue>>(rv, [&](TlReader& r552) -> std::shared_ptr<tl::JSONObjectValue> { return tl::read_boxed<tl::JSONObjectValue>(r552); });
+    return out;
+}
+
+
+void types::pageTableCell::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (header) flags_v |= (1u << 0);
+        if (align_center) flags_v |= (1u << 3);
+        if (align_right) flags_v |= (1u << 4);
+        if (valign_middle) flags_v |= (1u << 5);
+        if (valign_bottom) flags_v |= (1u << 6);
+        if (text.has_value()) flags_v |= (1u << 7);
+        if (colspan.has_value()) flags_v |= (1u << 1);
+        if (rowspan.has_value()) flags_v |= (1u << 2);
+        tlw.write_uint32(flags_v);
+    }
+    if (text.has_value()) { text.value()->serialize(tlw); }
+    if (colspan.has_value()) { tlw.write_int32(colspan.value()); }
+    if (rowspan.has_value()) { tlw.write_int32(rowspan.value()); }
+}
+
+types::pageTableCell types::pageTableCell::read_body(TlReader& rv) {
+    types::pageTableCell out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.header = (fl_flags & (1u << 0)) != 0;
+    out.align_center = (fl_flags & (1u << 3)) != 0;
+    out.align_right = (fl_flags & (1u << 4)) != 0;
+    out.valign_middle = (fl_flags & (1u << 5)) != 0;
+    out.valign_bottom = (fl_flags & (1u << 6)) != 0;
+    if ((fl_flags & (1u << 7)) != 0) { out.text = tl::read_boxed<tl::RichText>(rv); }
+    if ((fl_flags & (1u << 1)) != 0) { out.colspan = rv.read_int32(); }
+    if ((fl_flags & (1u << 2)) != 0) { out.rowspan = rv.read_int32(); }
+    return out;
+}
+
+
+void types::pageTableRow::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, cells, [&](TlWriter& tlw555, const auto& e555) { e555->serialize(tlw555); });
+}
+
+types::pageTableRow types::pageTableRow::read_body(TlReader& rv) {
+    types::pageTableRow out;
+    out.cells = tl::read_vector<std::shared_ptr<tl::PageTableCell>>(rv, [&](TlReader& r554) -> std::shared_ptr<tl::PageTableCell> { return tl::read_boxed<tl::PageTableCell>(r554); });
+    return out;
+}
+
+
+void types::pageCaption::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    text->serialize(tlw);
+    credit->serialize(tlw);
+}
+
+types::pageCaption types::pageCaption::read_body(TlReader& rv) {
+    types::pageCaption out;
+    out.text = tl::read_boxed<tl::RichText>(rv);
+    out.credit = tl::read_boxed<tl::RichText>(rv);
+    return out;
+}
+
+
+void types::pageListItemText::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (checkbox) flags_v |= (1u << 0);
+        if (checked) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    text->serialize(tlw);
+}
+
+types::pageListItemText types::pageListItemText::read_body(TlReader& rv) {
+    types::pageListItemText out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.checkbox = (fl_flags & (1u << 0)) != 0;
+    out.checked = (fl_flags & (1u << 1)) != 0;
+    out.text = tl::read_boxed<tl::RichText>(rv);
+    return out;
+}
+
+
+void types::pageListItemBlocks::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (checkbox) flags_v |= (1u << 0);
+        if (checked) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tl::write_vector(tlw, blocks, [&](TlWriter& tlw557, const auto& e557) { e557->serialize(tlw557); });
+}
+
+types::pageListItemBlocks types::pageListItemBlocks::read_body(TlReader& rv) {
+    types::pageListItemBlocks out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.checkbox = (fl_flags & (1u << 0)) != 0;
+    out.checked = (fl_flags & (1u << 1)) != 0;
+    out.blocks = tl::read_vector<std::shared_ptr<tl::PageBlock>>(rv, [&](TlReader& r556) -> std::shared_ptr<tl::PageBlock> { return tl::read_boxed<tl::PageBlock>(r556); });
+    return out;
+}
+
+
+void types::pageListOrderedItemText::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (checkbox) flags_v |= (1u << 0);
+        if (checked) flags_v |= (1u << 1);
+        if (num.has_value()) flags_v |= (1u << 2);
+        if (value.has_value()) flags_v |= (1u << 3);
+        if (type.has_value()) flags_v |= (1u << 4);
+        tlw.write_uint32(flags_v);
+    }
+    if (num.has_value()) { tlw.write_string(num.value()); }
+    text->serialize(tlw);
+    if (value.has_value()) { tlw.write_int32(value.value()); }
+    if (type.has_value()) { tlw.write_string(type.value()); }
+}
+
+types::pageListOrderedItemText types::pageListOrderedItemText::read_body(TlReader& rv) {
+    types::pageListOrderedItemText out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.checkbox = (fl_flags & (1u << 0)) != 0;
+    out.checked = (fl_flags & (1u << 1)) != 0;
+    if ((fl_flags & (1u << 2)) != 0) { out.num = rv.read_string(); }
+    out.text = tl::read_boxed<tl::RichText>(rv);
+    if ((fl_flags & (1u << 3)) != 0) { out.value = rv.read_int32(); }
+    if ((fl_flags & (1u << 4)) != 0) { out.type = rv.read_string(); }
+    return out;
+}
+
+
+void types::pageListOrderedItemBlocks::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (checkbox) flags_v |= (1u << 0);
+        if (checked) flags_v |= (1u << 1);
+        if (num.has_value()) flags_v |= (1u << 2);
+        if (value.has_value()) flags_v |= (1u << 3);
+        if (type.has_value()) flags_v |= (1u << 4);
+        tlw.write_uint32(flags_v);
+    }
+    if (num.has_value()) { tlw.write_string(num.value()); }
+    tl::write_vector(tlw, blocks, [&](TlWriter& tlw559, const auto& e559) { e559->serialize(tlw559); });
+    if (value.has_value()) { tlw.write_int32(value.value()); }
+    if (type.has_value()) { tlw.write_string(type.value()); }
+}
+
+types::pageListOrderedItemBlocks types::pageListOrderedItemBlocks::read_body(TlReader& rv) {
+    types::pageListOrderedItemBlocks out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.checkbox = (fl_flags & (1u << 0)) != 0;
+    out.checked = (fl_flags & (1u << 1)) != 0;
+    if ((fl_flags & (1u << 2)) != 0) { out.num = rv.read_string(); }
+    out.blocks = tl::read_vector<std::shared_ptr<tl::PageBlock>>(rv, [&](TlReader& r558) -> std::shared_ptr<tl::PageBlock> { return tl::read_boxed<tl::PageBlock>(r558); });
+    if ((fl_flags & (1u << 3)) != 0) { out.value = rv.read_int32(); }
+    if ((fl_flags & (1u << 4)) != 0) { out.type = rv.read_string(); }
+    return out;
+}
+
+
+void types::pageRelatedArticle::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (title.has_value()) flags_v |= (1u << 0);
+        if (description.has_value()) flags_v |= (1u << 1);
+        if (photo_id.has_value()) flags_v |= (1u << 2);
+        if (author.has_value()) flags_v |= (1u << 3);
+        if (published_date.has_value()) flags_v |= (1u << 4);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(url);
+    tlw.write_int64(webpage_id);
+    if (title.has_value()) { tlw.write_string(title.value()); }
+    if (description.has_value()) { tlw.write_string(description.value()); }
+    if (photo_id.has_value()) { tlw.write_int64(photo_id.value()); }
+    if (author.has_value()) { tlw.write_string(author.value()); }
+    if (published_date.has_value()) { tlw.write_int32(published_date.value()); }
+}
+
+types::pageRelatedArticle types::pageRelatedArticle::read_body(TlReader& rv) {
+    types::pageRelatedArticle out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.url = rv.read_string();
+    out.webpage_id = rv.read_int64();
+    if ((fl_flags & (1u << 0)) != 0) { out.title = rv.read_string(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.description = rv.read_string(); }
+    if ((fl_flags & (1u << 2)) != 0) { out.photo_id = rv.read_int64(); }
+    if ((fl_flags & (1u << 3)) != 0) { out.author = rv.read_string(); }
+    if ((fl_flags & (1u << 4)) != 0) { out.published_date = rv.read_int32(); }
+    return out;
+}
+
+
+void types::page::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (part) flags_v |= (1u << 0);
+        if (rtl) flags_v |= (1u << 1);
+        if (v2) flags_v |= (1u << 2);
+        if (views.has_value()) flags_v |= (1u << 3);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(url);
+    tl::write_vector(tlw, blocks, [&](TlWriter& tlw563, const auto& e563) { e563->serialize(tlw563); });
+    tl::write_vector(tlw, photos, [&](TlWriter& tlw564, const auto& e564) { e564->serialize(tlw564); });
+    tl::write_vector(tlw, documents, [&](TlWriter& tlw565, const auto& e565) { e565->serialize(tlw565); });
+    if (views.has_value()) { tlw.write_int32(views.value()); }
+}
+
+types::page types::page::read_body(TlReader& rv) {
+    types::page out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.part = (fl_flags & (1u << 0)) != 0;
+    out.rtl = (fl_flags & (1u << 1)) != 0;
+    out.v2 = (fl_flags & (1u << 2)) != 0;
+    out.url = rv.read_string();
+    out.blocks = tl::read_vector<std::shared_ptr<tl::PageBlock>>(rv, [&](TlReader& r560) -> std::shared_ptr<tl::PageBlock> { return tl::read_boxed<tl::PageBlock>(r560); });
+    out.photos = tl::read_vector<std::shared_ptr<tl::Photo>>(rv, [&](TlReader& r561) -> std::shared_ptr<tl::Photo> { return tl::read_boxed<tl::Photo>(r561); });
+    out.documents = tl::read_vector<std::shared_ptr<tl::Document>>(rv, [&](TlReader& r562) -> std::shared_ptr<tl::Document> { return tl::read_boxed<tl::Document>(r562); });
+    if ((fl_flags & (1u << 3)) != 0) { out.views = rv.read_int32(); }
+    return out;
+}
+
+
+void types::help_supportName::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(name);
+}
+
+types::help_supportName types::help_supportName::read_body(TlReader& rv) {
+    types::help_supportName out;
+    out.name = rv.read_string();
+    return out;
+}
+
+
+void types::help_userInfoEmpty::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::help_userInfoEmpty types::help_userInfoEmpty::read_body(TlReader& rv) {
+    types::help_userInfoEmpty out;
+    return out;
+}
+
+
+void types::help_userInfo::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(message);
+    tl::write_vector(tlw, entities, [&](TlWriter& tlw567, const auto& e567) { e567->serialize(tlw567); });
+    tlw.write_string(author);
+    tlw.write_int32(date);
+}
+
+types::help_userInfo types::help_userInfo::read_body(TlReader& rv) {
+    types::help_userInfo out;
+    out.message = rv.read_string();
+    out.entities = tl::read_vector<std::shared_ptr<tl::MessageEntity>>(rv, [&](TlReader& r566) -> std::shared_ptr<tl::MessageEntity> { return tl::read_boxed<tl::MessageEntity>(r566); });
+    out.author = rv.read_string();
+    out.date = rv.read_int32();
+    return out;
 }
 
 

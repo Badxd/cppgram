@@ -14,8 +14,12 @@ namespace {
 
 // Accepts a full link (https://t.me/addlist/SLUG) or a bare slug.
 std::string slug_of(const std::string& link) {
-    const std::size_t slash = link.find_last_of('/');
-    return slash == std::string::npos ? link : link.substr(slash + 1);
+    // Drop any query string or fragment first, so "https://t.me/addlist/abc?x=1#y" yields "abc".
+    std::string rest = link;
+    const std::size_t cut = rest.find_first_of("?#");
+    if (cut != std::string::npos) rest.resize(cut);
+    const std::size_t slash = rest.find_last_of('/');
+    return slash == std::string::npos ? rest : rest.substr(slash + 1);
 }
 
 std::shared_ptr<tl::InputChatlist> chatlist_of(std::int32_t filter_id) {
@@ -92,8 +96,17 @@ FolderInviteCheck Client::check_folder_invite_link(const std::string& link) {
     req.slug = slug_of(link);
     const tl::chatlists_ChatlistInvite res = call_rpc(req);
     FolderInviteCheck out;
-    if (std::get_if<ty::chatlists_chatlistInviteAlready>(&res.value)) {
+    if (const auto* already = std::get_if<ty::chatlists_chatlistInviteAlready>(&res.value)) {
         out.already_joined = true;
+        out.filter_id = already->filter_id;
+        cache_users_chats(already->users, already->chats);
+        for (const auto& p : already->missing_peers) {
+            if (p) out.missing_peers.push_back(detail::peer_from_tl(*p, cache_));
+        }
+        for (const auto& p : already->already_peers) {
+            if (p) out.already_peers.push_back(detail::peer_from_tl(*p, cache_));
+        }
+        out.peer_count = static_cast<std::int32_t>(out.missing_peers.size() + out.already_peers.size());
         return out;
     }
     const auto* inv = std::get_if<ty::chatlists_chatlistInvite>(&res.value);
@@ -101,16 +114,68 @@ FolderInviteCheck Client::check_folder_invite_link(const std::string& link) {
     if (inv->title) {
         if (const auto* t = std::get_if<ty::textWithEntities>(&inv->title->value)) out.title = t->text;
     }
-    out.peer_count = static_cast<std::int32_t>(inv->peers.size());
+    if (inv->emoticon) out.emoticon = *inv->emoticon;
+    cache_users_chats(inv->users, inv->chats);
+    for (const auto& p : inv->peers) {
+        if (p) out.missing_peers.push_back(detail::peer_from_tl(*p, cache_));
+    }
+    out.peer_count = static_cast<std::int32_t>(out.missing_peers.size());
     return out;
 }
 
-void Client::join_folder_invite_link(const std::string& link, const std::vector<PeerRef>& peers) {
+bool Client::join_folder_invite_link(const std::string& link, const std::vector<PeerRef>& peers) {
     require_session();
     fn::chatlists_joinChatlistInvite req;
     req.slug = slug_of(link);
     for (const auto& p : peers) req.peers.push_back(std::make_shared<tl::InputPeer>(input_peer(p)));
-    call_rpc(req);
+    const tl::Updates updates = call_rpc(req);
+    // The returned Updates carry the joined chats and users. Cache them so later lookups resolve their access hashes.
+    if (const auto* u = std::get_if<ty::updates>(&updates.value)) cache_users_chats(u->users, u->chats);
+    return true;
+}
+
+FolderUpdatesInfo Client::get_folder_updates(std::int32_t filter_id) {
+    require_session();
+    fn::chatlists_getChatlistUpdates req;
+    req.chatlist = chatlist_of(filter_id);
+    const tl::chatlists_ChatlistUpdates res = call_rpc(req);
+    const auto* u = std::get_if<ty::chatlists_chatlistUpdates>(&res.value);
+    if (u == nullptr) throw std::runtime_error("get_folder_updates: unexpected response");
+    cache_users_chats(u->users, u->chats);
+    FolderUpdatesInfo out;
+    for (const auto& p : u->missing_peers) {
+        if (p) out.missing_peers.push_back(detail::peer_from_tl(*p, cache_));
+    }
+    return out;
+}
+
+bool Client::join_folder_updates(std::int32_t filter_id, const std::vector<PeerRef>& peers) {
+    require_session();
+    fn::chatlists_joinChatlistUpdates req;
+    req.chatlist = chatlist_of(filter_id);
+    for (const auto& p : peers) req.peers.push_back(std::make_shared<tl::InputPeer>(input_peer(p)));
+    const tl::Updates updates = call_rpc(req);
+    if (const auto* u = std::get_if<ty::updates>(&updates.value)) cache_users_chats(u->users, u->chats);
+    return true;
+}
+
+bool Client::hide_folder_updates(std::int32_t filter_id) {
+    require_session();
+    fn::chatlists_hideChatlistUpdates req;
+    req.chatlist = chatlist_of(filter_id);
+    return call_rpc(req);
+}
+
+std::vector<PeerRef> Client::get_leave_folder_suggestions(std::int32_t filter_id) {
+    require_session();
+    fn::chatlists_getLeaveChatlistSuggestions req;
+    req.chatlist = chatlist_of(filter_id);
+    const std::vector<std::shared_ptr<tl::Peer>> peers = call_rpc(req);
+    std::vector<PeerRef> out;
+    for (const auto& p : peers) {
+        if (p) out.push_back(detail::peer_from_tl(*p, cache_));
+    }
+    return out;
 }
 
 BoostsStatusInfo Client::get_boosts_status(const PeerRef& chat) {

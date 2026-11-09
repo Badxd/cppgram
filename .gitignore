@@ -48,3 +48,6 @@ bot_workspace/
 build-san/
 build-tsan/
 build-fuzz/
+
+# Local build outputs and release bundles, never source.
+dist/

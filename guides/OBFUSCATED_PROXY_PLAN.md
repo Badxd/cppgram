@@ -2,7 +2,7 @@
 
 Status: implemented for the client side (plain and padded-intermediate secrets, `ClientOptions::mtproto_proxy`).
 Offline tested only. Compatibility with a real Telegram proxy server is NOT VERIFIED. Fake-TLS (`ee`) secrets are rejected.
-See [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md) for the verification status of each feature.
+See [FINAL_REPORT.md](../FINAL_REPORT.md) for the verification status of each feature.
 
 
 ## What exists now

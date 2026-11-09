@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
-project(cppgram LANGUAGES CXX)
+
+# The version comes from the VERSION file, the single source for the package version (see HOW_TO_RELEASE.md).
+# tools/check_version.sh checks that client.h announces the same version to Telegram.
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" CPPGRAM_VERSION_FILE_CONTENT LIMIT_COUNT 1)
+string(STRIP "${CPPGRAM_VERSION_FILE_CONTENT}" CPPGRAM_VERSION_FILE_CONTENT)
+project(cppgram VERSION ${CPPGRAM_VERSION_FILE_CONTENT} LANGUAGES CXX)
 
 # Build speed. Each item falls back to the plain toolchain when its tool is missing; nothing here is required.
 #   CPPGRAM_USE_CCACHE / CPPGRAM_COMPILER_CACHE  reuse object files (ccache or sccache)
@@ -112,6 +117,15 @@ add_library(cppgram
     src/mtproto/schema/api_impl_7.cpp
     src/mtproto/schema/api_impl_8.cpp
     src/mtproto/schema/api_impl_9.cpp
+    src/mtproto/schema/api_impl_10.cpp
+    src/mtproto/schema/api_impl_11.cpp
+    src/mtproto/schema/api_impl_12.cpp
+    src/mtproto/schema/api_impl_13.cpp
+    src/mtproto/schema/api_impl_14.cpp
+    src/mtproto/schema/api_impl_15.cpp
+    src/mtproto/schema/api_impl_16.cpp
+    src/mtproto/schema/api_impl_17.cpp
+    src/mtproto/schema/api_impl_18.cpp
     src/mtproto/auth.cpp
     src/mtproto/rsa_keys.cpp
     src/mtproto/connection.cpp
@@ -129,6 +143,7 @@ add_library(cppgram
     src/more.cpp
     src/media.cpp
     src/markup.cpp
+    src/rich_blocks.cpp
     src/stickers.cpp
     src/text.cpp
     src/parser.cpp
@@ -143,10 +158,18 @@ add_library(cppgram
     src/folders.cpp
     src/invites.cpp
     src/stories_messages.cpp
+    src/account_reads.cpp
+    src/payments_stars.cpp
+    src/wallet_ton.cpp
+    src/business_chatlists.cpp
+    src/account_more.cpp
+    src/bots_channels.cpp
+    src/messages_more.cpp
     src/folder_invites.cpp
     src/forum_and_stars.cpp
     src/account_settings.cpp
     src/contacts_and_blocks.cpp
+    src/qr_login.cpp
     src/business_and_stealth.cpp
     src/misc_5.cpp
     src/misc_6.cpp
@@ -192,6 +215,15 @@ if(CPPGRAM_UNITY_BUILD)
         src/mtproto/schema/api_impl_7.cpp
         src/mtproto/schema/api_impl_8.cpp
         src/mtproto/schema/api_impl_9.cpp
+        src/mtproto/schema/api_impl_10.cpp
+        src/mtproto/schema/api_impl_11.cpp
+        src/mtproto/schema/api_impl_12.cpp
+        src/mtproto/schema/api_impl_13.cpp
+        src/mtproto/schema/api_impl_14.cpp
+        src/mtproto/schema/api_impl_15.cpp
+        src/mtproto/schema/api_impl_16.cpp
+        src/mtproto/schema/api_impl_17.cpp
+        src/mtproto/schema/api_impl_18.cpp
         src/mtproto/srp.cpp
         src/client.cpp
         src/send.cpp
@@ -279,8 +311,15 @@ install(EXPORT cppgramTargets
     FILE cppgramTargets.cmake
     DESTINATION "${CPPGRAM_INSTALL_CMAKEDIR}"
 )
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/cppgramConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/cppgramConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/cppgramConfigVersion.cmake"
     DESTINATION "${CPPGRAM_INSTALL_CMAKEDIR}"
 )
 
@@ -340,6 +379,13 @@ if(BUILD_LIVE_CHECK)
     add_executable(cppgram_live_check examples/live_check.cpp)
     target_link_libraries(cppgram_live_check PRIVATE cppgram)
     target_include_directories(cppgram_live_check PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+endif()
+
+option(BUILD_MINIMAL_EXAMPLE "Build examples/minimal_api: constructs a Client from env vars, makes no network call" OFF)
+if(BUILD_MINIMAL_EXAMPLE)
+    add_executable(cppgram_minimal_api examples/minimal_api/minimal_api.cpp)
+    target_link_libraries(cppgram_minimal_api PRIVATE cppgram)
+    target_include_directories(cppgram_minimal_api PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 endif()
 
 # Live tests: only the runner and the library, no test suite, no fuzzers. Optimization is left at the CMake default

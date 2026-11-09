@@ -3,5717 +3,3096 @@
 
 namespace cppgram::mtproto::tl {
 
-void types::auth_codeTypeFlashCall::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::auth_codeTypeFlashCall types::auth_codeTypeFlashCall::read_body(TlReader& rv) {
-    types::auth_codeTypeFlashCall out;
-    return out;
-}
-
-
-void types::auth_codeTypeMissedCall::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::auth_codeTypeMissedCall types::auth_codeTypeMissedCall::read_body(TlReader& rv) {
-    types::auth_codeTypeMissedCall out;
-    return out;
-}
-
-
-void types::auth_codeTypeFragmentSms::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::auth_codeTypeFragmentSms types::auth_codeTypeFragmentSms::read_body(TlReader& rv) {
-    types::auth_codeTypeFragmentSms out;
-    return out;
-}
-
-
-void types::auth_sentCodeTypeApp::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(length);
-}
-
-types::auth_sentCodeTypeApp types::auth_sentCodeTypeApp::read_body(TlReader& rv) {
-    types::auth_sentCodeTypeApp out;
-    out.length = rv.read_int32();
-    return out;
-}
-
-
-void types::auth_sentCodeTypeSms::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(length);
-}
-
-types::auth_sentCodeTypeSms types::auth_sentCodeTypeSms::read_body(TlReader& rv) {
-    types::auth_sentCodeTypeSms out;
-    out.length = rv.read_int32();
-    return out;
-}
-
-
-void types::auth_sentCodeTypeCall::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(length);
-}
-
-types::auth_sentCodeTypeCall types::auth_sentCodeTypeCall::read_body(TlReader& rv) {
-    types::auth_sentCodeTypeCall out;
-    out.length = rv.read_int32();
-    return out;
-}
-
-
-void types::auth_sentCodeTypeFlashCall::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(pattern);
-}
-
-types::auth_sentCodeTypeFlashCall types::auth_sentCodeTypeFlashCall::read_body(TlReader& rv) {
-    types::auth_sentCodeTypeFlashCall out;
-    out.pattern = rv.read_string();
-    return out;
-}
-
-
-void types::auth_sentCodeTypeMissedCall::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(prefix);
-    tlw.write_int32(length);
-}
-
-types::auth_sentCodeTypeMissedCall types::auth_sentCodeTypeMissedCall::read_body(TlReader& rv) {
-    types::auth_sentCodeTypeMissedCall out;
-    out.prefix = rv.read_string();
-    out.length = rv.read_int32();
-    return out;
-}
-
-
-void types::auth_sentCodeTypeEmailCode::serialize(TlWriter& tlw) const {
+void types::updatePinnedChannelMessages::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (apple_signin_allowed) flags_v |= (1u << 0);
-        if (google_signin_allowed) flags_v |= (1u << 1);
-        if (reset_available_period.has_value()) flags_v |= (1u << 3);
-        if (reset_pending_date.has_value()) flags_v |= (1u << 4);
+        if (pinned) flags_v |= (1u << 0);
         tlw.write_uint32(flags_v);
     }
-    tlw.write_string(email_pattern);
-    tlw.write_int32(length);
-    if (reset_available_period.has_value()) { tlw.write_int32(reset_available_period.value()); }
-    if (reset_pending_date.has_value()) { tlw.write_int32(reset_pending_date.value()); }
+    tlw.write_int64(channel_id);
+    tl::write_vector(tlw, messages, [&](TlWriter& tlw187, const auto& e187) { tlw187.write_int32(e187); });
+    tlw.write_int32(pts);
+    tlw.write_int32(pts_count);
 }
 
-types::auth_sentCodeTypeEmailCode types::auth_sentCodeTypeEmailCode::read_body(TlReader& rv) {
-    types::auth_sentCodeTypeEmailCode out;
+types::updatePinnedChannelMessages types::updatePinnedChannelMessages::read_body(TlReader& rv) {
+    types::updatePinnedChannelMessages out;
     std::uint32_t fl_flags = rv.read_uint32();
-    out.apple_signin_allowed = (fl_flags & (1u << 0)) != 0;
-    out.google_signin_allowed = (fl_flags & (1u << 1)) != 0;
-    out.email_pattern = rv.read_string();
-    out.length = rv.read_int32();
-    if ((fl_flags & (1u << 3)) != 0) { out.reset_available_period = rv.read_int32(); }
-    if ((fl_flags & (1u << 4)) != 0) { out.reset_pending_date = rv.read_int32(); }
+    out.pinned = (fl_flags & (1u << 0)) != 0;
+    out.channel_id = rv.read_int64();
+    out.messages = tl::read_vector<std::int32_t>(rv, [&](TlReader& r186) -> std::int32_t { return r186.read_int32(); });
+    out.pts = rv.read_int32();
+    out.pts_count = rv.read_int32();
     return out;
 }
 
 
-void types::auth_sentCodeTypeSetUpEmailRequired::serialize(TlWriter& tlw) const {
+void types::updateChat::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(chat_id);
+}
+
+types::updateChat types::updateChat::read_body(TlReader& rv) {
+    types::updateChat out;
+    out.chat_id = rv.read_int64();
+    return out;
+}
+
+
+void types::updateGroupCallParticipants::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    call->serialize(tlw);
+    tl::write_vector(tlw, participants, [&](TlWriter& tlw189, const auto& e189) { e189->serialize(tlw189); });
+    tlw.write_int32(version);
+}
+
+types::updateGroupCallParticipants types::updateGroupCallParticipants::read_body(TlReader& rv) {
+    types::updateGroupCallParticipants out;
+    out.call = tl::read_boxed<tl::InputGroupCall>(rv);
+    out.participants = tl::read_vector<std::shared_ptr<tl::GroupCallParticipant>>(rv, [&](TlReader& r188) -> std::shared_ptr<tl::GroupCallParticipant> { return tl::read_boxed<tl::GroupCallParticipant>(r188); });
+    out.version = rv.read_int32();
+    return out;
+}
+
+
+void types::updateGroupCall::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (apple_signin_allowed) flags_v |= (1u << 0);
-        if (google_signin_allowed) flags_v |= (1u << 1);
+        if (live_story) flags_v |= (1u << 2);
+        if (peer.has_value()) flags_v |= (1u << 1);
         tlw.write_uint32(flags_v);
     }
+    if (peer.has_value()) { peer.value()->serialize(tlw); }
+    call->serialize(tlw);
 }
 
-types::auth_sentCodeTypeSetUpEmailRequired types::auth_sentCodeTypeSetUpEmailRequired::read_body(TlReader& rv) {
-    types::auth_sentCodeTypeSetUpEmailRequired out;
+types::updateGroupCall types::updateGroupCall::read_body(TlReader& rv) {
+    types::updateGroupCall out;
     std::uint32_t fl_flags = rv.read_uint32();
-    out.apple_signin_allowed = (fl_flags & (1u << 0)) != 0;
-    out.google_signin_allowed = (fl_flags & (1u << 1)) != 0;
+    out.live_story = (fl_flags & (1u << 2)) != 0;
+    if ((fl_flags & (1u << 1)) != 0) { out.peer = tl::read_boxed<tl::Peer>(rv); }
+    out.call = tl::read_boxed<tl::GroupCall>(rv);
     return out;
 }
 
 
-void types::auth_sentCodeTypeFragmentSms::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(url);
-    tlw.write_int32(length);
-}
-
-types::auth_sentCodeTypeFragmentSms types::auth_sentCodeTypeFragmentSms::read_body(TlReader& rv) {
-    types::auth_sentCodeTypeFragmentSms out;
-    out.url = rv.read_string();
-    out.length = rv.read_int32();
-    return out;
-}
-
-
-void types::auth_sentCodeTypeFirebaseSms::serialize(TlWriter& tlw) const {
+void types::updatePeerHistoryTTL::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (nonce.has_value()) flags_v |= (1u << 0);
-        if (play_integrity_project_id.has_value()) flags_v |= (1u << 2);
-        if (play_integrity_nonce.has_value()) flags_v |= (1u << 2);
-        if (receipt.has_value()) flags_v |= (1u << 1);
-        if (push_timeout.has_value()) flags_v |= (1u << 1);
+        if (ttl_period.has_value()) flags_v |= (1u << 0);
         tlw.write_uint32(flags_v);
     }
-    if (nonce.has_value()) { tlw.write_bytes(nonce.value()); }
-    if (play_integrity_project_id.has_value()) { tlw.write_int64(play_integrity_project_id.value()); }
-    if (play_integrity_nonce.has_value()) { tlw.write_bytes(play_integrity_nonce.value()); }
-    if (receipt.has_value()) { tlw.write_string(receipt.value()); }
-    if (push_timeout.has_value()) { tlw.write_int32(push_timeout.value()); }
-    tlw.write_int32(length);
+    peer->serialize(tlw);
+    if (ttl_period.has_value()) { tlw.write_int32(ttl_period.value()); }
 }
 
-types::auth_sentCodeTypeFirebaseSms types::auth_sentCodeTypeFirebaseSms::read_body(TlReader& rv) {
-    types::auth_sentCodeTypeFirebaseSms out;
+types::updatePeerHistoryTTL types::updatePeerHistoryTTL::read_body(TlReader& rv) {
+    types::updatePeerHistoryTTL out;
     std::uint32_t fl_flags = rv.read_uint32();
-    if ((fl_flags & (1u << 0)) != 0) { out.nonce = rv.read_bytes(); }
-    if ((fl_flags & (1u << 2)) != 0) { out.play_integrity_project_id = rv.read_int64(); }
-    if ((fl_flags & (1u << 2)) != 0) { out.play_integrity_nonce = rv.read_bytes(); }
-    if ((fl_flags & (1u << 1)) != 0) { out.receipt = rv.read_string(); }
-    if ((fl_flags & (1u << 1)) != 0) { out.push_timeout = rv.read_int32(); }
-    out.length = rv.read_int32();
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    if ((fl_flags & (1u << 0)) != 0) { out.ttl_period = rv.read_int32(); }
     return out;
 }
 
 
-void types::auth_sentCodeTypeSmsWord::serialize(TlWriter& tlw) const {
+void types::updateChatParticipant::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (beginning.has_value()) flags_v |= (1u << 0);
+        if (prev_participant.has_value()) flags_v |= (1u << 0);
+        if (new_participant.has_value()) flags_v |= (1u << 1);
+        if (invite.has_value()) flags_v |= (1u << 2);
         tlw.write_uint32(flags_v);
     }
-    if (beginning.has_value()) { tlw.write_string(beginning.value()); }
+    tlw.write_int64(chat_id);
+    tlw.write_int32(date);
+    tlw.write_int64(actor_id);
+    tlw.write_int64(user_id);
+    if (prev_participant.has_value()) { prev_participant.value()->serialize(tlw); }
+    if (new_participant.has_value()) { new_participant.value()->serialize(tlw); }
+    if (invite.has_value()) { invite.value()->serialize(tlw); }
+    tlw.write_int32(qts);
 }
 
-types::auth_sentCodeTypeSmsWord types::auth_sentCodeTypeSmsWord::read_body(TlReader& rv) {
-    types::auth_sentCodeTypeSmsWord out;
+types::updateChatParticipant types::updateChatParticipant::read_body(TlReader& rv) {
+    types::updateChatParticipant out;
     std::uint32_t fl_flags = rv.read_uint32();
-    if ((fl_flags & (1u << 0)) != 0) { out.beginning = rv.read_string(); }
+    out.chat_id = rv.read_int64();
+    out.date = rv.read_int32();
+    out.actor_id = rv.read_int64();
+    out.user_id = rv.read_int64();
+    if ((fl_flags & (1u << 0)) != 0) { out.prev_participant = tl::read_boxed<tl::ChatParticipant>(rv); }
+    if ((fl_flags & (1u << 1)) != 0) { out.new_participant = tl::read_boxed<tl::ChatParticipant>(rv); }
+    if ((fl_flags & (1u << 2)) != 0) { out.invite = tl::read_boxed<tl::ExportedChatInvite>(rv); }
+    out.qts = rv.read_int32();
     return out;
 }
 
 
-void types::auth_sentCodeTypeSmsPhrase::serialize(TlWriter& tlw) const {
+void types::updateChannelParticipant::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (beginning.has_value()) flags_v |= (1u << 0);
+        if (via_chatlist) flags_v |= (1u << 3);
+        if (prev_participant.has_value()) flags_v |= (1u << 0);
+        if (new_participant.has_value()) flags_v |= (1u << 1);
+        if (invite.has_value()) flags_v |= (1u << 2);
         tlw.write_uint32(flags_v);
     }
-    if (beginning.has_value()) { tlw.write_string(beginning.value()); }
+    tlw.write_int64(channel_id);
+    tlw.write_int32(date);
+    tlw.write_int64(actor_id);
+    tlw.write_int64(user_id);
+    if (prev_participant.has_value()) { prev_participant.value()->serialize(tlw); }
+    if (new_participant.has_value()) { new_participant.value()->serialize(tlw); }
+    if (invite.has_value()) { invite.value()->serialize(tlw); }
+    tlw.write_int32(qts);
 }
 
-types::auth_sentCodeTypeSmsPhrase types::auth_sentCodeTypeSmsPhrase::read_body(TlReader& rv) {
-    types::auth_sentCodeTypeSmsPhrase out;
+types::updateChannelParticipant types::updateChannelParticipant::read_body(TlReader& rv) {
+    types::updateChannelParticipant out;
     std::uint32_t fl_flags = rv.read_uint32();
-    if ((fl_flags & (1u << 0)) != 0) { out.beginning = rv.read_string(); }
+    out.via_chatlist = (fl_flags & (1u << 3)) != 0;
+    out.channel_id = rv.read_int64();
+    out.date = rv.read_int32();
+    out.actor_id = rv.read_int64();
+    out.user_id = rv.read_int64();
+    if ((fl_flags & (1u << 0)) != 0) { out.prev_participant = tl::read_boxed<tl::ChannelParticipant>(rv); }
+    if ((fl_flags & (1u << 1)) != 0) { out.new_participant = tl::read_boxed<tl::ChannelParticipant>(rv); }
+    if ((fl_flags & (1u << 2)) != 0) { out.invite = tl::read_boxed<tl::ExportedChatInvite>(rv); }
+    out.qts = rv.read_int32();
     return out;
 }
 
 
-void types::messages_botCallbackAnswer::serialize(TlWriter& tlw) const {
+void types::updateBotStopped::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(user_id);
+    tlw.write_int32(date);
+    tlw.write_bool(stopped);
+    tlw.write_int32(qts);
+}
+
+types::updateBotStopped types::updateBotStopped::read_body(TlReader& rv) {
+    types::updateBotStopped out;
+    out.user_id = rv.read_int64();
+    out.date = rv.read_int32();
+    out.stopped = rv.read_bool();
+    out.qts = rv.read_int32();
+    return out;
+}
+
+
+void types::updateGroupCallConnection::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (alert) flags_v |= (1u << 1);
-        if (has_url) flags_v |= (1u << 3);
-        if (native_ui) flags_v |= (1u << 4);
-        if (message.has_value()) flags_v |= (1u << 0);
-        if (url.has_value()) flags_v |= (1u << 2);
+        if (presentation) flags_v |= (1u << 0);
         tlw.write_uint32(flags_v);
     }
-    if (message.has_value()) { tlw.write_string(message.value()); }
-    if (url.has_value()) { tlw.write_string(url.value()); }
-    tlw.write_int32(cache_time);
+    params->serialize(tlw);
 }
 
-types::messages_botCallbackAnswer types::messages_botCallbackAnswer::read_body(TlReader& rv) {
-    types::messages_botCallbackAnswer out;
+types::updateGroupCallConnection types::updateGroupCallConnection::read_body(TlReader& rv) {
+    types::updateGroupCallConnection out;
     std::uint32_t fl_flags = rv.read_uint32();
-    out.alert = (fl_flags & (1u << 1)) != 0;
-    out.has_url = (fl_flags & (1u << 3)) != 0;
-    out.native_ui = (fl_flags & (1u << 4)) != 0;
-    if ((fl_flags & (1u << 0)) != 0) { out.message = rv.read_string(); }
-    if ((fl_flags & (1u << 2)) != 0) { out.url = rv.read_string(); }
-    out.cache_time = rv.read_int32();
+    out.presentation = (fl_flags & (1u << 0)) != 0;
+    out.params = tl::read_boxed<tl::DataJSON>(rv);
     return out;
 }
 
 
-void types::messages_messageEditData::serialize(TlWriter& tlw) const {
+void types::updateBotCommands::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+    tlw.write_int64(bot_id);
+    tl::write_vector(tlw, commands, [&](TlWriter& tlw191, const auto& e191) { e191->serialize(tlw191); });
+}
+
+types::updateBotCommands types::updateBotCommands::read_body(TlReader& rv) {
+    types::updateBotCommands out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.bot_id = rv.read_int64();
+    out.commands = tl::read_vector<std::shared_ptr<tl::BotCommand>>(rv, [&](TlReader& r190) -> std::shared_ptr<tl::BotCommand> { return tl::read_boxed<tl::BotCommand>(r190); });
+    return out;
+}
+
+
+void types::updatePendingJoinRequests::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+    tlw.write_int32(requests_pending);
+    tl::write_vector(tlw, recent_requesters, [&](TlWriter& tlw193, const auto& e193) { tlw193.write_int64(e193); });
+}
+
+types::updatePendingJoinRequests types::updatePendingJoinRequests::read_body(TlReader& rv) {
+    types::updatePendingJoinRequests out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.requests_pending = rv.read_int32();
+    out.recent_requesters = tl::read_vector<std::int64_t>(rv, [&](TlReader& r192) -> std::int64_t { return r192.read_int64(); });
+    return out;
+}
+
+
+void types::updateBotChatInviteRequester::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (caption) flags_v |= (1u << 0);
+        if (query_id.has_value()) flags_v |= (1u << 0);
         tlw.write_uint32(flags_v);
     }
+    peer->serialize(tlw);
+    tlw.write_int32(date);
+    tlw.write_int64(user_id);
+    tlw.write_string(about);
+    invite->serialize(tlw);
+    tlw.write_int32(qts);
+    if (query_id.has_value()) { tlw.write_int64(query_id.value()); }
 }
 
-types::messages_messageEditData types::messages_messageEditData::read_body(TlReader& rv) {
-    types::messages_messageEditData out;
+types::updateBotChatInviteRequester types::updateBotChatInviteRequester::read_body(TlReader& rv) {
+    types::updateBotChatInviteRequester out;
     std::uint32_t fl_flags = rv.read_uint32();
-    out.caption = (fl_flags & (1u << 0)) != 0;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.date = rv.read_int32();
+    out.user_id = rv.read_int64();
+    out.about = rv.read_string();
+    out.invite = tl::read_boxed<tl::ExportedChatInvite>(rv);
+    out.qts = rv.read_int32();
+    if ((fl_flags & (1u << 0)) != 0) { out.query_id = rv.read_int64(); }
     return out;
 }
 
 
-void types::inputBotInlineMessageID::serialize(TlWriter& tlw) const {
+void types::updateMessageReactions::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    tlw.write_int32(dc_id);
-    tlw.write_int64(id);
-    tlw.write_int64(access_hash);
+    {
+        std::uint32_t flags_v = 0;
+        if (top_msg_id.has_value()) flags_v |= (1u << 0);
+        if (saved_peer_id.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    peer->serialize(tlw);
+    tlw.write_int32(msg_id);
+    if (top_msg_id.has_value()) { tlw.write_int32(top_msg_id.value()); }
+    if (saved_peer_id.has_value()) { saved_peer_id.value()->serialize(tlw); }
+    reactions->serialize(tlw);
 }
 
-types::inputBotInlineMessageID types::inputBotInlineMessageID::read_body(TlReader& rv) {
-    types::inputBotInlineMessageID out;
-    out.dc_id = rv.read_int32();
-    out.id = rv.read_int64();
-    out.access_hash = rv.read_int64();
+types::updateMessageReactions types::updateMessageReactions::read_body(TlReader& rv) {
+    types::updateMessageReactions out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.msg_id = rv.read_int32();
+    if ((fl_flags & (1u << 0)) != 0) { out.top_msg_id = rv.read_int32(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.saved_peer_id = tl::read_boxed<tl::Peer>(rv); }
+    out.reactions = tl::read_boxed<tl::MessageReactions>(rv);
     return out;
 }
 
 
-void types::inputBotInlineMessageID64::serialize(TlWriter& tlw) const {
+void types::updateAttachMenuBots::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    tlw.write_int32(dc_id);
-    tlw.write_int64(owner_id);
-    tlw.write_int32(id);
-    tlw.write_int64(access_hash);
 }
 
-types::inputBotInlineMessageID64 types::inputBotInlineMessageID64::read_body(TlReader& rv) {
-    types::inputBotInlineMessageID64 out;
-    out.dc_id = rv.read_int32();
-    out.owner_id = rv.read_int64();
-    out.id = rv.read_int32();
-    out.access_hash = rv.read_int64();
+types::updateAttachMenuBots types::updateAttachMenuBots::read_body(TlReader& rv) {
+    types::updateAttachMenuBots out;
     return out;
 }
 
 
-void types::inlineBotSwitchPM::serialize(TlWriter& tlw) const {
+void types::updateWebViewResultSent::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
+    tlw.write_int64(query_id);
+}
+
+types::updateWebViewResultSent types::updateWebViewResultSent::read_body(TlReader& rv) {
+    types::updateWebViewResultSent out;
+    out.query_id = rv.read_int64();
+    return out;
+}
+
+
+void types::updateBotMenuButton::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(bot_id);
+    button->serialize(tlw);
+}
+
+types::updateBotMenuButton types::updateBotMenuButton::read_body(TlReader& rv) {
+    types::updateBotMenuButton out;
+    out.bot_id = rv.read_int64();
+    out.button = tl::read_boxed<tl::BotMenuButton>(rv);
+    return out;
+}
+
+
+void types::updateSavedRingtones::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::updateSavedRingtones types::updateSavedRingtones::read_body(TlReader& rv) {
+    types::updateSavedRingtones out;
+    return out;
+}
+
+
+void types::updateTranscribedAudio::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (pending) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    peer->serialize(tlw);
+    tlw.write_int32(msg_id);
+    tlw.write_int64(transcription_id);
     tlw.write_string(text);
-    tlw.write_string(start_param);
 }
 
-types::inlineBotSwitchPM types::inlineBotSwitchPM::read_body(TlReader& rv) {
-    types::inlineBotSwitchPM out;
+types::updateTranscribedAudio types::updateTranscribedAudio::read_body(TlReader& rv) {
+    types::updateTranscribedAudio out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.pending = (fl_flags & (1u << 0)) != 0;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.msg_id = rv.read_int32();
+    out.transcription_id = rv.read_int64();
     out.text = rv.read_string();
-    out.start_param = rv.read_string();
     return out;
 }
 
 
-void types::messages_peerDialogs::serialize(TlWriter& tlw) const {
+void types::updateReadFeaturedEmojiStickers::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    tl::write_vector(tlw, dialogs, [&](TlWriter& tlw394, const auto& e394) { e394->serialize(tlw394); });
-    tl::write_vector(tlw, messages, [&](TlWriter& tlw395, const auto& e395) { e395->serialize(tlw395); });
-    tl::write_vector(tlw, chats, [&](TlWriter& tlw396, const auto& e396) { e396->serialize(tlw396); });
-    tl::write_vector(tlw, users, [&](TlWriter& tlw397, const auto& e397) { e397->serialize(tlw397); });
+}
+
+types::updateReadFeaturedEmojiStickers types::updateReadFeaturedEmojiStickers::read_body(TlReader& rv) {
+    types::updateReadFeaturedEmojiStickers out;
+    return out;
+}
+
+
+void types::updateUserEmojiStatus::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(user_id);
+    emoji_status->serialize(tlw);
+}
+
+types::updateUserEmojiStatus types::updateUserEmojiStatus::read_body(TlReader& rv) {
+    types::updateUserEmojiStatus out;
+    out.user_id = rv.read_int64();
+    out.emoji_status = tl::read_boxed<tl::EmojiStatus>(rv);
+    return out;
+}
+
+
+void types::updateRecentEmojiStatuses::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::updateRecentEmojiStatuses types::updateRecentEmojiStatuses::read_body(TlReader& rv) {
+    types::updateRecentEmojiStatuses out;
+    return out;
+}
+
+
+void types::updateRecentReactions::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::updateRecentReactions types::updateRecentReactions::read_body(TlReader& rv) {
+    types::updateRecentReactions out;
+    return out;
+}
+
+
+void types::updateMoveStickerSetToTop::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (masks) flags_v |= (1u << 0);
+        if (emojis) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(stickerset);
+}
+
+types::updateMoveStickerSetToTop types::updateMoveStickerSetToTop::read_body(TlReader& rv) {
+    types::updateMoveStickerSetToTop out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.masks = (fl_flags & (1u << 0)) != 0;
+    out.emojis = (fl_flags & (1u << 1)) != 0;
+    out.stickerset = rv.read_int64();
+    return out;
+}
+
+
+void types::updateMessageExtendedMedia::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+    tlw.write_int32(msg_id);
+    tl::write_vector(tlw, extended_media, [&](TlWriter& tlw195, const auto& e195) { e195->serialize(tlw195); });
+}
+
+types::updateMessageExtendedMedia types::updateMessageExtendedMedia::read_body(TlReader& rv) {
+    types::updateMessageExtendedMedia out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.msg_id = rv.read_int32();
+    out.extended_media = tl::read_vector<std::shared_ptr<tl::MessageExtendedMedia>>(rv, [&](TlReader& r194) -> std::shared_ptr<tl::MessageExtendedMedia> { return tl::read_boxed<tl::MessageExtendedMedia>(r194); });
+    return out;
+}
+
+
+void types::updateUser::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(user_id);
+}
+
+types::updateUser types::updateUser::read_body(TlReader& rv) {
+    types::updateUser out;
+    out.user_id = rv.read_int64();
+    return out;
+}
+
+
+void types::updateAutoSaveSettings::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::updateAutoSaveSettings types::updateAutoSaveSettings::read_body(TlReader& rv) {
+    types::updateAutoSaveSettings out;
+    return out;
+}
+
+
+void types::updateStory::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+    story->serialize(tlw);
+}
+
+types::updateStory types::updateStory::read_body(TlReader& rv) {
+    types::updateStory out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.story = tl::read_boxed<tl::StoryItem>(rv);
+    return out;
+}
+
+
+void types::updateReadStories::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+    tlw.write_int32(max_id);
+}
+
+types::updateReadStories types::updateReadStories::read_body(TlReader& rv) {
+    types::updateReadStories out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.max_id = rv.read_int32();
+    return out;
+}
+
+
+void types::updateStoryID::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(id);
+    tlw.write_int64(random_id);
+}
+
+types::updateStoryID types::updateStoryID::read_body(TlReader& rv) {
+    types::updateStoryID out;
+    out.id = rv.read_int32();
+    out.random_id = rv.read_int64();
+    return out;
+}
+
+
+void types::updateStoriesStealthMode::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    stealth_mode->serialize(tlw);
+}
+
+types::updateStoriesStealthMode types::updateStoriesStealthMode::read_body(TlReader& rv) {
+    types::updateStoriesStealthMode out;
+    out.stealth_mode = tl::read_boxed<tl::StoriesStealthMode>(rv);
+    return out;
+}
+
+
+void types::updateSentStoryReaction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+    tlw.write_int32(story_id);
+    reaction->serialize(tlw);
+}
+
+types::updateSentStoryReaction types::updateSentStoryReaction::read_body(TlReader& rv) {
+    types::updateSentStoryReaction out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.story_id = rv.read_int32();
+    out.reaction = tl::read_boxed<tl::Reaction>(rv);
+    return out;
+}
+
+
+void types::updateBotChatBoost::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+    boost->serialize(tlw);
+    tlw.write_int32(qts);
+}
+
+types::updateBotChatBoost types::updateBotChatBoost::read_body(TlReader& rv) {
+    types::updateBotChatBoost out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.boost = tl::read_boxed<tl::Boost>(rv);
+    out.qts = rv.read_int32();
+    return out;
+}
+
+
+void types::updateChannelViewForumAsMessages::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(channel_id);
+    tlw.write_bool(enabled);
+}
+
+types::updateChannelViewForumAsMessages types::updateChannelViewForumAsMessages::read_body(TlReader& rv) {
+    types::updateChannelViewForumAsMessages out;
+    out.channel_id = rv.read_int64();
+    out.enabled = rv.read_bool();
+    return out;
+}
+
+
+void types::updatePeerWallpaper::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (wallpaper_overridden) flags_v |= (1u << 1);
+        if (wallpaper.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    peer->serialize(tlw);
+    if (wallpaper.has_value()) { wallpaper.value()->serialize(tlw); }
+}
+
+types::updatePeerWallpaper types::updatePeerWallpaper::read_body(TlReader& rv) {
+    types::updatePeerWallpaper out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.wallpaper_overridden = (fl_flags & (1u << 1)) != 0;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    if ((fl_flags & (1u << 0)) != 0) { out.wallpaper = tl::read_boxed<tl::WallPaper>(rv); }
+    return out;
+}
+
+
+void types::updateBotMessageReaction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+    tlw.write_int32(msg_id);
+    tlw.write_int32(date);
+    actor->serialize(tlw);
+    tl::write_vector(tlw, old_reactions, [&](TlWriter& tlw198, const auto& e198) { e198->serialize(tlw198); });
+    tl::write_vector(tlw, new_reactions, [&](TlWriter& tlw199, const auto& e199) { e199->serialize(tlw199); });
+    tlw.write_int32(qts);
+}
+
+types::updateBotMessageReaction types::updateBotMessageReaction::read_body(TlReader& rv) {
+    types::updateBotMessageReaction out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.msg_id = rv.read_int32();
+    out.date = rv.read_int32();
+    out.actor = tl::read_boxed<tl::Peer>(rv);
+    out.old_reactions = tl::read_vector<std::shared_ptr<tl::Reaction>>(rv, [&](TlReader& r196) -> std::shared_ptr<tl::Reaction> { return tl::read_boxed<tl::Reaction>(r196); });
+    out.new_reactions = tl::read_vector<std::shared_ptr<tl::Reaction>>(rv, [&](TlReader& r197) -> std::shared_ptr<tl::Reaction> { return tl::read_boxed<tl::Reaction>(r197); });
+    out.qts = rv.read_int32();
+    return out;
+}
+
+
+void types::updateBotMessageReactions::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+    tlw.write_int32(msg_id);
+    tlw.write_int32(date);
+    tl::write_vector(tlw, reactions, [&](TlWriter& tlw201, const auto& e201) { e201->serialize(tlw201); });
+    tlw.write_int32(qts);
+}
+
+types::updateBotMessageReactions types::updateBotMessageReactions::read_body(TlReader& rv) {
+    types::updateBotMessageReactions out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.msg_id = rv.read_int32();
+    out.date = rv.read_int32();
+    out.reactions = tl::read_vector<std::shared_ptr<tl::ReactionCount>>(rv, [&](TlReader& r200) -> std::shared_ptr<tl::ReactionCount> { return tl::read_boxed<tl::ReactionCount>(r200); });
+    out.qts = rv.read_int32();
+    return out;
+}
+
+
+void types::updateSavedDialogPinned::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (pinned) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    peer->serialize(tlw);
+}
+
+types::updateSavedDialogPinned types::updateSavedDialogPinned::read_body(TlReader& rv) {
+    types::updateSavedDialogPinned out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.pinned = (fl_flags & (1u << 0)) != 0;
+    out.peer = tl::read_boxed<tl::DialogPeer>(rv);
+    return out;
+}
+
+
+void types::updatePinnedSavedDialogs::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (order.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    if (order.has_value()) { tl::write_vector(tlw, order.value(), [&](TlWriter& tlw203, const auto& e203) { e203->serialize(tlw203); }); }
+}
+
+types::updatePinnedSavedDialogs types::updatePinnedSavedDialogs::read_body(TlReader& rv) {
+    types::updatePinnedSavedDialogs out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    if ((fl_flags & (1u << 0)) != 0) { out.order = tl::read_vector<std::shared_ptr<tl::DialogPeer>>(rv, [&](TlReader& r202) -> std::shared_ptr<tl::DialogPeer> { return tl::read_boxed<tl::DialogPeer>(r202); }); }
+    return out;
+}
+
+
+void types::updateSavedReactionTags::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::updateSavedReactionTags types::updateSavedReactionTags::read_body(TlReader& rv) {
+    types::updateSavedReactionTags out;
+    return out;
+}
+
+
+void types::updateSmsJob::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(job_id);
+}
+
+types::updateSmsJob types::updateSmsJob::read_body(TlReader& rv) {
+    types::updateSmsJob out;
+    out.job_id = rv.read_string();
+    return out;
+}
+
+
+void types::updateQuickReplies::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, quick_replies, [&](TlWriter& tlw205, const auto& e205) { e205->serialize(tlw205); });
+}
+
+types::updateQuickReplies types::updateQuickReplies::read_body(TlReader& rv) {
+    types::updateQuickReplies out;
+    out.quick_replies = tl::read_vector<std::shared_ptr<tl::QuickReply>>(rv, [&](TlReader& r204) -> std::shared_ptr<tl::QuickReply> { return tl::read_boxed<tl::QuickReply>(r204); });
+    return out;
+}
+
+
+void types::updateNewQuickReply::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    quick_reply->serialize(tlw);
+}
+
+types::updateNewQuickReply types::updateNewQuickReply::read_body(TlReader& rv) {
+    types::updateNewQuickReply out;
+    out.quick_reply = tl::read_boxed<tl::QuickReply>(rv);
+    return out;
+}
+
+
+void types::updateDeleteQuickReply::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(shortcut_id);
+}
+
+types::updateDeleteQuickReply types::updateDeleteQuickReply::read_body(TlReader& rv) {
+    types::updateDeleteQuickReply out;
+    out.shortcut_id = rv.read_int32();
+    return out;
+}
+
+
+void types::updateQuickReplyMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    message->serialize(tlw);
+}
+
+types::updateQuickReplyMessage types::updateQuickReplyMessage::read_body(TlReader& rv) {
+    types::updateQuickReplyMessage out;
+    out.message = tl::read_boxed<tl::Message>(rv);
+    return out;
+}
+
+
+void types::updateDeleteQuickReplyMessages::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(shortcut_id);
+    tl::write_vector(tlw, messages, [&](TlWriter& tlw207, const auto& e207) { tlw207.write_int32(e207); });
+}
+
+types::updateDeleteQuickReplyMessages types::updateDeleteQuickReplyMessages::read_body(TlReader& rv) {
+    types::updateDeleteQuickReplyMessages out;
+    out.shortcut_id = rv.read_int32();
+    out.messages = tl::read_vector<std::int32_t>(rv, [&](TlReader& r206) -> std::int32_t { return r206.read_int32(); });
+    return out;
+}
+
+
+void types::updateBotBusinessConnect::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    connection->serialize(tlw);
+    tlw.write_int32(qts);
+}
+
+types::updateBotBusinessConnect types::updateBotBusinessConnect::read_body(TlReader& rv) {
+    types::updateBotBusinessConnect out;
+    out.connection = tl::read_boxed<tl::BotBusinessConnection>(rv);
+    out.qts = rv.read_int32();
+    return out;
+}
+
+
+void types::updateBotNewBusinessMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (reply_to_message.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(connection_id);
+    message->serialize(tlw);
+    if (reply_to_message.has_value()) { reply_to_message.value()->serialize(tlw); }
+    tlw.write_int32(qts);
+}
+
+types::updateBotNewBusinessMessage types::updateBotNewBusinessMessage::read_body(TlReader& rv) {
+    types::updateBotNewBusinessMessage out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.connection_id = rv.read_string();
+    out.message = tl::read_boxed<tl::Message>(rv);
+    if ((fl_flags & (1u << 0)) != 0) { out.reply_to_message = tl::read_boxed<tl::Message>(rv); }
+    out.qts = rv.read_int32();
+    return out;
+}
+
+
+void types::updateBotEditBusinessMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (reply_to_message.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(connection_id);
+    message->serialize(tlw);
+    if (reply_to_message.has_value()) { reply_to_message.value()->serialize(tlw); }
+    tlw.write_int32(qts);
+}
+
+types::updateBotEditBusinessMessage types::updateBotEditBusinessMessage::read_body(TlReader& rv) {
+    types::updateBotEditBusinessMessage out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.connection_id = rv.read_string();
+    out.message = tl::read_boxed<tl::Message>(rv);
+    if ((fl_flags & (1u << 0)) != 0) { out.reply_to_message = tl::read_boxed<tl::Message>(rv); }
+    out.qts = rv.read_int32();
+    return out;
+}
+
+
+void types::updateBotDeleteBusinessMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(connection_id);
+    peer->serialize(tlw);
+    tl::write_vector(tlw, messages, [&](TlWriter& tlw209, const auto& e209) { tlw209.write_int32(e209); });
+    tlw.write_int32(qts);
+}
+
+types::updateBotDeleteBusinessMessage types::updateBotDeleteBusinessMessage::read_body(TlReader& rv) {
+    types::updateBotDeleteBusinessMessage out;
+    out.connection_id = rv.read_string();
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.messages = tl::read_vector<std::int32_t>(rv, [&](TlReader& r208) -> std::int32_t { return r208.read_int32(); });
+    out.qts = rv.read_int32();
+    return out;
+}
+
+
+void types::updateNewStoryReaction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(story_id);
+    peer->serialize(tlw);
+    reaction->serialize(tlw);
+}
+
+types::updateNewStoryReaction types::updateNewStoryReaction::read_body(TlReader& rv) {
+    types::updateNewStoryReaction out;
+    out.story_id = rv.read_int32();
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.reaction = tl::read_boxed<tl::Reaction>(rv);
+    return out;
+}
+
+
+void types::updateStarsBalance::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    balance->serialize(tlw);
+}
+
+types::updateStarsBalance types::updateStarsBalance::read_body(TlReader& rv) {
+    types::updateStarsBalance out;
+    out.balance = tl::read_boxed<tl::StarsAmount>(rv);
+    return out;
+}
+
+
+void types::updateBusinessBotCallbackQuery::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (reply_to_message.has_value()) flags_v |= (1u << 2);
+        if (data.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(query_id);
+    tlw.write_int64(user_id);
+    tlw.write_string(connection_id);
+    message->serialize(tlw);
+    if (reply_to_message.has_value()) { reply_to_message.value()->serialize(tlw); }
+    tlw.write_int64(chat_instance);
+    if (data.has_value()) { tlw.write_bytes(data.value()); }
+}
+
+types::updateBusinessBotCallbackQuery types::updateBusinessBotCallbackQuery::read_body(TlReader& rv) {
+    types::updateBusinessBotCallbackQuery out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.query_id = rv.read_int64();
+    out.user_id = rv.read_int64();
+    out.connection_id = rv.read_string();
+    out.message = tl::read_boxed<tl::Message>(rv);
+    if ((fl_flags & (1u << 2)) != 0) { out.reply_to_message = tl::read_boxed<tl::Message>(rv); }
+    out.chat_instance = rv.read_int64();
+    if ((fl_flags & (1u << 0)) != 0) { out.data = rv.read_bytes(); }
+    return out;
+}
+
+
+void types::updateStarsRevenueStatus::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+    status->serialize(tlw);
+}
+
+types::updateStarsRevenueStatus types::updateStarsRevenueStatus::read_body(TlReader& rv) {
+    types::updateStarsRevenueStatus out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.status = tl::read_boxed<tl::StarsRevenueStatus>(rv);
+    return out;
+}
+
+
+void types::updateBotPurchasedPaidMedia::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(user_id);
+    tlw.write_string(payload);
+    tlw.write_int32(qts);
+}
+
+types::updateBotPurchasedPaidMedia types::updateBotPurchasedPaidMedia::read_body(TlReader& rv) {
+    types::updateBotPurchasedPaidMedia out;
+    out.user_id = rv.read_int64();
+    out.payload = rv.read_string();
+    out.qts = rv.read_int32();
+    return out;
+}
+
+
+void types::updatePaidReactionPrivacy::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    private_->serialize(tlw);
+}
+
+types::updatePaidReactionPrivacy types::updatePaidReactionPrivacy::read_body(TlReader& rv) {
+    types::updatePaidReactionPrivacy out;
+    out.private_ = tl::read_boxed<tl::PaidReactionPrivacy>(rv);
+    return out;
+}
+
+
+void types::updateSentPhoneCode::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    sent_code->serialize(tlw);
+}
+
+types::updateSentPhoneCode types::updateSentPhoneCode::read_body(TlReader& rv) {
+    types::updateSentPhoneCode out;
+    out.sent_code = tl::read_boxed<tl::auth_SentCode>(rv);
+    return out;
+}
+
+
+void types::updateGroupCallChainBlocks::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    call->serialize(tlw);
+    tlw.write_int32(sub_chain_id);
+    tl::write_vector(tlw, blocks, [&](TlWriter& tlw211, const auto& e211) { tlw211.write_bytes(e211); });
+    tlw.write_int32(next_offset);
+}
+
+types::updateGroupCallChainBlocks types::updateGroupCallChainBlocks::read_body(TlReader& rv) {
+    types::updateGroupCallChainBlocks out;
+    out.call = tl::read_boxed<tl::InputGroupCall>(rv);
+    out.sub_chain_id = rv.read_int32();
+    out.blocks = tl::read_vector<Bytes>(rv, [&](TlReader& r210) -> Bytes { return r210.read_bytes(); });
+    out.next_offset = rv.read_int32();
+    return out;
+}
+
+
+void types::updateReadMonoForumInbox::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(channel_id);
+    saved_peer_id->serialize(tlw);
+    tlw.write_int32(read_max_id);
+}
+
+types::updateReadMonoForumInbox types::updateReadMonoForumInbox::read_body(TlReader& rv) {
+    types::updateReadMonoForumInbox out;
+    out.channel_id = rv.read_int64();
+    out.saved_peer_id = tl::read_boxed<tl::Peer>(rv);
+    out.read_max_id = rv.read_int32();
+    return out;
+}
+
+
+void types::updateReadMonoForumOutbox::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(channel_id);
+    saved_peer_id->serialize(tlw);
+    tlw.write_int32(read_max_id);
+}
+
+types::updateReadMonoForumOutbox types::updateReadMonoForumOutbox::read_body(TlReader& rv) {
+    types::updateReadMonoForumOutbox out;
+    out.channel_id = rv.read_int64();
+    out.saved_peer_id = tl::read_boxed<tl::Peer>(rv);
+    out.read_max_id = rv.read_int32();
+    return out;
+}
+
+
+void types::updateMonoForumNoPaidException::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (exception) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(channel_id);
+    saved_peer_id->serialize(tlw);
+}
+
+types::updateMonoForumNoPaidException types::updateMonoForumNoPaidException::read_body(TlReader& rv) {
+    types::updateMonoForumNoPaidException out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.exception = (fl_flags & (1u << 0)) != 0;
+    out.channel_id = rv.read_int64();
+    out.saved_peer_id = tl::read_boxed<tl::Peer>(rv);
+    return out;
+}
+
+
+void types::updateGroupCallMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    call->serialize(tlw);
+    message->serialize(tlw);
+}
+
+types::updateGroupCallMessage types::updateGroupCallMessage::read_body(TlReader& rv) {
+    types::updateGroupCallMessage out;
+    out.call = tl::read_boxed<tl::InputGroupCall>(rv);
+    out.message = tl::read_boxed<tl::GroupCallMessage>(rv);
+    return out;
+}
+
+
+void types::updateGroupCallEncryptedMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    call->serialize(tlw);
+    from_id->serialize(tlw);
+    tlw.write_bytes(encrypted_message);
+}
+
+types::updateGroupCallEncryptedMessage types::updateGroupCallEncryptedMessage::read_body(TlReader& rv) {
+    types::updateGroupCallEncryptedMessage out;
+    out.call = tl::read_boxed<tl::InputGroupCall>(rv);
+    out.from_id = tl::read_boxed<tl::Peer>(rv);
+    out.encrypted_message = rv.read_bytes();
+    return out;
+}
+
+
+void types::updatePinnedForumTopic::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (pinned) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    peer->serialize(tlw);
+    tlw.write_int32(topic_id);
+}
+
+types::updatePinnedForumTopic types::updatePinnedForumTopic::read_body(TlReader& rv) {
+    types::updatePinnedForumTopic out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.pinned = (fl_flags & (1u << 0)) != 0;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.topic_id = rv.read_int32();
+    return out;
+}
+
+
+void types::updatePinnedForumTopics::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (order.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    peer->serialize(tlw);
+    if (order.has_value()) { tl::write_vector(tlw, order.value(), [&](TlWriter& tlw213, const auto& e213) { tlw213.write_int32(e213); }); }
+}
+
+types::updatePinnedForumTopics types::updatePinnedForumTopics::read_body(TlReader& rv) {
+    types::updatePinnedForumTopics out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    if ((fl_flags & (1u << 0)) != 0) { out.order = tl::read_vector<std::int32_t>(rv, [&](TlReader& r212) -> std::int32_t { return r212.read_int32(); }); }
+    return out;
+}
+
+
+void types::updateDeleteGroupCallMessages::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    call->serialize(tlw);
+    tl::write_vector(tlw, messages, [&](TlWriter& tlw215, const auto& e215) { tlw215.write_int32(e215); });
+}
+
+types::updateDeleteGroupCallMessages types::updateDeleteGroupCallMessages::read_body(TlReader& rv) {
+    types::updateDeleteGroupCallMessages out;
+    out.call = tl::read_boxed<tl::InputGroupCall>(rv);
+    out.messages = tl::read_vector<std::int32_t>(rv, [&](TlReader& r214) -> std::int32_t { return r214.read_int32(); });
+    return out;
+}
+
+
+void types::updateStarGiftAuctionState::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(gift_id);
     state->serialize(tlw);
 }
 
-types::messages_peerDialogs types::messages_peerDialogs::read_body(TlReader& rv) {
-    types::messages_peerDialogs out;
-    out.dialogs = tl::read_vector<std::shared_ptr<tl::Dialog>>(rv, [&](TlReader& r390) -> std::shared_ptr<tl::Dialog> { return tl::read_boxed<tl::Dialog>(r390); });
-    out.messages = tl::read_vector<std::shared_ptr<tl::Message>>(rv, [&](TlReader& r391) -> std::shared_ptr<tl::Message> { return tl::read_boxed<tl::Message>(r391); });
-    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r392) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r392); });
-    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r393) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r393); });
+types::updateStarGiftAuctionState types::updateStarGiftAuctionState::read_body(TlReader& rv) {
+    types::updateStarGiftAuctionState out;
+    out.gift_id = rv.read_int64();
+    out.state = tl::read_boxed<tl::StarGiftAuctionState>(rv);
+    return out;
+}
+
+
+void types::updateStarGiftAuctionUserState::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(gift_id);
+    user_state->serialize(tlw);
+}
+
+types::updateStarGiftAuctionUserState types::updateStarGiftAuctionUserState::read_body(TlReader& rv) {
+    types::updateStarGiftAuctionUserState out;
+    out.gift_id = rv.read_int64();
+    out.user_state = tl::read_boxed<tl::StarGiftAuctionUserState>(rv);
+    return out;
+}
+
+
+void types::updateEmojiGameInfo::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    info->serialize(tlw);
+}
+
+types::updateEmojiGameInfo types::updateEmojiGameInfo::read_body(TlReader& rv) {
+    types::updateEmojiGameInfo out;
+    out.info = tl::read_boxed<tl::messages_EmojiGameInfo>(rv);
+    return out;
+}
+
+
+void types::updateStarGiftCraftFail::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::updateStarGiftCraftFail types::updateStarGiftCraftFail::read_body(TlReader& rv) {
+    types::updateStarGiftCraftFail out;
+    return out;
+}
+
+
+void types::updateChatParticipantRank::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(chat_id);
+    tlw.write_int64(user_id);
+    tlw.write_string(rank);
+    tlw.write_int32(version);
+}
+
+types::updateChatParticipantRank types::updateChatParticipantRank::read_body(TlReader& rv) {
+    types::updateChatParticipantRank out;
+    out.chat_id = rv.read_int64();
+    out.user_id = rv.read_int64();
+    out.rank = rv.read_string();
+    out.version = rv.read_int32();
+    return out;
+}
+
+
+void types::updateManagedBot::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(user_id);
+    tlw.write_int64(bot_id);
+    tlw.write_int32(qts);
+}
+
+types::updateManagedBot types::updateManagedBot::read_body(TlReader& rv) {
+    types::updateManagedBot out;
+    out.user_id = rv.read_int64();
+    out.bot_id = rv.read_int64();
+    out.qts = rv.read_int32();
+    return out;
+}
+
+
+void types::updateBotGuestChatQuery::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (reference_messages.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(query_id);
+    message->serialize(tlw);
+    if (reference_messages.has_value()) { tl::write_vector(tlw, reference_messages.value(), [&](TlWriter& tlw217, const auto& e217) { e217->serialize(tlw217); }); }
+    tlw.write_int32(qts);
+}
+
+types::updateBotGuestChatQuery types::updateBotGuestChatQuery::read_body(TlReader& rv) {
+    types::updateBotGuestChatQuery out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.query_id = rv.read_int64();
+    out.message = tl::read_boxed<tl::Message>(rv);
+    if ((fl_flags & (1u << 0)) != 0) { out.reference_messages = tl::read_vector<std::shared_ptr<tl::Message>>(rv, [&](TlReader& r216) -> std::shared_ptr<tl::Message> { return tl::read_boxed<tl::Message>(r216); }); }
+    out.qts = rv.read_int32();
+    return out;
+}
+
+
+void types::updateAiComposeTones::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::updateAiComposeTones types::updateAiComposeTones::read_body(TlReader& rv) {
+    types::updateAiComposeTones out;
+    return out;
+}
+
+
+void types::updateJoinChatWebViewDecision::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+    tlw.write_int64(query_id);
+    result->serialize(tlw);
+}
+
+types::updateJoinChatWebViewDecision types::updateJoinChatWebViewDecision::read_body(TlReader& rv) {
+    types::updateJoinChatWebViewDecision out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.query_id = rv.read_int64();
+    out.result = tl::read_boxed<tl::JoinChatBotResult>(rv);
+    return out;
+}
+
+
+void types::updateNewBotConnection::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (confirmed) flags_v |= (1u << 0);
+        if (date.has_value()) flags_v |= (1u << 1);
+        if (device.has_value()) flags_v |= (1u << 1);
+        if (location.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(bot_id);
+    if (date.has_value()) { tlw.write_int32(date.value()); }
+    if (device.has_value()) { tlw.write_string(device.value()); }
+    if (location.has_value()) { tlw.write_string(location.value()); }
+}
+
+types::updateNewBotConnection types::updateNewBotConnection::read_body(TlReader& rv) {
+    types::updateNewBotConnection out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.confirmed = (fl_flags & (1u << 0)) != 0;
+    out.bot_id = rv.read_int64();
+    if ((fl_flags & (1u << 1)) != 0) { out.date = rv.read_int32(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.device = rv.read_string(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.location = rv.read_string(); }
+    return out;
+}
+
+
+void types::updateWebBrowserSettings::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (open_external_browser) flags_v |= (1u << 0);
+        if (display_close_button) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+}
+
+types::updateWebBrowserSettings types::updateWebBrowserSettings::read_body(TlReader& rv) {
+    types::updateWebBrowserSettings out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.open_external_browser = (fl_flags & (1u << 0)) != 0;
+    out.display_close_button = (fl_flags & (1u << 1)) != 0;
+    return out;
+}
+
+
+void types::updateWebBrowserException::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (delete_) flags_v |= (1u << 1);
+        if (open_external_browser.has_value()) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    if (open_external_browser.has_value()) { tlw.write_bool(open_external_browser.value()); }
+    exception->serialize(tlw);
+}
+
+types::updateWebBrowserException types::updateWebBrowserException::read_body(TlReader& rv) {
+    types::updateWebBrowserException out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.delete_ = (fl_flags & (1u << 1)) != 0;
+    if ((fl_flags & (1u << 0)) != 0) { out.open_external_browser = rv.read_bool(); }
+    out.exception = tl::read_boxed<tl::WebDomainException>(rv);
+    return out;
+}
+
+
+void types::updateNewEphemeralMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    message->serialize(tlw);
+}
+
+types::updateNewEphemeralMessage types::updateNewEphemeralMessage::read_body(TlReader& rv) {
+    types::updateNewEphemeralMessage out;
+    out.message = tl::read_boxed<tl::EphemeralMessage>(rv);
+    return out;
+}
+
+
+void types::updateDeleteEphemeralMessages::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+    tl::write_vector(tlw, ids, [&](TlWriter& tlw219, const auto& e219) { tlw219.write_int32(e219); });
+}
+
+types::updateDeleteEphemeralMessages types::updateDeleteEphemeralMessages::read_body(TlReader& rv) {
+    types::updateDeleteEphemeralMessages out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.ids = tl::read_vector<std::int32_t>(rv, [&](TlReader& r218) -> std::int32_t { return r218.read_int32(); });
+    return out;
+}
+
+
+void types::updateEditEphemeralMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    message->serialize(tlw);
+}
+
+types::updateEditEphemeralMessage types::updateEditEphemeralMessage::read_body(TlReader& rv) {
+    types::updateEditEphemeralMessage out;
+    out.message = tl::read_boxed<tl::EphemeralMessage>(rv);
+    return out;
+}
+
+
+void types::updateEphemeralBotCallbackQuery::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (peer.has_value()) flags_v |= (1u << 0);
+        if (chat_instance.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(query_id);
+    tlw.write_int64(user_id);
+    if (peer.has_value()) { peer.value()->serialize(tlw); }
+    tlw.write_int32(msg_id);
+    tlw.write_bytes(data);
+    if (chat_instance.has_value()) { tlw.write_int64(chat_instance.value()); }
+    message->serialize(tlw);
+}
+
+types::updateEphemeralBotCallbackQuery types::updateEphemeralBotCallbackQuery::read_body(TlReader& rv) {
+    types::updateEphemeralBotCallbackQuery out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.query_id = rv.read_int64();
+    out.user_id = rv.read_int64();
+    if ((fl_flags & (1u << 0)) != 0) { out.peer = tl::read_boxed<tl::Peer>(rv); }
+    out.msg_id = rv.read_int32();
+    out.data = rv.read_bytes();
+    if ((fl_flags & (1u << 1)) != 0) { out.chat_instance = rv.read_int64(); }
+    out.message = tl::read_boxed<tl::EphemeralMessage>(rv);
+    return out;
+}
+
+
+void types::updateBotStarsSubscription::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (canceled) flags_v |= (1u << 0);
+        if (payment_failed) flags_v |= (1u << 1);
+        if (restored) flags_v |= (1u << 2);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(user_id);
+    tlw.write_bytes(payload);
+    tlw.write_int32(qts);
+}
+
+types::updateBotStarsSubscription types::updateBotStarsSubscription::read_body(TlReader& rv) {
+    types::updateBotStarsSubscription out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.canceled = (fl_flags & (1u << 0)) != 0;
+    out.payment_failed = (fl_flags & (1u << 1)) != 0;
+    out.restored = (fl_flags & (1u << 2)) != 0;
+    out.user_id = rv.read_int64();
+    out.payload = rv.read_bytes();
+    out.qts = rv.read_int32();
+    return out;
+}
+
+
+void types::updateWalletState::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    state->serialize(tlw);
+}
+
+types::updateWalletState types::updateWalletState::read_body(TlReader& rv) {
+    types::updateWalletState out;
+    out.state = tl::read_boxed<tl::WalletState>(rv);
+    return out;
+}
+
+
+void types::updateSentWalletTransaction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (gasless) flags_v |= (1u << 0);
+        if (transaction.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_string(msg_hash);
+    if (transaction.has_value()) { transaction.value()->serialize(tlw); }
+}
+
+types::updateSentWalletTransaction types::updateSentWalletTransaction::read_body(TlReader& rv) {
+    types::updateSentWalletTransaction out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.gasless = (fl_flags & (1u << 0)) != 0;
+    out.msg_hash = rv.read_string();
+    if ((fl_flags & (1u << 1)) != 0) { out.transaction = tl::read_boxed<tl::WalletTransaction>(rv); }
+    return out;
+}
+
+
+void types::updateWalletGaslessInfo::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (available) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int32(left);
+    tlw.write_int32(reset_at);
+    tlw.write_int64(min_amount);
+    tlw.write_string(relayer_address);
+}
+
+types::updateWalletGaslessInfo types::updateWalletGaslessInfo::read_body(TlReader& rv) {
+    types::updateWalletGaslessInfo out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.available = (fl_flags & (1u << 0)) != 0;
+    out.left = rv.read_int32();
+    out.reset_at = rv.read_int32();
+    out.min_amount = rv.read_int64();
+    out.relayer_address = rv.read_string();
+    return out;
+}
+
+
+void types::updateWalletTonConnectSession::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    session->serialize(tlw);
+}
+
+types::updateWalletTonConnectSession types::updateWalletTonConnectSession::read_body(TlReader& rv) {
+    types::updateWalletTonConnectSession out;
+    out.session = tl::read_boxed<tl::TonConnectSession>(rv);
+    return out;
+}
+
+
+void types::updateWalletTonConnectPendingDisconnect::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, session_ids, [&](TlWriter& tlw221, const auto& e221) { tlw221.write_int64(e221); });
+}
+
+types::updateWalletTonConnectPendingDisconnect types::updateWalletTonConnectPendingDisconnect::read_body(TlReader& rv) {
+    types::updateWalletTonConnectPendingDisconnect out;
+    out.session_ids = tl::read_vector<std::int64_t>(rv, [&](TlReader& r220) -> std::int64_t { return r220.read_int64(); });
+    return out;
+}
+
+
+void types::updateEditForumTopic::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (title.has_value()) flags_v |= (1u << 0);
+        if (icon_emoji_id.has_value()) flags_v |= (1u << 1);
+        if (closed.has_value()) flags_v |= (1u << 2);
+        if (hidden.has_value()) flags_v |= (1u << 3);
+        tlw.write_uint32(flags_v);
+    }
+    peer->serialize(tlw);
+    tlw.write_int32(topic_id);
+    if (title.has_value()) { tlw.write_string(title.value()); }
+    if (icon_emoji_id.has_value()) { tlw.write_int64(icon_emoji_id.value()); }
+    if (closed.has_value()) { tlw.write_bool(closed.value()); }
+    if (hidden.has_value()) { tlw.write_bool(hidden.value()); }
+}
+
+types::updateEditForumTopic types::updateEditForumTopic::read_body(TlReader& rv) {
+    types::updateEditForumTopic out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.topic_id = rv.read_int32();
+    if ((fl_flags & (1u << 0)) != 0) { out.title = rv.read_string(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.icon_emoji_id = rv.read_int64(); }
+    if ((fl_flags & (1u << 2)) != 0) { out.closed = rv.read_bool(); }
+    if ((fl_flags & (1u << 3)) != 0) { out.hidden = rv.read_bool(); }
+    return out;
+}
+
+
+void types::updateBotWidgetQuery::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (widget_id.has_value()) flags_v |= (1u << 0);
+        if (wallet_card.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(query_id);
+    query_type->serialize(tlw);
+    tlw.write_int64(user_id);
+    peer->serialize(tlw);
+    tlw.write_int32(msg_id);
+    tlw.write_int64(chat_instance);
+    tlw.write_string(chat_type);
+    tlw.write_bytes(data);
+    if (widget_id.has_value()) { tlw.write_int64(widget_id.value()); }
+    if (wallet_card.has_value()) { wallet_card.value()->serialize(tlw); }
+}
+
+types::updateBotWidgetQuery types::updateBotWidgetQuery::read_body(TlReader& rv) {
+    types::updateBotWidgetQuery out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.query_id = rv.read_int64();
+    out.query_type = tl::read_boxed<tl::WidgetQueryType>(rv);
+    out.user_id = rv.read_int64();
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.msg_id = rv.read_int32();
+    out.chat_instance = rv.read_int64();
+    out.chat_type = rv.read_string();
+    out.data = rv.read_bytes();
+    if ((fl_flags & (1u << 0)) != 0) { out.widget_id = rv.read_int64(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.wallet_card = tl::read_boxed<tl::wallet_Card>(rv); }
+    return out;
+}
+
+
+void types::updateInlineBotWidgetQuery::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (widget_id.has_value()) flags_v |= (1u << 0);
+        if (wallet_card.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(query_id);
+    query_type->serialize(tlw);
+    tlw.write_int64(user_id);
+    inline_message_id->serialize(tlw);
+    tlw.write_int64(chat_instance);
+    tlw.write_string(chat_type);
+    tlw.write_bytes(data);
+    if (widget_id.has_value()) { tlw.write_int64(widget_id.value()); }
+    if (wallet_card.has_value()) { wallet_card.value()->serialize(tlw); }
+}
+
+types::updateInlineBotWidgetQuery types::updateInlineBotWidgetQuery::read_body(TlReader& rv) {
+    types::updateInlineBotWidgetQuery out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.query_id = rv.read_int64();
+    out.query_type = tl::read_boxed<tl::WidgetQueryType>(rv);
+    out.user_id = rv.read_int64();
+    out.inline_message_id = tl::read_boxed<tl::InputBotInlineMessageID>(rv);
+    out.chat_instance = rv.read_int64();
+    out.chat_type = rv.read_string();
+    out.data = rv.read_bytes();
+    if ((fl_flags & (1u << 0)) != 0) { out.widget_id = rv.read_int64(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.wallet_card = tl::read_boxed<tl::wallet_Card>(rv); }
+    return out;
+}
+
+
+void types::updateBotWidgetCopyQuery::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (wallet_card.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(query_id);
+    query_type->serialize(tlw);
+    tlw.write_int64(user_id);
+    tlw.write_bytes(data);
+    tlw.write_int64(widget_id);
+    if (wallet_card.has_value()) { wallet_card.value()->serialize(tlw); }
+}
+
+types::updateBotWidgetCopyQuery types::updateBotWidgetCopyQuery::read_body(TlReader& rv) {
+    types::updateBotWidgetCopyQuery out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.query_id = rv.read_int64();
+    out.query_type = tl::read_boxed<tl::WidgetQueryType>(rv);
+    out.user_id = rv.read_int64();
+    out.data = rv.read_bytes();
+    out.widget_id = rv.read_int64();
+    if ((fl_flags & (1u << 1)) != 0) { out.wallet_card = tl::read_boxed<tl::wallet_Card>(rv); }
+    return out;
+}
+
+
+void types::updateMessageWidgetData::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (public_data.has_value()) flags_v |= (1u << 0);
+        if (public_data_hash.has_value()) flags_v |= (1u << 0);
+        if (chat_data.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    peer->serialize(tlw);
+    tlw.write_int32(msg_id);
+    if (public_data.has_value()) { tlw.write_string(public_data.value()); }
+    if (public_data_hash.has_value()) { tlw.write_int64(public_data_hash.value()); }
+    if (chat_data.has_value()) { tlw.write_string(chat_data.value()); }
+    tlw.write_int32(pts);
+    tlw.write_int32(pts_count);
+}
+
+types::updateMessageWidgetData types::updateMessageWidgetData::read_body(TlReader& rv) {
+    types::updateMessageWidgetData out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.msg_id = rv.read_int32();
+    if ((fl_flags & (1u << 0)) != 0) { out.public_data = rv.read_string(); }
+    if ((fl_flags & (1u << 0)) != 0) { out.public_data_hash = rv.read_int64(); }
+    if ((fl_flags & (1u << 1)) != 0) { out.chat_data = rv.read_string(); }
+    out.pts = rv.read_int32();
+    out.pts_count = rv.read_int32();
+    return out;
+}
+
+
+void types::updateTranscribedAudioFile::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (pending) flags_v |= (1u << 0);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(transcription_id);
+    tlw.write_string(text);
+}
+
+types::updateTranscribedAudioFile types::updateTranscribedAudioFile::read_body(TlReader& rv) {
+    types::updateTranscribedAudioFile out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.pending = (fl_flags & (1u << 0)) != 0;
+    out.transcription_id = rv.read_int64();
+    out.text = rv.read_string();
+    return out;
+}
+
+
+void types::updates_state::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(pts);
+    tlw.write_int32(qts);
+    tlw.write_int32(date);
+    tlw.write_int32(seq);
+    tlw.write_int32(unread_count);
+}
+
+types::updates_state types::updates_state::read_body(TlReader& rv) {
+    types::updates_state out;
+    out.pts = rv.read_int32();
+    out.qts = rv.read_int32();
+    out.date = rv.read_int32();
+    out.seq = rv.read_int32();
+    out.unread_count = rv.read_int32();
+    return out;
+}
+
+
+void types::updates_differenceEmpty::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(date);
+    tlw.write_int32(seq);
+}
+
+types::updates_differenceEmpty types::updates_differenceEmpty::read_body(TlReader& rv) {
+    types::updates_differenceEmpty out;
+    out.date = rv.read_int32();
+    out.seq = rv.read_int32();
+    return out;
+}
+
+
+void types::updates_difference::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, new_messages, [&](TlWriter& tlw227, const auto& e227) { e227->serialize(tlw227); });
+    tl::write_vector(tlw, new_encrypted_messages, [&](TlWriter& tlw228, const auto& e228) { e228->serialize(tlw228); });
+    tl::write_vector(tlw, other_updates, [&](TlWriter& tlw229, const auto& e229) { e229->serialize(tlw229); });
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw230, const auto& e230) { e230->serialize(tlw230); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw231, const auto& e231) { e231->serialize(tlw231); });
+    state->serialize(tlw);
+}
+
+types::updates_difference types::updates_difference::read_body(TlReader& rv) {
+    types::updates_difference out;
+    out.new_messages = tl::read_vector<std::shared_ptr<tl::Message>>(rv, [&](TlReader& r222) -> std::shared_ptr<tl::Message> { return tl::read_boxed<tl::Message>(r222); });
+    out.new_encrypted_messages = tl::read_vector<std::shared_ptr<tl::EncryptedMessage>>(rv, [&](TlReader& r223) -> std::shared_ptr<tl::EncryptedMessage> { return tl::read_boxed<tl::EncryptedMessage>(r223); });
+    out.other_updates = tl::read_vector<std::shared_ptr<tl::Update>>(rv, [&](TlReader& r224) -> std::shared_ptr<tl::Update> { return tl::read_boxed<tl::Update>(r224); });
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r225) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r225); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r226) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r226); });
     out.state = tl::read_boxed<tl::updates_State>(rv);
     return out;
 }
 
 
-void types::topPeer::serialize(TlWriter& tlw) const {
+void types::updates_differenceSlice::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    peer->serialize(tlw);
-    tlw.write_double(rating);
+    tl::write_vector(tlw, new_messages, [&](TlWriter& tlw237, const auto& e237) { e237->serialize(tlw237); });
+    tl::write_vector(tlw, new_encrypted_messages, [&](TlWriter& tlw238, const auto& e238) { e238->serialize(tlw238); });
+    tl::write_vector(tlw, other_updates, [&](TlWriter& tlw239, const auto& e239) { e239->serialize(tlw239); });
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw240, const auto& e240) { e240->serialize(tlw240); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw241, const auto& e241) { e241->serialize(tlw241); });
+    intermediate_state->serialize(tlw);
 }
 
-types::topPeer types::topPeer::read_body(TlReader& rv) {
-    types::topPeer out;
-    out.peer = tl::read_boxed<tl::Peer>(rv);
-    out.rating = rv.read_double();
+types::updates_differenceSlice types::updates_differenceSlice::read_body(TlReader& rv) {
+    types::updates_differenceSlice out;
+    out.new_messages = tl::read_vector<std::shared_ptr<tl::Message>>(rv, [&](TlReader& r232) -> std::shared_ptr<tl::Message> { return tl::read_boxed<tl::Message>(r232); });
+    out.new_encrypted_messages = tl::read_vector<std::shared_ptr<tl::EncryptedMessage>>(rv, [&](TlReader& r233) -> std::shared_ptr<tl::EncryptedMessage> { return tl::read_boxed<tl::EncryptedMessage>(r233); });
+    out.other_updates = tl::read_vector<std::shared_ptr<tl::Update>>(rv, [&](TlReader& r234) -> std::shared_ptr<tl::Update> { return tl::read_boxed<tl::Update>(r234); });
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r235) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r235); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r236) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r236); });
+    out.intermediate_state = tl::read_boxed<tl::updates_State>(rv);
     return out;
 }
 
 
-void types::topPeerCategoryBotsPM::serialize(TlWriter& tlw) const {
+void types::updates_differenceTooLong::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
+    tlw.write_int32(pts);
 }
 
-types::topPeerCategoryBotsPM types::topPeerCategoryBotsPM::read_body(TlReader& rv) {
-    types::topPeerCategoryBotsPM out;
+types::updates_differenceTooLong types::updates_differenceTooLong::read_body(TlReader& rv) {
+    types::updates_differenceTooLong out;
+    out.pts = rv.read_int32();
     return out;
 }
 
 
-void types::topPeerCategoryBotsInline::serialize(TlWriter& tlw) const {
+void types::updatesTooLong::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
 }
 
-types::topPeerCategoryBotsInline types::topPeerCategoryBotsInline::read_body(TlReader& rv) {
-    types::topPeerCategoryBotsInline out;
+types::updatesTooLong types::updatesTooLong::read_body(TlReader& rv) {
+    types::updatesTooLong out;
     return out;
 }
 
 
-void types::topPeerCategoryCorrespondents::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::topPeerCategoryCorrespondents types::topPeerCategoryCorrespondents::read_body(TlReader& rv) {
-    types::topPeerCategoryCorrespondents out;
-    return out;
-}
-
-
-void types::topPeerCategoryGroups::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::topPeerCategoryGroups types::topPeerCategoryGroups::read_body(TlReader& rv) {
-    types::topPeerCategoryGroups out;
-    return out;
-}
-
-
-void types::topPeerCategoryChannels::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::topPeerCategoryChannels types::topPeerCategoryChannels::read_body(TlReader& rv) {
-    types::topPeerCategoryChannels out;
-    return out;
-}
-
-
-void types::topPeerCategoryPhoneCalls::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::topPeerCategoryPhoneCalls types::topPeerCategoryPhoneCalls::read_body(TlReader& rv) {
-    types::topPeerCategoryPhoneCalls out;
-    return out;
-}
-
-
-void types::topPeerCategoryForwardUsers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::topPeerCategoryForwardUsers types::topPeerCategoryForwardUsers::read_body(TlReader& rv) {
-    types::topPeerCategoryForwardUsers out;
-    return out;
-}
-
-
-void types::topPeerCategoryForwardChats::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::topPeerCategoryForwardChats types::topPeerCategoryForwardChats::read_body(TlReader& rv) {
-    types::topPeerCategoryForwardChats out;
-    return out;
-}
-
-
-void types::topPeerCategoryBotsApp::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::topPeerCategoryBotsApp types::topPeerCategoryBotsApp::read_body(TlReader& rv) {
-    types::topPeerCategoryBotsApp out;
-    return out;
-}
-
-
-void types::topPeerCategoryBotsGuestChat::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::topPeerCategoryBotsGuestChat types::topPeerCategoryBotsGuestChat::read_body(TlReader& rv) {
-    types::topPeerCategoryBotsGuestChat out;
-    return out;
-}
-
-
-void types::topPeerCategoryPeers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    category->serialize(tlw);
-    tlw.write_int32(count);
-    tl::write_vector(tlw, peers, [&](TlWriter& tlw399, const auto& e399) { e399->serialize(tlw399); });
-}
-
-types::topPeerCategoryPeers types::topPeerCategoryPeers::read_body(TlReader& rv) {
-    types::topPeerCategoryPeers out;
-    out.category = tl::read_boxed<tl::TopPeerCategory>(rv);
-    out.count = rv.read_int32();
-    out.peers = tl::read_vector<std::shared_ptr<tl::TopPeer>>(rv, [&](TlReader& r398) -> std::shared_ptr<tl::TopPeer> { return tl::read_boxed<tl::TopPeer>(r398); });
-    return out;
-}
-
-
-void types::contacts_topPeersNotModified::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::contacts_topPeersNotModified types::contacts_topPeersNotModified::read_body(TlReader& rv) {
-    types::contacts_topPeersNotModified out;
-    return out;
-}
-
-
-void types::contacts_topPeers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, categories, [&](TlWriter& tlw403, const auto& e403) { e403->serialize(tlw403); });
-    tl::write_vector(tlw, chats, [&](TlWriter& tlw404, const auto& e404) { e404->serialize(tlw404); });
-    tl::write_vector(tlw, users, [&](TlWriter& tlw405, const auto& e405) { e405->serialize(tlw405); });
-}
-
-types::contacts_topPeers types::contacts_topPeers::read_body(TlReader& rv) {
-    types::contacts_topPeers out;
-    out.categories = tl::read_vector<std::shared_ptr<tl::TopPeerCategoryPeers>>(rv, [&](TlReader& r400) -> std::shared_ptr<tl::TopPeerCategoryPeers> { return tl::read_boxed<tl::TopPeerCategoryPeers>(r400); });
-    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r401) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r401); });
-    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r402) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r402); });
-    return out;
-}
-
-
-void types::contacts_topPeersDisabled::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::contacts_topPeersDisabled types::contacts_topPeersDisabled::read_body(TlReader& rv) {
-    types::contacts_topPeersDisabled out;
-    return out;
-}
-
-
-void types::draftMessageEmpty::serialize(TlWriter& tlw) const {
+void types::updateShortMessage::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (date.has_value()) flags_v |= (1u << 0);
+        if (out) flags_v |= (1u << 1);
+        if (mentioned) flags_v |= (1u << 4);
+        if (media_unread) flags_v |= (1u << 5);
+        if (silent) flags_v |= (1u << 13);
+        if (fwd_from.has_value()) flags_v |= (1u << 2);
+        if (via_bot_id.has_value()) flags_v |= (1u << 11);
+        if (reply_to.has_value()) flags_v |= (1u << 3);
+        if (entities.has_value()) flags_v |= (1u << 7);
+        if (ttl_period.has_value()) flags_v |= (1u << 25);
         tlw.write_uint32(flags_v);
     }
-    if (date.has_value()) { tlw.write_int32(date.value()); }
-}
-
-types::draftMessageEmpty types::draftMessageEmpty::read_body(TlReader& rv) {
-    types::draftMessageEmpty out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    if ((fl_flags & (1u << 0)) != 0) { out.date = rv.read_int32(); }
-    return out;
-}
-
-
-void types::draftMessage::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (no_webpage) flags_v |= (1u << 1);
-        if (invert_media) flags_v |= (1u << 6);
-        if (reply_to.has_value()) flags_v |= (1u << 4);
-        if (entities.has_value()) flags_v |= (1u << 3);
-        if (media.has_value()) flags_v |= (1u << 5);
-        if (effect.has_value()) flags_v |= (1u << 7);
-        if (suggested_post.has_value()) flags_v |= (1u << 8);
-        if (rich_message.has_value()) flags_v |= (1u << 9);
-        tlw.write_uint32(flags_v);
-    }
-    if (reply_to.has_value()) { reply_to.value()->serialize(tlw); }
+    tlw.write_int32(id);
+    tlw.write_int64(user_id);
     tlw.write_string(message);
-    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw407, const auto& e407) { e407->serialize(tlw407); }); }
-    if (media.has_value()) { media.value()->serialize(tlw); }
+    tlw.write_int32(pts);
+    tlw.write_int32(pts_count);
     tlw.write_int32(date);
-    if (effect.has_value()) { tlw.write_int64(effect.value()); }
-    if (suggested_post.has_value()) { suggested_post.value()->serialize(tlw); }
-    if (rich_message.has_value()) { rich_message.value()->serialize(tlw); }
+    if (fwd_from.has_value()) { fwd_from.value()->serialize(tlw); }
+    if (via_bot_id.has_value()) { tlw.write_int64(via_bot_id.value()); }
+    if (reply_to.has_value()) { reply_to.value()->serialize(tlw); }
+    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw243, const auto& e243) { e243->serialize(tlw243); }); }
+    if (ttl_period.has_value()) { tlw.write_int32(ttl_period.value()); }
 }
 
-types::draftMessage types::draftMessage::read_body(TlReader& rv) {
-    types::draftMessage out;
+types::updateShortMessage types::updateShortMessage::read_body(TlReader& rv) {
+    types::updateShortMessage out;
     std::uint32_t fl_flags = rv.read_uint32();
-    out.no_webpage = (fl_flags & (1u << 1)) != 0;
-    out.invert_media = (fl_flags & (1u << 6)) != 0;
-    if ((fl_flags & (1u << 4)) != 0) { out.reply_to = tl::read_boxed<tl::InputReplyTo>(rv); }
+    out.out = (fl_flags & (1u << 1)) != 0;
+    out.mentioned = (fl_flags & (1u << 4)) != 0;
+    out.media_unread = (fl_flags & (1u << 5)) != 0;
+    out.silent = (fl_flags & (1u << 13)) != 0;
+    out.id = rv.read_int32();
+    out.user_id = rv.read_int64();
     out.message = rv.read_string();
-    if ((fl_flags & (1u << 3)) != 0) { out.entities = tl::read_vector<std::shared_ptr<tl::MessageEntity>>(rv, [&](TlReader& r406) -> std::shared_ptr<tl::MessageEntity> { return tl::read_boxed<tl::MessageEntity>(r406); }); }
-    if ((fl_flags & (1u << 5)) != 0) { out.media = tl::read_boxed<tl::InputMedia>(rv); }
+    out.pts = rv.read_int32();
+    out.pts_count = rv.read_int32();
     out.date = rv.read_int32();
-    if ((fl_flags & (1u << 7)) != 0) { out.effect = rv.read_int64(); }
-    if ((fl_flags & (1u << 8)) != 0) { out.suggested_post = tl::read_boxed<tl::SuggestedPost>(rv); }
-    if ((fl_flags & (1u << 9)) != 0) { out.rich_message = tl::read_boxed<tl::RichMessage>(rv); }
+    if ((fl_flags & (1u << 2)) != 0) { out.fwd_from = tl::read_boxed<tl::MessageFwdHeader>(rv); }
+    if ((fl_flags & (1u << 11)) != 0) { out.via_bot_id = rv.read_int64(); }
+    if ((fl_flags & (1u << 3)) != 0) { out.reply_to = tl::read_boxed<tl::MessageReplyHeader>(rv); }
+    if ((fl_flags & (1u << 7)) != 0) { out.entities = tl::read_vector<std::shared_ptr<tl::MessageEntity>>(rv, [&](TlReader& r242) -> std::shared_ptr<tl::MessageEntity> { return tl::read_boxed<tl::MessageEntity>(r242); }); }
+    if ((fl_flags & (1u << 25)) != 0) { out.ttl_period = rv.read_int32(); }
     return out;
 }
 
 
-void types::messages_featuredStickersNotModified::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(count);
-}
-
-types::messages_featuredStickersNotModified types::messages_featuredStickersNotModified::read_body(TlReader& rv) {
-    types::messages_featuredStickersNotModified out;
-    out.count = rv.read_int32();
-    return out;
-}
-
-
-void types::messages_featuredStickers::serialize(TlWriter& tlw) const {
+void types::updateShortChatMessage::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (premium) flags_v |= (1u << 0);
+        if (out) flags_v |= (1u << 1);
+        if (mentioned) flags_v |= (1u << 4);
+        if (media_unread) flags_v |= (1u << 5);
+        if (silent) flags_v |= (1u << 13);
+        if (fwd_from.has_value()) flags_v |= (1u << 2);
+        if (via_bot_id.has_value()) flags_v |= (1u << 11);
+        if (reply_to.has_value()) flags_v |= (1u << 3);
+        if (entities.has_value()) flags_v |= (1u << 7);
+        if (ttl_period.has_value()) flags_v |= (1u << 25);
         tlw.write_uint32(flags_v);
     }
-    tlw.write_int64(hash);
-    tlw.write_int32(count);
-    tl::write_vector(tlw, sets, [&](TlWriter& tlw410, const auto& e410) { e410->serialize(tlw410); });
-    tl::write_vector(tlw, unread, [&](TlWriter& tlw411, const auto& e411) { tlw411.write_int64(e411); });
+    tlw.write_int32(id);
+    tlw.write_int64(from_id);
+    tlw.write_int64(chat_id);
+    tlw.write_string(message);
+    tlw.write_int32(pts);
+    tlw.write_int32(pts_count);
+    tlw.write_int32(date);
+    if (fwd_from.has_value()) { fwd_from.value()->serialize(tlw); }
+    if (via_bot_id.has_value()) { tlw.write_int64(via_bot_id.value()); }
+    if (reply_to.has_value()) { reply_to.value()->serialize(tlw); }
+    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw245, const auto& e245) { e245->serialize(tlw245); }); }
+    if (ttl_period.has_value()) { tlw.write_int32(ttl_period.value()); }
 }
 
-types::messages_featuredStickers types::messages_featuredStickers::read_body(TlReader& rv) {
-    types::messages_featuredStickers out;
+types::updateShortChatMessage types::updateShortChatMessage::read_body(TlReader& rv) {
+    types::updateShortChatMessage out;
     std::uint32_t fl_flags = rv.read_uint32();
-    out.premium = (fl_flags & (1u << 0)) != 0;
-    out.hash = rv.read_int64();
-    out.count = rv.read_int32();
-    out.sets = tl::read_vector<std::shared_ptr<tl::StickerSetCovered>>(rv, [&](TlReader& r408) -> std::shared_ptr<tl::StickerSetCovered> { return tl::read_boxed<tl::StickerSetCovered>(r408); });
-    out.unread = tl::read_vector<std::int64_t>(rv, [&](TlReader& r409) -> std::int64_t { return r409.read_int64(); });
+    out.out = (fl_flags & (1u << 1)) != 0;
+    out.mentioned = (fl_flags & (1u << 4)) != 0;
+    out.media_unread = (fl_flags & (1u << 5)) != 0;
+    out.silent = (fl_flags & (1u << 13)) != 0;
+    out.id = rv.read_int32();
+    out.from_id = rv.read_int64();
+    out.chat_id = rv.read_int64();
+    out.message = rv.read_string();
+    out.pts = rv.read_int32();
+    out.pts_count = rv.read_int32();
+    out.date = rv.read_int32();
+    if ((fl_flags & (1u << 2)) != 0) { out.fwd_from = tl::read_boxed<tl::MessageFwdHeader>(rv); }
+    if ((fl_flags & (1u << 11)) != 0) { out.via_bot_id = rv.read_int64(); }
+    if ((fl_flags & (1u << 3)) != 0) { out.reply_to = tl::read_boxed<tl::MessageReplyHeader>(rv); }
+    if ((fl_flags & (1u << 7)) != 0) { out.entities = tl::read_vector<std::shared_ptr<tl::MessageEntity>>(rv, [&](TlReader& r244) -> std::shared_ptr<tl::MessageEntity> { return tl::read_boxed<tl::MessageEntity>(r244); }); }
+    if ((fl_flags & (1u << 25)) != 0) { out.ttl_period = rv.read_int32(); }
     return out;
 }
 
 
-void types::messages_recentStickersNotModified::serialize(TlWriter& tlw) const {
+void types::updateShort::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
+    update->serialize(tlw);
+    tlw.write_int32(date);
 }
 
-types::messages_recentStickersNotModified types::messages_recentStickersNotModified::read_body(TlReader& rv) {
-    types::messages_recentStickersNotModified out;
+types::updateShort types::updateShort::read_body(TlReader& rv) {
+    types::updateShort out;
+    out.update = tl::read_boxed<tl::Update>(rv);
+    out.date = rv.read_int32();
     return out;
 }
 
 
-void types::messages_recentStickers::serialize(TlWriter& tlw) const {
+void types::updatesCombined::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-    tl::write_vector(tlw, packs, [&](TlWriter& tlw415, const auto& e415) { e415->serialize(tlw415); });
-    tl::write_vector(tlw, stickers, [&](TlWriter& tlw416, const auto& e416) { e416->serialize(tlw416); });
-    tl::write_vector(tlw, dates, [&](TlWriter& tlw417, const auto& e417) { tlw417.write_int32(e417); });
+    tl::write_vector(tlw, updates, [&](TlWriter& tlw249, const auto& e249) { e249->serialize(tlw249); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw250, const auto& e250) { e250->serialize(tlw250); });
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw251, const auto& e251) { e251->serialize(tlw251); });
+    tlw.write_int32(date);
+    tlw.write_int32(seq_start);
+    tlw.write_int32(seq);
 }
 
-types::messages_recentStickers types::messages_recentStickers::read_body(TlReader& rv) {
-    types::messages_recentStickers out;
-    out.hash = rv.read_int64();
-    out.packs = tl::read_vector<std::shared_ptr<tl::StickerPack>>(rv, [&](TlReader& r412) -> std::shared_ptr<tl::StickerPack> { return tl::read_boxed<tl::StickerPack>(r412); });
-    out.stickers = tl::read_vector<std::shared_ptr<tl::Document>>(rv, [&](TlReader& r413) -> std::shared_ptr<tl::Document> { return tl::read_boxed<tl::Document>(r413); });
-    out.dates = tl::read_vector<std::int32_t>(rv, [&](TlReader& r414) -> std::int32_t { return r414.read_int32(); });
+types::updatesCombined types::updatesCombined::read_body(TlReader& rv) {
+    types::updatesCombined out;
+    out.updates = tl::read_vector<std::shared_ptr<tl::Update>>(rv, [&](TlReader& r246) -> std::shared_ptr<tl::Update> { return tl::read_boxed<tl::Update>(r246); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r247) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r247); });
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r248) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r248); });
+    out.date = rv.read_int32();
+    out.seq_start = rv.read_int32();
+    out.seq = rv.read_int32();
     return out;
 }
 
 
-void types::messages_archivedStickers::serialize(TlWriter& tlw) const {
+void types::updates::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    tlw.write_int32(count);
-    tl::write_vector(tlw, sets, [&](TlWriter& tlw419, const auto& e419) { e419->serialize(tlw419); });
+    tl::write_vector(tlw, updates, [&](TlWriter& tlw255, const auto& e255) { e255->serialize(tlw255); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw256, const auto& e256) { e256->serialize(tlw256); });
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw257, const auto& e257) { e257->serialize(tlw257); });
+    tlw.write_int32(date);
+    tlw.write_int32(seq);
 }
 
-types::messages_archivedStickers types::messages_archivedStickers::read_body(TlReader& rv) {
-    types::messages_archivedStickers out;
-    out.count = rv.read_int32();
-    out.sets = tl::read_vector<std::shared_ptr<tl::StickerSetCovered>>(rv, [&](TlReader& r418) -> std::shared_ptr<tl::StickerSetCovered> { return tl::read_boxed<tl::StickerSetCovered>(r418); });
+types::updates types::updates::read_body(TlReader& rv) {
+    types::updates out;
+    out.updates = tl::read_vector<std::shared_ptr<tl::Update>>(rv, [&](TlReader& r252) -> std::shared_ptr<tl::Update> { return tl::read_boxed<tl::Update>(r252); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r253) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r253); });
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r254) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r254); });
+    out.date = rv.read_int32();
+    out.seq = rv.read_int32();
     return out;
 }
 
 
-void types::messages_stickerSetInstallResultSuccess::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::messages_stickerSetInstallResultSuccess types::messages_stickerSetInstallResultSuccess::read_body(TlReader& rv) {
-    types::messages_stickerSetInstallResultSuccess out;
-    return out;
-}
-
-
-void types::messages_stickerSetInstallResultArchive::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, sets, [&](TlWriter& tlw421, const auto& e421) { e421->serialize(tlw421); });
-}
-
-types::messages_stickerSetInstallResultArchive types::messages_stickerSetInstallResultArchive::read_body(TlReader& rv) {
-    types::messages_stickerSetInstallResultArchive out;
-    out.sets = tl::read_vector<std::shared_ptr<tl::StickerSetCovered>>(rv, [&](TlReader& r420) -> std::shared_ptr<tl::StickerSetCovered> { return tl::read_boxed<tl::StickerSetCovered>(r420); });
-    return out;
-}
-
-
-void types::stickerSetCovered::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    set->serialize(tlw);
-    cover->serialize(tlw);
-}
-
-types::stickerSetCovered types::stickerSetCovered::read_body(TlReader& rv) {
-    types::stickerSetCovered out;
-    out.set = tl::read_boxed<tl::StickerSet>(rv);
-    out.cover = tl::read_boxed<tl::Document>(rv);
-    return out;
-}
-
-
-void types::stickerSetMultiCovered::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    set->serialize(tlw);
-    tl::write_vector(tlw, covers, [&](TlWriter& tlw423, const auto& e423) { e423->serialize(tlw423); });
-}
-
-types::stickerSetMultiCovered types::stickerSetMultiCovered::read_body(TlReader& rv) {
-    types::stickerSetMultiCovered out;
-    out.set = tl::read_boxed<tl::StickerSet>(rv);
-    out.covers = tl::read_vector<std::shared_ptr<tl::Document>>(rv, [&](TlReader& r422) -> std::shared_ptr<tl::Document> { return tl::read_boxed<tl::Document>(r422); });
-    return out;
-}
-
-
-void types::stickerSetFullCovered::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    set->serialize(tlw);
-    tl::write_vector(tlw, packs, [&](TlWriter& tlw427, const auto& e427) { e427->serialize(tlw427); });
-    tl::write_vector(tlw, keywords, [&](TlWriter& tlw428, const auto& e428) { e428->serialize(tlw428); });
-    tl::write_vector(tlw, documents, [&](TlWriter& tlw429, const auto& e429) { e429->serialize(tlw429); });
-}
-
-types::stickerSetFullCovered types::stickerSetFullCovered::read_body(TlReader& rv) {
-    types::stickerSetFullCovered out;
-    out.set = tl::read_boxed<tl::StickerSet>(rv);
-    out.packs = tl::read_vector<std::shared_ptr<tl::StickerPack>>(rv, [&](TlReader& r424) -> std::shared_ptr<tl::StickerPack> { return tl::read_boxed<tl::StickerPack>(r424); });
-    out.keywords = tl::read_vector<std::shared_ptr<tl::StickerKeyword>>(rv, [&](TlReader& r425) -> std::shared_ptr<tl::StickerKeyword> { return tl::read_boxed<tl::StickerKeyword>(r425); });
-    out.documents = tl::read_vector<std::shared_ptr<tl::Document>>(rv, [&](TlReader& r426) -> std::shared_ptr<tl::Document> { return tl::read_boxed<tl::Document>(r426); });
-    return out;
-}
-
-
-void types::stickerSetNoCovered::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    set->serialize(tlw);
-}
-
-types::stickerSetNoCovered types::stickerSetNoCovered::read_body(TlReader& rv) {
-    types::stickerSetNoCovered out;
-    out.set = tl::read_boxed<tl::StickerSet>(rv);
-    return out;
-}
-
-
-void types::maskCoords::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(n);
-    tlw.write_double(x);
-    tlw.write_double(y);
-    tlw.write_double(zoom);
-}
-
-types::maskCoords types::maskCoords::read_body(TlReader& rv) {
-    types::maskCoords out;
-    out.n = rv.read_int32();
-    out.x = rv.read_double();
-    out.y = rv.read_double();
-    out.zoom = rv.read_double();
-    return out;
-}
-
-
-void types::inputStickeredMediaPhoto::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    id->serialize(tlw);
-}
-
-types::inputStickeredMediaPhoto types::inputStickeredMediaPhoto::read_body(TlReader& rv) {
-    types::inputStickeredMediaPhoto out;
-    out.id = tl::read_boxed<tl::InputPhoto>(rv);
-    return out;
-}
-
-
-void types::inputStickeredMediaDocument::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    id->serialize(tlw);
-}
-
-types::inputStickeredMediaDocument types::inputStickeredMediaDocument::read_body(TlReader& rv) {
-    types::inputStickeredMediaDocument out;
-    out.id = tl::read_boxed<tl::InputDocument>(rv);
-    return out;
-}
-
-
-void types::game::serialize(TlWriter& tlw) const {
+void types::updateShortSentMessage::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (document.has_value()) flags_v |= (1u << 0);
+        if (out) flags_v |= (1u << 1);
+        if (media.has_value()) flags_v |= (1u << 9);
+        if (entities.has_value()) flags_v |= (1u << 7);
+        if (ttl_period.has_value()) flags_v |= (1u << 25);
         tlw.write_uint32(flags_v);
     }
-    tlw.write_int64(id);
-    tlw.write_int64(access_hash);
-    tlw.write_string(short_name);
-    tlw.write_string(title);
-    tlw.write_string(description);
+    tlw.write_int32(id);
+    tlw.write_int32(pts);
+    tlw.write_int32(pts_count);
+    tlw.write_int32(date);
+    if (media.has_value()) { media.value()->serialize(tlw); }
+    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw259, const auto& e259) { e259->serialize(tlw259); }); }
+    if (ttl_period.has_value()) { tlw.write_int32(ttl_period.value()); }
+}
+
+types::updateShortSentMessage types::updateShortSentMessage::read_body(TlReader& rv) {
+    types::updateShortSentMessage out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.out = (fl_flags & (1u << 1)) != 0;
+    out.id = rv.read_int32();
+    out.pts = rv.read_int32();
+    out.pts_count = rv.read_int32();
+    out.date = rv.read_int32();
+    if ((fl_flags & (1u << 9)) != 0) { out.media = tl::read_boxed<tl::MessageMedia>(rv); }
+    if ((fl_flags & (1u << 7)) != 0) { out.entities = tl::read_vector<std::shared_ptr<tl::MessageEntity>>(rv, [&](TlReader& r258) -> std::shared_ptr<tl::MessageEntity> { return tl::read_boxed<tl::MessageEntity>(r258); }); }
+    if ((fl_flags & (1u << 25)) != 0) { out.ttl_period = rv.read_int32(); }
+    return out;
+}
+
+
+void types::photos_photos::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, photos, [&](TlWriter& tlw262, const auto& e262) { e262->serialize(tlw262); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw263, const auto& e263) { e263->serialize(tlw263); });
+}
+
+types::photos_photos types::photos_photos::read_body(TlReader& rv) {
+    types::photos_photos out;
+    out.photos = tl::read_vector<std::shared_ptr<tl::Photo>>(rv, [&](TlReader& r260) -> std::shared_ptr<tl::Photo> { return tl::read_boxed<tl::Photo>(r260); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r261) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r261); });
+    return out;
+}
+
+
+void types::photos_photosSlice::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(count);
+    tl::write_vector(tlw, photos, [&](TlWriter& tlw266, const auto& e266) { e266->serialize(tlw266); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw267, const auto& e267) { e267->serialize(tlw267); });
+}
+
+types::photos_photosSlice types::photos_photosSlice::read_body(TlReader& rv) {
+    types::photos_photosSlice out;
+    out.count = rv.read_int32();
+    out.photos = tl::read_vector<std::shared_ptr<tl::Photo>>(rv, [&](TlReader& r264) -> std::shared_ptr<tl::Photo> { return tl::read_boxed<tl::Photo>(r264); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r265) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r265); });
+    return out;
+}
+
+
+void types::photos_photo::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
     photo->serialize(tlw);
-    if (document.has_value()) { document.value()->serialize(tlw); }
+    tl::write_vector(tlw, users, [&](TlWriter& tlw269, const auto& e269) { e269->serialize(tlw269); });
 }
 
-types::game types::game::read_body(TlReader& rv) {
-    types::game out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.id = rv.read_int64();
-    out.access_hash = rv.read_int64();
-    out.short_name = rv.read_string();
-    out.title = rv.read_string();
-    out.description = rv.read_string();
+types::photos_photo types::photos_photo::read_body(TlReader& rv) {
+    types::photos_photo out;
     out.photo = tl::read_boxed<tl::Photo>(rv);
-    if ((fl_flags & (1u << 0)) != 0) { out.document = tl::read_boxed<tl::Document>(rv); }
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r268) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r268); });
     return out;
 }
 
 
-void types::inputGameID::serialize(TlWriter& tlw) const {
+void types::upload_file::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    tlw.write_int64(id);
-    tlw.write_int64(access_hash);
-}
-
-types::inputGameID types::inputGameID::read_body(TlReader& rv) {
-    types::inputGameID out;
-    out.id = rv.read_int64();
-    out.access_hash = rv.read_int64();
-    return out;
-}
-
-
-void types::inputGameShortName::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    bot_id->serialize(tlw);
-    tlw.write_string(short_name);
-}
-
-types::inputGameShortName types::inputGameShortName::read_body(TlReader& rv) {
-    types::inputGameShortName out;
-    out.bot_id = tl::read_boxed<tl::InputUser>(rv);
-    out.short_name = rv.read_string();
-    return out;
-}
-
-
-void types::highScore::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(pos);
-    tlw.write_int64(user_id);
-    tlw.write_int32(score);
-}
-
-types::highScore types::highScore::read_body(TlReader& rv) {
-    types::highScore out;
-    out.pos = rv.read_int32();
-    out.user_id = rv.read_int64();
-    out.score = rv.read_int32();
-    return out;
-}
-
-
-void types::messages_highScores::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, scores, [&](TlWriter& tlw432, const auto& e432) { e432->serialize(tlw432); });
-    tl::write_vector(tlw, users, [&](TlWriter& tlw433, const auto& e433) { e433->serialize(tlw433); });
-}
-
-types::messages_highScores types::messages_highScores::read_body(TlReader& rv) {
-    types::messages_highScores out;
-    out.scores = tl::read_vector<std::shared_ptr<tl::HighScore>>(rv, [&](TlReader& r430) -> std::shared_ptr<tl::HighScore> { return tl::read_boxed<tl::HighScore>(r430); });
-    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r431) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r431); });
-    return out;
-}
-
-
-void types::textEmpty::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::textEmpty types::textEmpty::read_body(TlReader& rv) {
-    types::textEmpty out;
-    return out;
-}
-
-
-void types::textPlain::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(text);
-}
-
-types::textPlain types::textPlain::read_body(TlReader& rv) {
-    types::textPlain out;
-    out.text = rv.read_string();
-    return out;
-}
-
-
-void types::textBold::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textBold types::textBold::read_body(TlReader& rv) {
-    types::textBold out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textItalic::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textItalic types::textItalic::read_body(TlReader& rv) {
-    types::textItalic out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textUnderline::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textUnderline types::textUnderline::read_body(TlReader& rv) {
-    types::textUnderline out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textStrike::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textStrike types::textStrike::read_body(TlReader& rv) {
-    types::textStrike out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textFixed::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textFixed types::textFixed::read_body(TlReader& rv) {
-    types::textFixed out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textUrl::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-    tlw.write_string(url);
-    tlw.write_int64(webpage_id);
-}
-
-types::textUrl types::textUrl::read_body(TlReader& rv) {
-    types::textUrl out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    out.url = rv.read_string();
-    out.webpage_id = rv.read_int64();
-    return out;
-}
-
-
-void types::textEmail::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-    tlw.write_string(email);
-}
-
-types::textEmail types::textEmail::read_body(TlReader& rv) {
-    types::textEmail out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    out.email = rv.read_string();
-    return out;
-}
-
-
-void types::textConcat::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, texts, [&](TlWriter& tlw435, const auto& e435) { e435->serialize(tlw435); });
-}
-
-types::textConcat types::textConcat::read_body(TlReader& rv) {
-    types::textConcat out;
-    out.texts = tl::read_vector<std::shared_ptr<tl::RichText>>(rv, [&](TlReader& r434) -> std::shared_ptr<tl::RichText> { return tl::read_boxed<tl::RichText>(r434); });
-    return out;
-}
-
-
-void types::textSubscript::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textSubscript types::textSubscript::read_body(TlReader& rv) {
-    types::textSubscript out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textSuperscript::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textSuperscript types::textSuperscript::read_body(TlReader& rv) {
-    types::textSuperscript out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textMarked::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textMarked types::textMarked::read_body(TlReader& rv) {
-    types::textMarked out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textPhone::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-    tlw.write_string(phone);
-}
-
-types::textPhone types::textPhone::read_body(TlReader& rv) {
-    types::textPhone out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    out.phone = rv.read_string();
-    return out;
-}
-
-
-void types::textImage::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(document_id);
-    tlw.write_int32(w);
-    tlw.write_int32(h);
-}
-
-types::textImage types::textImage::read_body(TlReader& rv) {
-    types::textImage out;
-    out.document_id = rv.read_int64();
-    out.w = rv.read_int32();
-    out.h = rv.read_int32();
-    return out;
-}
-
-
-void types::textAnchor::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-    tlw.write_string(name);
-}
-
-types::textAnchor types::textAnchor::read_body(TlReader& rv) {
-    types::textAnchor out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    out.name = rv.read_string();
-    return out;
-}
-
-
-void types::textMath::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(source);
-}
-
-types::textMath types::textMath::read_body(TlReader& rv) {
-    types::textMath out;
-    out.source = rv.read_string();
-    return out;
-}
-
-
-void types::textCustomEmoji::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(document_id);
-    tlw.write_string(alt);
-}
-
-types::textCustomEmoji types::textCustomEmoji::read_body(TlReader& rv) {
-    types::textCustomEmoji out;
-    out.document_id = rv.read_int64();
-    out.alt = rv.read_string();
-    return out;
-}
-
-
-void types::textSpoiler::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textSpoiler types::textSpoiler::read_body(TlReader& rv) {
-    types::textSpoiler out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textMention::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textMention types::textMention::read_body(TlReader& rv) {
-    types::textMention out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textHashtag::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textHashtag types::textHashtag::read_body(TlReader& rv) {
-    types::textHashtag out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textBotCommand::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textBotCommand types::textBotCommand::read_body(TlReader& rv) {
-    types::textBotCommand out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textCashtag::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textCashtag types::textCashtag::read_body(TlReader& rv) {
-    types::textCashtag out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textAutoUrl::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textAutoUrl types::textAutoUrl::read_body(TlReader& rv) {
-    types::textAutoUrl out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textAutoEmail::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textAutoEmail types::textAutoEmail::read_body(TlReader& rv) {
-    types::textAutoEmail out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textAutoPhone::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textAutoPhone types::textAutoPhone::read_body(TlReader& rv) {
-    types::textAutoPhone out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textBankCard::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textBankCard types::textBankCard::read_body(TlReader& rv) {
-    types::textBankCard out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textMentionName::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-    tlw.write_int64(user_id);
-}
-
-types::textMentionName types::textMentionName::read_body(TlReader& rv) {
-    types::textMentionName out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    out.user_id = rv.read_int64();
-    return out;
-}
-
-
-void types::textDate::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (relative) flags_v |= (1u << 0);
-        if (short_time) flags_v |= (1u << 1);
-        if (long_time) flags_v |= (1u << 2);
-        if (short_date) flags_v |= (1u << 3);
-        if (long_date) flags_v |= (1u << 4);
-        if (day_of_week) flags_v |= (1u << 5);
-        tlw.write_uint32(flags_v);
-    }
-    text->serialize(tlw);
-    tlw.write_int32(date);
-}
-
-types::textDate types::textDate::read_body(TlReader& rv) {
-    types::textDate out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.relative = (fl_flags & (1u << 0)) != 0;
-    out.short_time = (fl_flags & (1u << 1)) != 0;
-    out.long_time = (fl_flags & (1u << 2)) != 0;
-    out.short_date = (fl_flags & (1u << 3)) != 0;
-    out.long_date = (fl_flags & (1u << 4)) != 0;
-    out.day_of_week = (fl_flags & (1u << 5)) != 0;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    out.date = rv.read_int32();
-    return out;
-}
-
-
-void types::textDiff::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-    old_text->serialize(tlw);
-}
-
-types::textDiff types::textDiff::read_body(TlReader& rv) {
-    types::textDiff out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    out.old_text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::textButton::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (style.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    text->serialize(tlw);
     type->serialize(tlw);
-    if (style.has_value()) { style.value()->serialize(tlw); }
-}
-
-types::textButton types::textButton::read_body(TlReader& rv) {
-    types::textButton out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    out.type = tl::read_boxed<tl::InlineButtonType>(rv);
-    if ((fl_flags & (1u << 0)) != 0) { out.style = tl::read_boxed<tl::RichButtonStyle>(rv); }
-    return out;
-}
-
-
-void types::textTonAddress::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::textTonAddress types::textTonAddress::read_body(TlReader& rv) {
-    types::textTonAddress out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockUnsupported::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::pageBlockUnsupported types::pageBlockUnsupported::read_body(TlReader& rv) {
-    types::pageBlockUnsupported out;
-    return out;
-}
-
-
-void types::pageBlockTitle::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::pageBlockTitle types::pageBlockTitle::read_body(TlReader& rv) {
-    types::pageBlockTitle out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockSubtitle::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::pageBlockSubtitle types::pageBlockSubtitle::read_body(TlReader& rv) {
-    types::pageBlockSubtitle out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockAuthorDate::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    author->serialize(tlw);
-    tlw.write_int32(published_date);
-}
-
-types::pageBlockAuthorDate types::pageBlockAuthorDate::read_body(TlReader& rv) {
-    types::pageBlockAuthorDate out;
-    out.author = tl::read_boxed<tl::RichText>(rv);
-    out.published_date = rv.read_int32();
-    return out;
-}
-
-
-void types::pageBlockHeader::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::pageBlockHeader types::pageBlockHeader::read_body(TlReader& rv) {
-    types::pageBlockHeader out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockSubheader::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::pageBlockSubheader types::pageBlockSubheader::read_body(TlReader& rv) {
-    types::pageBlockSubheader out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockParagraph::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::pageBlockParagraph types::pageBlockParagraph::read_body(TlReader& rv) {
-    types::pageBlockParagraph out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockPreformatted::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-    tlw.write_string(language);
-}
-
-types::pageBlockPreformatted types::pageBlockPreformatted::read_body(TlReader& rv) {
-    types::pageBlockPreformatted out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    out.language = rv.read_string();
-    return out;
-}
-
-
-void types::pageBlockFooter::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::pageBlockFooter types::pageBlockFooter::read_body(TlReader& rv) {
-    types::pageBlockFooter out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockDivider::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::pageBlockDivider types::pageBlockDivider::read_body(TlReader& rv) {
-    types::pageBlockDivider out;
-    return out;
-}
-
-
-void types::pageBlockAnchor::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(name);
-}
-
-types::pageBlockAnchor types::pageBlockAnchor::read_body(TlReader& rv) {
-    types::pageBlockAnchor out;
-    out.name = rv.read_string();
-    return out;
-}
-
-
-void types::pageBlockList::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, items, [&](TlWriter& tlw437, const auto& e437) { e437->serialize(tlw437); });
-}
-
-types::pageBlockList types::pageBlockList::read_body(TlReader& rv) {
-    types::pageBlockList out;
-    out.items = tl::read_vector<std::shared_ptr<tl::PageListItem>>(rv, [&](TlReader& r436) -> std::shared_ptr<tl::PageListItem> { return tl::read_boxed<tl::PageListItem>(r436); });
-    return out;
-}
-
-
-void types::pageBlockBlockquote::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (collapsed) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    text->serialize(tlw);
-    caption->serialize(tlw);
-}
-
-types::pageBlockBlockquote types::pageBlockBlockquote::read_body(TlReader& rv) {
-    types::pageBlockBlockquote out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.collapsed = (fl_flags & (1u << 0)) != 0;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    out.caption = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockPullquote::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-    caption->serialize(tlw);
-}
-
-types::pageBlockPullquote types::pageBlockPullquote::read_body(TlReader& rv) {
-    types::pageBlockPullquote out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    out.caption = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockPhoto::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (spoiler) flags_v |= (1u << 1);
-        if (url.has_value()) flags_v |= (1u << 0);
-        if (webpage_id.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int64(photo_id);
-    caption->serialize(tlw);
-    if (url.has_value()) { tlw.write_string(url.value()); }
-    if (webpage_id.has_value()) { tlw.write_int64(webpage_id.value()); }
-}
-
-types::pageBlockPhoto types::pageBlockPhoto::read_body(TlReader& rv) {
-    types::pageBlockPhoto out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.spoiler = (fl_flags & (1u << 1)) != 0;
-    out.photo_id = rv.read_int64();
-    out.caption = tl::read_boxed<tl::PageCaption>(rv);
-    if ((fl_flags & (1u << 0)) != 0) { out.url = rv.read_string(); }
-    if ((fl_flags & (1u << 0)) != 0) { out.webpage_id = rv.read_int64(); }
-    return out;
-}
-
-
-void types::pageBlockVideo::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (autoplay) flags_v |= (1u << 0);
-        if (loop) flags_v |= (1u << 1);
-        if (spoiler) flags_v |= (1u << 2);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int64(video_id);
-    caption->serialize(tlw);
-}
-
-types::pageBlockVideo types::pageBlockVideo::read_body(TlReader& rv) {
-    types::pageBlockVideo out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.autoplay = (fl_flags & (1u << 0)) != 0;
-    out.loop = (fl_flags & (1u << 1)) != 0;
-    out.spoiler = (fl_flags & (1u << 2)) != 0;
-    out.video_id = rv.read_int64();
-    out.caption = tl::read_boxed<tl::PageCaption>(rv);
-    return out;
-}
-
-
-void types::pageBlockCover::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    cover->serialize(tlw);
-}
-
-types::pageBlockCover types::pageBlockCover::read_body(TlReader& rv) {
-    types::pageBlockCover out;
-    out.cover = tl::read_boxed<tl::PageBlock>(rv);
-    return out;
-}
-
-
-void types::pageBlockEmbed::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (full_width) flags_v |= (1u << 0);
-        if (allow_scrolling) flags_v |= (1u << 3);
-        if (url.has_value()) flags_v |= (1u << 1);
-        if (html.has_value()) flags_v |= (1u << 2);
-        if (poster_photo_id.has_value()) flags_v |= (1u << 4);
-        if (w.has_value()) flags_v |= (1u << 5);
-        if (h.has_value()) flags_v |= (1u << 5);
-        tlw.write_uint32(flags_v);
-    }
-    if (url.has_value()) { tlw.write_string(url.value()); }
-    if (html.has_value()) { tlw.write_string(html.value()); }
-    if (poster_photo_id.has_value()) { tlw.write_int64(poster_photo_id.value()); }
-    if (w.has_value()) { tlw.write_int32(w.value()); }
-    if (h.has_value()) { tlw.write_int32(h.value()); }
-    caption->serialize(tlw);
-}
-
-types::pageBlockEmbed types::pageBlockEmbed::read_body(TlReader& rv) {
-    types::pageBlockEmbed out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.full_width = (fl_flags & (1u << 0)) != 0;
-    out.allow_scrolling = (fl_flags & (1u << 3)) != 0;
-    if ((fl_flags & (1u << 1)) != 0) { out.url = rv.read_string(); }
-    if ((fl_flags & (1u << 2)) != 0) { out.html = rv.read_string(); }
-    if ((fl_flags & (1u << 4)) != 0) { out.poster_photo_id = rv.read_int64(); }
-    if ((fl_flags & (1u << 5)) != 0) { out.w = rv.read_int32(); }
-    if ((fl_flags & (1u << 5)) != 0) { out.h = rv.read_int32(); }
-    out.caption = tl::read_boxed<tl::PageCaption>(rv);
-    return out;
-}
-
-
-void types::pageBlockEmbedPost::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(url);
-    tlw.write_int64(webpage_id);
-    tlw.write_int64(author_photo_id);
-    tlw.write_string(author);
-    tlw.write_int32(date);
-    tl::write_vector(tlw, blocks, [&](TlWriter& tlw439, const auto& e439) { e439->serialize(tlw439); });
-    caption->serialize(tlw);
-}
-
-types::pageBlockEmbedPost types::pageBlockEmbedPost::read_body(TlReader& rv) {
-    types::pageBlockEmbedPost out;
-    out.url = rv.read_string();
-    out.webpage_id = rv.read_int64();
-    out.author_photo_id = rv.read_int64();
-    out.author = rv.read_string();
-    out.date = rv.read_int32();
-    out.blocks = tl::read_vector<std::shared_ptr<tl::PageBlock>>(rv, [&](TlReader& r438) -> std::shared_ptr<tl::PageBlock> { return tl::read_boxed<tl::PageBlock>(r438); });
-    out.caption = tl::read_boxed<tl::PageCaption>(rv);
-    return out;
-}
-
-
-void types::pageBlockCollage::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, items, [&](TlWriter& tlw441, const auto& e441) { e441->serialize(tlw441); });
-    caption->serialize(tlw);
-}
-
-types::pageBlockCollage types::pageBlockCollage::read_body(TlReader& rv) {
-    types::pageBlockCollage out;
-    out.items = tl::read_vector<std::shared_ptr<tl::PageBlock>>(rv, [&](TlReader& r440) -> std::shared_ptr<tl::PageBlock> { return tl::read_boxed<tl::PageBlock>(r440); });
-    out.caption = tl::read_boxed<tl::PageCaption>(rv);
-    return out;
-}
-
-
-void types::pageBlockSlideshow::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, items, [&](TlWriter& tlw443, const auto& e443) { e443->serialize(tlw443); });
-    caption->serialize(tlw);
-}
-
-types::pageBlockSlideshow types::pageBlockSlideshow::read_body(TlReader& rv) {
-    types::pageBlockSlideshow out;
-    out.items = tl::read_vector<std::shared_ptr<tl::PageBlock>>(rv, [&](TlReader& r442) -> std::shared_ptr<tl::PageBlock> { return tl::read_boxed<tl::PageBlock>(r442); });
-    out.caption = tl::read_boxed<tl::PageCaption>(rv);
-    return out;
-}
-
-
-void types::pageBlockChannel::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    channel->serialize(tlw);
-}
-
-types::pageBlockChannel types::pageBlockChannel::read_body(TlReader& rv) {
-    types::pageBlockChannel out;
-    out.channel = tl::read_boxed<tl::Chat>(rv);
-    return out;
-}
-
-
-void types::pageBlockAudio::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(audio_id);
-    caption->serialize(tlw);
-}
-
-types::pageBlockAudio types::pageBlockAudio::read_body(TlReader& rv) {
-    types::pageBlockAudio out;
-    out.audio_id = rv.read_int64();
-    out.caption = tl::read_boxed<tl::PageCaption>(rv);
-    return out;
-}
-
-
-void types::pageBlockKicker::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::pageBlockKicker types::pageBlockKicker::read_body(TlReader& rv) {
-    types::pageBlockKicker out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockTable::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (bordered) flags_v |= (1u << 0);
-        if (striped) flags_v |= (1u << 1);
-        if (compact) flags_v |= (1u << 2);
-        tlw.write_uint32(flags_v);
-    }
-    title->serialize(tlw);
-    tl::write_vector(tlw, rows, [&](TlWriter& tlw445, const auto& e445) { e445->serialize(tlw445); });
-}
-
-types::pageBlockTable types::pageBlockTable::read_body(TlReader& rv) {
-    types::pageBlockTable out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.bordered = (fl_flags & (1u << 0)) != 0;
-    out.striped = (fl_flags & (1u << 1)) != 0;
-    out.compact = (fl_flags & (1u << 2)) != 0;
-    out.title = tl::read_boxed<tl::RichText>(rv);
-    out.rows = tl::read_vector<std::shared_ptr<tl::PageTableRow>>(rv, [&](TlReader& r444) -> std::shared_ptr<tl::PageTableRow> { return tl::read_boxed<tl::PageTableRow>(r444); });
-    return out;
-}
-
-
-void types::pageBlockOrderedList::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (reversed) flags_v |= (1u << 2);
-        if (start.has_value()) flags_v |= (1u << 0);
-        if (type.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    tl::write_vector(tlw, items, [&](TlWriter& tlw447, const auto& e447) { e447->serialize(tlw447); });
-    if (start.has_value()) { tlw.write_int32(start.value()); }
-    if (type.has_value()) { tlw.write_string(type.value()); }
-}
-
-types::pageBlockOrderedList types::pageBlockOrderedList::read_body(TlReader& rv) {
-    types::pageBlockOrderedList out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.reversed = (fl_flags & (1u << 2)) != 0;
-    out.items = tl::read_vector<std::shared_ptr<tl::PageListOrderedItem>>(rv, [&](TlReader& r446) -> std::shared_ptr<tl::PageListOrderedItem> { return tl::read_boxed<tl::PageListOrderedItem>(r446); });
-    if ((fl_flags & (1u << 0)) != 0) { out.start = rv.read_int32(); }
-    if ((fl_flags & (1u << 1)) != 0) { out.type = rv.read_string(); }
-    return out;
-}
-
-
-void types::pageBlockDetails::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (open) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tl::write_vector(tlw, blocks, [&](TlWriter& tlw449, const auto& e449) { e449->serialize(tlw449); });
-    title->serialize(tlw);
-}
-
-types::pageBlockDetails types::pageBlockDetails::read_body(TlReader& rv) {
-    types::pageBlockDetails out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.open = (fl_flags & (1u << 0)) != 0;
-    out.blocks = tl::read_vector<std::shared_ptr<tl::PageBlock>>(rv, [&](TlReader& r448) -> std::shared_ptr<tl::PageBlock> { return tl::read_boxed<tl::PageBlock>(r448); });
-    out.title = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockRelatedArticles::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    title->serialize(tlw);
-    tl::write_vector(tlw, articles, [&](TlWriter& tlw451, const auto& e451) { e451->serialize(tlw451); });
-}
-
-types::pageBlockRelatedArticles types::pageBlockRelatedArticles::read_body(TlReader& rv) {
-    types::pageBlockRelatedArticles out;
-    out.title = tl::read_boxed<tl::RichText>(rv);
-    out.articles = tl::read_vector<std::shared_ptr<tl::PageRelatedArticle>>(rv, [&](TlReader& r450) -> std::shared_ptr<tl::PageRelatedArticle> { return tl::read_boxed<tl::PageRelatedArticle>(r450); });
-    return out;
-}
-
-
-void types::pageBlockMap::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    geo->serialize(tlw);
-    tlw.write_int32(zoom);
-    tlw.write_int32(w);
-    tlw.write_int32(h);
-    caption->serialize(tlw);
-}
-
-types::pageBlockMap types::pageBlockMap::read_body(TlReader& rv) {
-    types::pageBlockMap out;
-    out.geo = tl::read_boxed<tl::GeoPoint>(rv);
-    out.zoom = rv.read_int32();
-    out.w = rv.read_int32();
-    out.h = rv.read_int32();
-    out.caption = tl::read_boxed<tl::PageCaption>(rv);
-    return out;
-}
-
-
-void types::pageBlockHeading1::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::pageBlockHeading1 types::pageBlockHeading1::read_body(TlReader& rv) {
-    types::pageBlockHeading1 out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockHeading2::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::pageBlockHeading2 types::pageBlockHeading2::read_body(TlReader& rv) {
-    types::pageBlockHeading2 out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockHeading3::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::pageBlockHeading3 types::pageBlockHeading3::read_body(TlReader& rv) {
-    types::pageBlockHeading3 out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockHeading4::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::pageBlockHeading4 types::pageBlockHeading4::read_body(TlReader& rv) {
-    types::pageBlockHeading4 out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockHeading5::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::pageBlockHeading5 types::pageBlockHeading5::read_body(TlReader& rv) {
-    types::pageBlockHeading5 out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockHeading6::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::pageBlockHeading6 types::pageBlockHeading6::read_body(TlReader& rv) {
-    types::pageBlockHeading6 out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockMath::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(source);
-}
-
-types::pageBlockMath types::pageBlockMath::read_body(TlReader& rv) {
-    types::pageBlockMath out;
-    out.source = rv.read_string();
-    return out;
-}
-
-
-void types::pageBlockThinking::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-}
-
-types::pageBlockThinking types::pageBlockThinking::read_body(TlReader& rv) {
-    types::pageBlockThinking out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::inputPageBlockMap::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    geo->serialize(tlw);
-    tlw.write_int32(zoom);
-    tlw.write_int32(w);
-    tlw.write_int32(h);
-    caption->serialize(tlw);
-}
-
-types::inputPageBlockMap types::inputPageBlockMap::read_body(TlReader& rv) {
-    types::inputPageBlockMap out;
-    out.geo = tl::read_boxed<tl::InputGeoPoint>(rv);
-    out.zoom = rv.read_int32();
-    out.w = rv.read_int32();
-    out.h = rv.read_int32();
-    out.caption = tl::read_boxed<tl::PageCaption>(rv);
-    return out;
-}
-
-
-void types::pageBlockBlockquoteBlocks::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, blocks, [&](TlWriter& tlw453, const auto& e453) { e453->serialize(tlw453); });
-    caption->serialize(tlw);
-}
-
-types::pageBlockBlockquoteBlocks types::pageBlockBlockquoteBlocks::read_body(TlReader& rv) {
-    types::pageBlockBlockquoteBlocks out;
-    out.blocks = tl::read_vector<std::shared_ptr<tl::PageBlock>>(rv, [&](TlReader& r452) -> std::shared_ptr<tl::PageBlock> { return tl::read_boxed<tl::PageBlock>(r452); });
-    out.caption = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageBlockButtonRow::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (align_left) flags_v |= (1u << 0);
-        if (align_center) flags_v |= (1u << 1);
-        if (align_right) flags_v |= (1u << 2);
-        tlw.write_uint32(flags_v);
-    }
-    tl::write_vector(tlw, buttons, [&](TlWriter& tlw455, const auto& e455) { e455->serialize(tlw455); });
-}
-
-types::pageBlockButtonRow types::pageBlockButtonRow::read_body(TlReader& rv) {
-    types::pageBlockButtonRow out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.align_left = (fl_flags & (1u << 0)) != 0;
-    out.align_center = (fl_flags & (1u << 1)) != 0;
-    out.align_right = (fl_flags & (1u << 2)) != 0;
-    out.buttons = tl::read_vector<std::shared_ptr<tl::PageButton>>(rv, [&](TlReader& r454) -> std::shared_ptr<tl::PageButton> { return tl::read_boxed<tl::PageButton>(r454); });
-    return out;
-}
-
-
-void types::pageBlockDocument::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(document_id);
-    caption->serialize(tlw);
-}
-
-types::pageBlockDocument types::pageBlockDocument::read_body(TlReader& rv) {
-    types::pageBlockDocument out;
-    out.document_id = rv.read_int64();
-    out.caption = tl::read_boxed<tl::PageCaption>(rv);
-    return out;
-}
-
-
-void types::phoneCallDiscardReasonMissed::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::phoneCallDiscardReasonMissed types::phoneCallDiscardReasonMissed::read_body(TlReader& rv) {
-    types::phoneCallDiscardReasonMissed out;
-    return out;
-}
-
-
-void types::phoneCallDiscardReasonDisconnect::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::phoneCallDiscardReasonDisconnect types::phoneCallDiscardReasonDisconnect::read_body(TlReader& rv) {
-    types::phoneCallDiscardReasonDisconnect out;
-    return out;
-}
-
-
-void types::phoneCallDiscardReasonHangup::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::phoneCallDiscardReasonHangup types::phoneCallDiscardReasonHangup::read_body(TlReader& rv) {
-    types::phoneCallDiscardReasonHangup out;
-    return out;
-}
-
-
-void types::phoneCallDiscardReasonBusy::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::phoneCallDiscardReasonBusy types::phoneCallDiscardReasonBusy::read_body(TlReader& rv) {
-    types::phoneCallDiscardReasonBusy out;
-    return out;
-}
-
-
-void types::phoneCallDiscardReasonMigrateConferenceCall::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(slug);
-}
-
-types::phoneCallDiscardReasonMigrateConferenceCall types::phoneCallDiscardReasonMigrateConferenceCall::read_body(TlReader& rv) {
-    types::phoneCallDiscardReasonMigrateConferenceCall out;
-    out.slug = rv.read_string();
-    return out;
-}
-
-
-void types::dataJSON::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(data);
-}
-
-types::dataJSON types::dataJSON::read_body(TlReader& rv) {
-    types::dataJSON out;
-    out.data = rv.read_string();
-    return out;
-}
-
-
-void types::labeledPrice::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(label);
-    tlw.write_int64(amount);
-}
-
-types::labeledPrice types::labeledPrice::read_body(TlReader& rv) {
-    types::labeledPrice out;
-    out.label = rv.read_string();
-    out.amount = rv.read_int64();
-    return out;
-}
-
-
-void types::invoice::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (test) flags_v |= (1u << 0);
-        if (name_requested) flags_v |= (1u << 1);
-        if (phone_requested) flags_v |= (1u << 2);
-        if (email_requested) flags_v |= (1u << 3);
-        if (shipping_address_requested) flags_v |= (1u << 4);
-        if (flexible) flags_v |= (1u << 5);
-        if (phone_to_provider) flags_v |= (1u << 6);
-        if (email_to_provider) flags_v |= (1u << 7);
-        if (recurring) flags_v |= (1u << 9);
-        if (max_tip_amount.has_value()) flags_v |= (1u << 8);
-        if (suggested_tip_amounts.has_value()) flags_v |= (1u << 8);
-        if (terms_url.has_value()) flags_v |= (1u << 10);
-        if (subscription_period.has_value()) flags_v |= (1u << 11);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(currency);
-    tl::write_vector(tlw, prices, [&](TlWriter& tlw458, const auto& e458) { e458->serialize(tlw458); });
-    if (max_tip_amount.has_value()) { tlw.write_int64(max_tip_amount.value()); }
-    if (suggested_tip_amounts.has_value()) { tl::write_vector(tlw, suggested_tip_amounts.value(), [&](TlWriter& tlw459, const auto& e459) { tlw459.write_int64(e459); }); }
-    if (terms_url.has_value()) { tlw.write_string(terms_url.value()); }
-    if (subscription_period.has_value()) { tlw.write_int32(subscription_period.value()); }
-}
-
-types::invoice types::invoice::read_body(TlReader& rv) {
-    types::invoice out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.test = (fl_flags & (1u << 0)) != 0;
-    out.name_requested = (fl_flags & (1u << 1)) != 0;
-    out.phone_requested = (fl_flags & (1u << 2)) != 0;
-    out.email_requested = (fl_flags & (1u << 3)) != 0;
-    out.shipping_address_requested = (fl_flags & (1u << 4)) != 0;
-    out.flexible = (fl_flags & (1u << 5)) != 0;
-    out.phone_to_provider = (fl_flags & (1u << 6)) != 0;
-    out.email_to_provider = (fl_flags & (1u << 7)) != 0;
-    out.recurring = (fl_flags & (1u << 9)) != 0;
-    out.currency = rv.read_string();
-    out.prices = tl::read_vector<std::shared_ptr<tl::LabeledPrice>>(rv, [&](TlReader& r456) -> std::shared_ptr<tl::LabeledPrice> { return tl::read_boxed<tl::LabeledPrice>(r456); });
-    if ((fl_flags & (1u << 8)) != 0) { out.max_tip_amount = rv.read_int64(); }
-    if ((fl_flags & (1u << 8)) != 0) { out.suggested_tip_amounts = tl::read_vector<std::int64_t>(rv, [&](TlReader& r457) -> std::int64_t { return r457.read_int64(); }); }
-    if ((fl_flags & (1u << 10)) != 0) { out.terms_url = rv.read_string(); }
-    if ((fl_flags & (1u << 11)) != 0) { out.subscription_period = rv.read_int32(); }
-    return out;
-}
-
-
-void types::paymentCharge::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(id);
-    tlw.write_string(provider_charge_id);
-}
-
-types::paymentCharge types::paymentCharge::read_body(TlReader& rv) {
-    types::paymentCharge out;
-    out.id = rv.read_string();
-    out.provider_charge_id = rv.read_string();
-    return out;
-}
-
-
-void types::postAddress::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(street_line1);
-    tlw.write_string(street_line2);
-    tlw.write_string(city);
-    tlw.write_string(state);
-    tlw.write_string(country_iso2);
-    tlw.write_string(post_code);
-}
-
-types::postAddress types::postAddress::read_body(TlReader& rv) {
-    types::postAddress out;
-    out.street_line1 = rv.read_string();
-    out.street_line2 = rv.read_string();
-    out.city = rv.read_string();
-    out.state = rv.read_string();
-    out.country_iso2 = rv.read_string();
-    out.post_code = rv.read_string();
-    return out;
-}
-
-
-void types::paymentRequestedInfo::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (name.has_value()) flags_v |= (1u << 0);
-        if (phone.has_value()) flags_v |= (1u << 1);
-        if (email.has_value()) flags_v |= (1u << 2);
-        if (shipping_address.has_value()) flags_v |= (1u << 3);
-        tlw.write_uint32(flags_v);
-    }
-    if (name.has_value()) { tlw.write_string(name.value()); }
-    if (phone.has_value()) { tlw.write_string(phone.value()); }
-    if (email.has_value()) { tlw.write_string(email.value()); }
-    if (shipping_address.has_value()) { shipping_address.value()->serialize(tlw); }
-}
-
-types::paymentRequestedInfo types::paymentRequestedInfo::read_body(TlReader& rv) {
-    types::paymentRequestedInfo out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    if ((fl_flags & (1u << 0)) != 0) { out.name = rv.read_string(); }
-    if ((fl_flags & (1u << 1)) != 0) { out.phone = rv.read_string(); }
-    if ((fl_flags & (1u << 2)) != 0) { out.email = rv.read_string(); }
-    if ((fl_flags & (1u << 3)) != 0) { out.shipping_address = tl::read_boxed<tl::PostAddress>(rv); }
-    return out;
-}
-
-
-void types::paymentSavedCredentialsCard::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(id);
-    tlw.write_string(title);
-}
-
-types::paymentSavedCredentialsCard types::paymentSavedCredentialsCard::read_body(TlReader& rv) {
-    types::paymentSavedCredentialsCard out;
-    out.id = rv.read_string();
-    out.title = rv.read_string();
-    return out;
-}
-
-
-void types::webDocument::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(url);
-    tlw.write_int64(access_hash);
-    tlw.write_int32(size);
-    tlw.write_string(mime_type);
-    tl::write_vector(tlw, attributes, [&](TlWriter& tlw461, const auto& e461) { e461->serialize(tlw461); });
-}
-
-types::webDocument types::webDocument::read_body(TlReader& rv) {
-    types::webDocument out;
-    out.url = rv.read_string();
-    out.access_hash = rv.read_int64();
-    out.size = rv.read_int32();
-    out.mime_type = rv.read_string();
-    out.attributes = tl::read_vector<std::shared_ptr<tl::DocumentAttribute>>(rv, [&](TlReader& r460) -> std::shared_ptr<tl::DocumentAttribute> { return tl::read_boxed<tl::DocumentAttribute>(r460); });
-    return out;
-}
-
-
-void types::webDocumentNoProxy::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(url);
-    tlw.write_int32(size);
-    tlw.write_string(mime_type);
-    tl::write_vector(tlw, attributes, [&](TlWriter& tlw463, const auto& e463) { e463->serialize(tlw463); });
-}
-
-types::webDocumentNoProxy types::webDocumentNoProxy::read_body(TlReader& rv) {
-    types::webDocumentNoProxy out;
-    out.url = rv.read_string();
-    out.size = rv.read_int32();
-    out.mime_type = rv.read_string();
-    out.attributes = tl::read_vector<std::shared_ptr<tl::DocumentAttribute>>(rv, [&](TlReader& r462) -> std::shared_ptr<tl::DocumentAttribute> { return tl::read_boxed<tl::DocumentAttribute>(r462); });
-    return out;
-}
-
-
-void types::inputWebDocument::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(url);
-    tlw.write_int32(size);
-    tlw.write_string(mime_type);
-    tl::write_vector(tlw, attributes, [&](TlWriter& tlw465, const auto& e465) { e465->serialize(tlw465); });
-}
-
-types::inputWebDocument types::inputWebDocument::read_body(TlReader& rv) {
-    types::inputWebDocument out;
-    out.url = rv.read_string();
-    out.size = rv.read_int32();
-    out.mime_type = rv.read_string();
-    out.attributes = tl::read_vector<std::shared_ptr<tl::DocumentAttribute>>(rv, [&](TlReader& r464) -> std::shared_ptr<tl::DocumentAttribute> { return tl::read_boxed<tl::DocumentAttribute>(r464); });
-    return out;
-}
-
-
-void types::inputWebFileLocation::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(url);
-    tlw.write_int64(access_hash);
-}
-
-types::inputWebFileLocation types::inputWebFileLocation::read_body(TlReader& rv) {
-    types::inputWebFileLocation out;
-    out.url = rv.read_string();
-    out.access_hash = rv.read_int64();
-    return out;
-}
-
-
-void types::inputWebFileGeoPointLocation::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    geo_point->serialize(tlw);
-    tlw.write_int64(access_hash);
-    tlw.write_int32(w);
-    tlw.write_int32(h);
-    tlw.write_int32(zoom);
-    tlw.write_int32(scale);
-}
-
-types::inputWebFileGeoPointLocation types::inputWebFileGeoPointLocation::read_body(TlReader& rv) {
-    types::inputWebFileGeoPointLocation out;
-    out.geo_point = tl::read_boxed<tl::InputGeoPoint>(rv);
-    out.access_hash = rv.read_int64();
-    out.w = rv.read_int32();
-    out.h = rv.read_int32();
-    out.zoom = rv.read_int32();
-    out.scale = rv.read_int32();
-    return out;
-}
-
-
-void types::inputWebFileAudioAlbumThumbLocation::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (small) flags_v |= (1u << 2);
-        if (document.has_value()) flags_v |= (1u << 0);
-        if (title.has_value()) flags_v |= (1u << 1);
-        if (performer.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    if (document.has_value()) { document.value()->serialize(tlw); }
-    if (title.has_value()) { tlw.write_string(title.value()); }
-    if (performer.has_value()) { tlw.write_string(performer.value()); }
-}
-
-types::inputWebFileAudioAlbumThumbLocation types::inputWebFileAudioAlbumThumbLocation::read_body(TlReader& rv) {
-    types::inputWebFileAudioAlbumThumbLocation out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.small = (fl_flags & (1u << 2)) != 0;
-    if ((fl_flags & (1u << 0)) != 0) { out.document = tl::read_boxed<tl::InputDocument>(rv); }
-    if ((fl_flags & (1u << 1)) != 0) { out.title = rv.read_string(); }
-    if ((fl_flags & (1u << 1)) != 0) { out.performer = rv.read_string(); }
-    return out;
-}
-
-
-void types::upload_webFile::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(size);
-    tlw.write_string(mime_type);
-    file_type->serialize(tlw);
     tlw.write_int32(mtime);
     tlw.write_bytes(bytes);
 }
 
-types::upload_webFile types::upload_webFile::read_body(TlReader& rv) {
-    types::upload_webFile out;
-    out.size = rv.read_int32();
-    out.mime_type = rv.read_string();
-    out.file_type = tl::read_boxed<tl::storage_FileType>(rv);
+types::upload_file types::upload_file::read_body(TlReader& rv) {
+    types::upload_file out;
+    out.type = tl::read_boxed<tl::storage_FileType>(rv);
     out.mtime = rv.read_int32();
     out.bytes = rv.read_bytes();
     return out;
 }
 
 
-void types::payments_paymentForm::serialize(TlWriter& tlw) const {
+void types::upload_fileCdnRedirect::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(dc_id);
+    tlw.write_bytes(file_token);
+    tlw.write_bytes(encryption_key);
+    tlw.write_bytes(encryption_iv);
+    tl::write_vector(tlw, file_hashes, [&](TlWriter& tlw271, const auto& e271) { e271->serialize(tlw271); });
+}
+
+types::upload_fileCdnRedirect types::upload_fileCdnRedirect::read_body(TlReader& rv) {
+    types::upload_fileCdnRedirect out;
+    out.dc_id = rv.read_int32();
+    out.file_token = rv.read_bytes();
+    out.encryption_key = rv.read_bytes();
+    out.encryption_iv = rv.read_bytes();
+    out.file_hashes = tl::read_vector<std::shared_ptr<tl::FileHash>>(rv, [&](TlReader& r270) -> std::shared_ptr<tl::FileHash> { return tl::read_boxed<tl::FileHash>(r270); });
+    return out;
+}
+
+
+void types::dcOption::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (can_save_credentials) flags_v |= (1u << 2);
-        if (password_missing) flags_v |= (1u << 3);
-        if (photo.has_value()) flags_v |= (1u << 5);
-        if (native_provider.has_value()) flags_v |= (1u << 4);
-        if (native_params.has_value()) flags_v |= (1u << 4);
-        if (additional_methods.has_value()) flags_v |= (1u << 6);
-        if (saved_info.has_value()) flags_v |= (1u << 0);
-        if (saved_credentials.has_value()) flags_v |= (1u << 1);
+        if (ipv6) flags_v |= (1u << 0);
+        if (media_only) flags_v |= (1u << 1);
+        if (tcpo_only) flags_v |= (1u << 2);
+        if (cdn) flags_v |= (1u << 3);
+        if (static_) flags_v |= (1u << 4);
+        if (this_port_only) flags_v |= (1u << 5);
+        if (secret.has_value()) flags_v |= (1u << 10);
         tlw.write_uint32(flags_v);
     }
-    tlw.write_int64(form_id);
-    tlw.write_int64(bot_id);
-    tlw.write_string(title);
-    tlw.write_string(description);
-    if (photo.has_value()) { photo.value()->serialize(tlw); }
-    invoice->serialize(tlw);
-    tlw.write_int64(provider_id);
-    tlw.write_string(url);
-    if (native_provider.has_value()) { tlw.write_string(native_provider.value()); }
-    if (native_params.has_value()) { native_params.value()->serialize(tlw); }
-    if (additional_methods.has_value()) { tl::write_vector(tlw, additional_methods.value(), [&](TlWriter& tlw469, const auto& e469) { e469->serialize(tlw469); }); }
-    if (saved_info.has_value()) { saved_info.value()->serialize(tlw); }
-    if (saved_credentials.has_value()) { tl::write_vector(tlw, saved_credentials.value(), [&](TlWriter& tlw470, const auto& e470) { e470->serialize(tlw470); }); }
-    tl::write_vector(tlw, users, [&](TlWriter& tlw471, const auto& e471) { e471->serialize(tlw471); });
+    tlw.write_int32(id);
+    tlw.write_string(ip_address);
+    tlw.write_int32(port);
+    if (secret.has_value()) { tlw.write_bytes(secret.value()); }
 }
 
-types::payments_paymentForm types::payments_paymentForm::read_body(TlReader& rv) {
-    types::payments_paymentForm out;
+types::dcOption types::dcOption::read_body(TlReader& rv) {
+    types::dcOption out;
     std::uint32_t fl_flags = rv.read_uint32();
-    out.can_save_credentials = (fl_flags & (1u << 2)) != 0;
-    out.password_missing = (fl_flags & (1u << 3)) != 0;
-    out.form_id = rv.read_int64();
-    out.bot_id = rv.read_int64();
-    out.title = rv.read_string();
-    out.description = rv.read_string();
-    if ((fl_flags & (1u << 5)) != 0) { out.photo = tl::read_boxed<tl::WebDocument>(rv); }
-    out.invoice = tl::read_boxed<tl::Invoice>(rv);
-    out.provider_id = rv.read_int64();
-    out.url = rv.read_string();
-    if ((fl_flags & (1u << 4)) != 0) { out.native_provider = rv.read_string(); }
-    if ((fl_flags & (1u << 4)) != 0) { out.native_params = tl::read_boxed<tl::DataJSON>(rv); }
-    if ((fl_flags & (1u << 6)) != 0) { out.additional_methods = tl::read_vector<std::shared_ptr<tl::PaymentFormMethod>>(rv, [&](TlReader& r466) -> std::shared_ptr<tl::PaymentFormMethod> { return tl::read_boxed<tl::PaymentFormMethod>(r466); }); }
-    if ((fl_flags & (1u << 0)) != 0) { out.saved_info = tl::read_boxed<tl::PaymentRequestedInfo>(rv); }
-    if ((fl_flags & (1u << 1)) != 0) { out.saved_credentials = tl::read_vector<std::shared_ptr<tl::PaymentSavedCredentials>>(rv, [&](TlReader& r467) -> std::shared_ptr<tl::PaymentSavedCredentials> { return tl::read_boxed<tl::PaymentSavedCredentials>(r467); }); }
-    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r468) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r468); });
+    out.ipv6 = (fl_flags & (1u << 0)) != 0;
+    out.media_only = (fl_flags & (1u << 1)) != 0;
+    out.tcpo_only = (fl_flags & (1u << 2)) != 0;
+    out.cdn = (fl_flags & (1u << 3)) != 0;
+    out.static_ = (fl_flags & (1u << 4)) != 0;
+    out.this_port_only = (fl_flags & (1u << 5)) != 0;
+    out.id = rv.read_int32();
+    out.ip_address = rv.read_string();
+    out.port = rv.read_int32();
+    if ((fl_flags & (1u << 10)) != 0) { out.secret = rv.read_bytes(); }
     return out;
 }
 
 
-void types::payments_paymentFormStars::serialize(TlWriter& tlw) const {
+void types::config::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (photo.has_value()) flags_v |= (1u << 5);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int64(form_id);
-    tlw.write_int64(bot_id);
-    tlw.write_string(title);
-    tlw.write_string(description);
-    if (photo.has_value()) { photo.value()->serialize(tlw); }
-    invoice->serialize(tlw);
-    tl::write_vector(tlw, users, [&](TlWriter& tlw473, const auto& e473) { e473->serialize(tlw473); });
-}
-
-types::payments_paymentFormStars types::payments_paymentFormStars::read_body(TlReader& rv) {
-    types::payments_paymentFormStars out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.form_id = rv.read_int64();
-    out.bot_id = rv.read_int64();
-    out.title = rv.read_string();
-    out.description = rv.read_string();
-    if ((fl_flags & (1u << 5)) != 0) { out.photo = tl::read_boxed<tl::WebDocument>(rv); }
-    out.invoice = tl::read_boxed<tl::Invoice>(rv);
-    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r472) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r472); });
-    return out;
-}
-
-
-void types::payments_paymentFormStarGift::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(form_id);
-    invoice->serialize(tlw);
-}
-
-types::payments_paymentFormStarGift types::payments_paymentFormStarGift::read_body(TlReader& rv) {
-    types::payments_paymentFormStarGift out;
-    out.form_id = rv.read_int64();
-    out.invoice = tl::read_boxed<tl::Invoice>(rv);
-    return out;
-}
-
-
-void types::payments_validatedRequestedInfo::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (id.has_value()) flags_v |= (1u << 0);
-        if (shipping_options.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    if (id.has_value()) { tlw.write_string(id.value()); }
-    if (shipping_options.has_value()) { tl::write_vector(tlw, shipping_options.value(), [&](TlWriter& tlw475, const auto& e475) { e475->serialize(tlw475); }); }
-}
-
-types::payments_validatedRequestedInfo types::payments_validatedRequestedInfo::read_body(TlReader& rv) {
-    types::payments_validatedRequestedInfo out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    if ((fl_flags & (1u << 0)) != 0) { out.id = rv.read_string(); }
-    if ((fl_flags & (1u << 1)) != 0) { out.shipping_options = tl::read_vector<std::shared_ptr<tl::ShippingOption>>(rv, [&](TlReader& r474) -> std::shared_ptr<tl::ShippingOption> { return tl::read_boxed<tl::ShippingOption>(r474); }); }
-    return out;
-}
-
-
-void types::payments_paymentResult::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    updates->serialize(tlw);
-}
-
-types::payments_paymentResult types::payments_paymentResult::read_body(TlReader& rv) {
-    types::payments_paymentResult out;
-    out.updates = tl::read_boxed<tl::Updates>(rv);
-    return out;
-}
-
-
-void types::payments_paymentVerificationNeeded::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(url);
-}
-
-types::payments_paymentVerificationNeeded types::payments_paymentVerificationNeeded::read_body(TlReader& rv) {
-    types::payments_paymentVerificationNeeded out;
-    out.url = rv.read_string();
-    return out;
-}
-
-
-void types::payments_paymentReceipt::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (photo.has_value()) flags_v |= (1u << 2);
-        if (info.has_value()) flags_v |= (1u << 0);
-        if (shipping.has_value()) flags_v |= (1u << 1);
-        if (tip_amount.has_value()) flags_v |= (1u << 3);
+        if (default_p2p_contacts) flags_v |= (1u << 3);
+        if (preload_featured_stickers) flags_v |= (1u << 4);
+        if (revoke_pm_inbox) flags_v |= (1u << 6);
+        if (blocked_mode) flags_v |= (1u << 8);
+        if (force_try_ipv6) flags_v |= (1u << 14);
+        if (tmp_sessions.has_value()) flags_v |= (1u << 0);
+        if (autoupdate_url_prefix.has_value()) flags_v |= (1u << 7);
+        if (gif_search_username.has_value()) flags_v |= (1u << 9);
+        if (venue_search_username.has_value()) flags_v |= (1u << 10);
+        if (img_search_username.has_value()) flags_v |= (1u << 11);
+        if (static_maps_provider.has_value()) flags_v |= (1u << 12);
+        if (suggested_lang_code.has_value()) flags_v |= (1u << 2);
+        if (lang_pack_version.has_value()) flags_v |= (1u << 2);
+        if (base_lang_pack_version.has_value()) flags_v |= (1u << 2);
+        if (reactions_default.has_value()) flags_v |= (1u << 15);
+        if (autologin_token.has_value()) flags_v |= (1u << 16);
         tlw.write_uint32(flags_v);
     }
     tlw.write_int32(date);
-    tlw.write_int64(bot_id);
-    tlw.write_int64(provider_id);
-    tlw.write_string(title);
-    tlw.write_string(description);
-    if (photo.has_value()) { photo.value()->serialize(tlw); }
-    invoice->serialize(tlw);
-    if (info.has_value()) { info.value()->serialize(tlw); }
-    if (shipping.has_value()) { shipping.value()->serialize(tlw); }
-    if (tip_amount.has_value()) { tlw.write_int64(tip_amount.value()); }
-    tlw.write_string(currency);
-    tlw.write_int64(total_amount);
-    tlw.write_string(credentials_title);
-    tl::write_vector(tlw, users, [&](TlWriter& tlw477, const auto& e477) { e477->serialize(tlw477); });
+    tlw.write_int32(expires);
+    tlw.write_bool(test_mode);
+    tlw.write_int32(this_dc);
+    tl::write_vector(tlw, dc_options, [&](TlWriter& tlw273, const auto& e273) { e273->serialize(tlw273); });
+    tlw.write_string(dc_txt_domain_name);
+    tlw.write_int32(chat_size_max);
+    tlw.write_int32(megagroup_size_max);
+    tlw.write_int32(forwarded_count_max);
+    tlw.write_int32(online_update_period_ms);
+    tlw.write_int32(offline_blur_timeout_ms);
+    tlw.write_int32(offline_idle_timeout_ms);
+    tlw.write_int32(online_cloud_timeout_ms);
+    tlw.write_int32(notify_cloud_delay_ms);
+    tlw.write_int32(notify_default_delay_ms);
+    tlw.write_int32(push_chat_period_ms);
+    tlw.write_int32(push_chat_limit);
+    tlw.write_int32(edit_time_limit);
+    tlw.write_int32(revoke_time_limit);
+    tlw.write_int32(revoke_pm_time_limit);
+    tlw.write_int32(rating_e_decay);
+    tlw.write_int32(stickers_recent_limit);
+    tlw.write_int32(channels_read_media_period);
+    if (tmp_sessions.has_value()) { tlw.write_int32(tmp_sessions.value()); }
+    tlw.write_int32(call_receive_timeout_ms);
+    tlw.write_int32(call_ring_timeout_ms);
+    tlw.write_int32(call_connect_timeout_ms);
+    tlw.write_int32(call_packet_timeout_ms);
+    tlw.write_string(me_url_prefix);
+    if (autoupdate_url_prefix.has_value()) { tlw.write_string(autoupdate_url_prefix.value()); }
+    if (gif_search_username.has_value()) { tlw.write_string(gif_search_username.value()); }
+    if (venue_search_username.has_value()) { tlw.write_string(venue_search_username.value()); }
+    if (img_search_username.has_value()) { tlw.write_string(img_search_username.value()); }
+    if (static_maps_provider.has_value()) { tlw.write_string(static_maps_provider.value()); }
+    tlw.write_int32(caption_length_max);
+    tlw.write_int32(message_length_max);
+    tlw.write_int32(webfile_dc_id);
+    if (suggested_lang_code.has_value()) { tlw.write_string(suggested_lang_code.value()); }
+    if (lang_pack_version.has_value()) { tlw.write_int32(lang_pack_version.value()); }
+    if (base_lang_pack_version.has_value()) { tlw.write_int32(base_lang_pack_version.value()); }
+    if (reactions_default.has_value()) { reactions_default.value()->serialize(tlw); }
+    if (autologin_token.has_value()) { tlw.write_string(autologin_token.value()); }
 }
 
-types::payments_paymentReceipt types::payments_paymentReceipt::read_body(TlReader& rv) {
-    types::payments_paymentReceipt out;
+types::config types::config::read_body(TlReader& rv) {
+    types::config out;
     std::uint32_t fl_flags = rv.read_uint32();
+    out.default_p2p_contacts = (fl_flags & (1u << 3)) != 0;
+    out.preload_featured_stickers = (fl_flags & (1u << 4)) != 0;
+    out.revoke_pm_inbox = (fl_flags & (1u << 6)) != 0;
+    out.blocked_mode = (fl_flags & (1u << 8)) != 0;
+    out.force_try_ipv6 = (fl_flags & (1u << 14)) != 0;
     out.date = rv.read_int32();
-    out.bot_id = rv.read_int64();
-    out.provider_id = rv.read_int64();
-    out.title = rv.read_string();
-    out.description = rv.read_string();
-    if ((fl_flags & (1u << 2)) != 0) { out.photo = tl::read_boxed<tl::WebDocument>(rv); }
-    out.invoice = tl::read_boxed<tl::Invoice>(rv);
-    if ((fl_flags & (1u << 0)) != 0) { out.info = tl::read_boxed<tl::PaymentRequestedInfo>(rv); }
-    if ((fl_flags & (1u << 1)) != 0) { out.shipping = tl::read_boxed<tl::ShippingOption>(rv); }
-    if ((fl_flags & (1u << 3)) != 0) { out.tip_amount = rv.read_int64(); }
-    out.currency = rv.read_string();
-    out.total_amount = rv.read_int64();
-    out.credentials_title = rv.read_string();
-    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r476) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r476); });
+    out.expires = rv.read_int32();
+    out.test_mode = rv.read_bool();
+    out.this_dc = rv.read_int32();
+    out.dc_options = tl::read_vector<std::shared_ptr<tl::DcOption>>(rv, [&](TlReader& r272) -> std::shared_ptr<tl::DcOption> { return tl::read_boxed<tl::DcOption>(r272); });
+    out.dc_txt_domain_name = rv.read_string();
+    out.chat_size_max = rv.read_int32();
+    out.megagroup_size_max = rv.read_int32();
+    out.forwarded_count_max = rv.read_int32();
+    out.online_update_period_ms = rv.read_int32();
+    out.offline_blur_timeout_ms = rv.read_int32();
+    out.offline_idle_timeout_ms = rv.read_int32();
+    out.online_cloud_timeout_ms = rv.read_int32();
+    out.notify_cloud_delay_ms = rv.read_int32();
+    out.notify_default_delay_ms = rv.read_int32();
+    out.push_chat_period_ms = rv.read_int32();
+    out.push_chat_limit = rv.read_int32();
+    out.edit_time_limit = rv.read_int32();
+    out.revoke_time_limit = rv.read_int32();
+    out.revoke_pm_time_limit = rv.read_int32();
+    out.rating_e_decay = rv.read_int32();
+    out.stickers_recent_limit = rv.read_int32();
+    out.channels_read_media_period = rv.read_int32();
+    if ((fl_flags & (1u << 0)) != 0) { out.tmp_sessions = rv.read_int32(); }
+    out.call_receive_timeout_ms = rv.read_int32();
+    out.call_ring_timeout_ms = rv.read_int32();
+    out.call_connect_timeout_ms = rv.read_int32();
+    out.call_packet_timeout_ms = rv.read_int32();
+    out.me_url_prefix = rv.read_string();
+    if ((fl_flags & (1u << 7)) != 0) { out.autoupdate_url_prefix = rv.read_string(); }
+    if ((fl_flags & (1u << 9)) != 0) { out.gif_search_username = rv.read_string(); }
+    if ((fl_flags & (1u << 10)) != 0) { out.venue_search_username = rv.read_string(); }
+    if ((fl_flags & (1u << 11)) != 0) { out.img_search_username = rv.read_string(); }
+    if ((fl_flags & (1u << 12)) != 0) { out.static_maps_provider = rv.read_string(); }
+    out.caption_length_max = rv.read_int32();
+    out.message_length_max = rv.read_int32();
+    out.webfile_dc_id = rv.read_int32();
+    if ((fl_flags & (1u << 2)) != 0) { out.suggested_lang_code = rv.read_string(); }
+    if ((fl_flags & (1u << 2)) != 0) { out.lang_pack_version = rv.read_int32(); }
+    if ((fl_flags & (1u << 2)) != 0) { out.base_lang_pack_version = rv.read_int32(); }
+    if ((fl_flags & (1u << 15)) != 0) { out.reactions_default = tl::read_boxed<tl::Reaction>(rv); }
+    if ((fl_flags & (1u << 16)) != 0) { out.autologin_token = rv.read_string(); }
     return out;
 }
 
 
-void types::payments_paymentReceiptStars::serialize(TlWriter& tlw) const {
+void types::nearestDc::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(country);
+    tlw.write_int32(this_dc);
+    tlw.write_int32(nearest_dc);
+}
+
+types::nearestDc types::nearestDc::read_body(TlReader& rv) {
+    types::nearestDc out;
+    out.country = rv.read_string();
+    out.this_dc = rv.read_int32();
+    out.nearest_dc = rv.read_int32();
+    return out;
+}
+
+
+void types::help_appUpdate::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (photo.has_value()) flags_v |= (1u << 2);
+        if (can_not_skip) flags_v |= (1u << 0);
+        if (document.has_value()) flags_v |= (1u << 1);
+        if (url.has_value()) flags_v |= (1u << 2);
+        if (sticker.has_value()) flags_v |= (1u << 3);
         tlw.write_uint32(flags_v);
     }
-    tlw.write_int32(date);
-    tlw.write_int64(bot_id);
-    tlw.write_string(title);
-    tlw.write_string(description);
-    if (photo.has_value()) { photo.value()->serialize(tlw); }
-    invoice->serialize(tlw);
-    tlw.write_string(currency);
-    tlw.write_int64(total_amount);
-    tlw.write_string(transaction_id);
-    tl::write_vector(tlw, users, [&](TlWriter& tlw479, const auto& e479) { e479->serialize(tlw479); });
+    tlw.write_int32(id);
+    tlw.write_string(version);
+    tlw.write_string(text);
+    tl::write_vector(tlw, entities, [&](TlWriter& tlw275, const auto& e275) { e275->serialize(tlw275); });
+    if (document.has_value()) { document.value()->serialize(tlw); }
+    if (url.has_value()) { tlw.write_string(url.value()); }
+    if (sticker.has_value()) { sticker.value()->serialize(tlw); }
 }
 
-types::payments_paymentReceiptStars types::payments_paymentReceiptStars::read_body(TlReader& rv) {
-    types::payments_paymentReceiptStars out;
+types::help_appUpdate types::help_appUpdate::read_body(TlReader& rv) {
+    types::help_appUpdate out;
     std::uint32_t fl_flags = rv.read_uint32();
-    out.date = rv.read_int32();
-    out.bot_id = rv.read_int64();
-    out.title = rv.read_string();
-    out.description = rv.read_string();
-    if ((fl_flags & (1u << 2)) != 0) { out.photo = tl::read_boxed<tl::WebDocument>(rv); }
-    out.invoice = tl::read_boxed<tl::Invoice>(rv);
-    out.currency = rv.read_string();
-    out.total_amount = rv.read_int64();
-    out.transaction_id = rv.read_string();
-    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r478) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r478); });
+    out.can_not_skip = (fl_flags & (1u << 0)) != 0;
+    out.id = rv.read_int32();
+    out.version = rv.read_string();
+    out.text = rv.read_string();
+    out.entities = tl::read_vector<std::shared_ptr<tl::MessageEntity>>(rv, [&](TlReader& r274) -> std::shared_ptr<tl::MessageEntity> { return tl::read_boxed<tl::MessageEntity>(r274); });
+    if ((fl_flags & (1u << 1)) != 0) { out.document = tl::read_boxed<tl::Document>(rv); }
+    if ((fl_flags & (1u << 2)) != 0) { out.url = rv.read_string(); }
+    if ((fl_flags & (1u << 3)) != 0) { out.sticker = tl::read_boxed<tl::Document>(rv); }
     return out;
 }
 
 
-void types::payments_savedInfo::serialize(TlWriter& tlw) const {
+void types::help_noAppUpdate::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (has_saved_credentials) flags_v |= (1u << 1);
-        if (saved_info.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    if (saved_info.has_value()) { saved_info.value()->serialize(tlw); }
 }
 
-types::payments_savedInfo types::payments_savedInfo::read_body(TlReader& rv) {
-    types::payments_savedInfo out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.has_saved_credentials = (fl_flags & (1u << 1)) != 0;
-    if ((fl_flags & (1u << 0)) != 0) { out.saved_info = tl::read_boxed<tl::PaymentRequestedInfo>(rv); }
+types::help_noAppUpdate types::help_noAppUpdate::read_body(TlReader& rv) {
+    types::help_noAppUpdate out;
     return out;
 }
 
 
-void types::inputPaymentCredentialsSaved::serialize(TlWriter& tlw) const {
+void types::help_inviteText::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    tlw.write_string(id);
-    tlw.write_bytes(tmp_password);
+    tlw.write_string(message);
 }
 
-types::inputPaymentCredentialsSaved types::inputPaymentCredentialsSaved::read_body(TlReader& rv) {
-    types::inputPaymentCredentialsSaved out;
-    out.id = rv.read_string();
-    out.tmp_password = rv.read_bytes();
+types::help_inviteText types::help_inviteText::read_body(TlReader& rv) {
+    types::help_inviteText out;
+    out.message = rv.read_string();
     return out;
 }
 
 
-void types::inputPaymentCredentials::serialize(TlWriter& tlw) const {
+void types::encryptedChatEmpty::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (save) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    data->serialize(tlw);
+    tlw.write_int32(id);
 }
 
-types::inputPaymentCredentials types::inputPaymentCredentials::read_body(TlReader& rv) {
-    types::inputPaymentCredentials out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.save = (fl_flags & (1u << 0)) != 0;
-    out.data = tl::read_boxed<tl::DataJSON>(rv);
+types::encryptedChatEmpty types::encryptedChatEmpty::read_body(TlReader& rv) {
+    types::encryptedChatEmpty out;
+    out.id = rv.read_int32();
     return out;
 }
 
 
-void types::inputPaymentCredentialsApplePay::serialize(TlWriter& tlw) const {
+void types::encryptedChatWaiting::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    payment_data->serialize(tlw);
-}
-
-types::inputPaymentCredentialsApplePay types::inputPaymentCredentialsApplePay::read_body(TlReader& rv) {
-    types::inputPaymentCredentialsApplePay out;
-    out.payment_data = tl::read_boxed<tl::DataJSON>(rv);
-    return out;
-}
-
-
-void types::inputPaymentCredentialsGooglePay::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    payment_token->serialize(tlw);
-}
-
-types::inputPaymentCredentialsGooglePay types::inputPaymentCredentialsGooglePay::read_body(TlReader& rv) {
-    types::inputPaymentCredentialsGooglePay out;
-    out.payment_token = tl::read_boxed<tl::DataJSON>(rv);
-    return out;
-}
-
-
-void types::account_tmpPassword::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bytes(tmp_password);
-    tlw.write_int32(valid_until);
-}
-
-types::account_tmpPassword types::account_tmpPassword::read_body(TlReader& rv) {
-    types::account_tmpPassword out;
-    out.tmp_password = rv.read_bytes();
-    out.valid_until = rv.read_int32();
-    return out;
-}
-
-
-void types::shippingOption::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(id);
-    tlw.write_string(title);
-    tl::write_vector(tlw, prices, [&](TlWriter& tlw481, const auto& e481) { e481->serialize(tlw481); });
-}
-
-types::shippingOption types::shippingOption::read_body(TlReader& rv) {
-    types::shippingOption out;
-    out.id = rv.read_string();
-    out.title = rv.read_string();
-    out.prices = tl::read_vector<std::shared_ptr<tl::LabeledPrice>>(rv, [&](TlReader& r480) -> std::shared_ptr<tl::LabeledPrice> { return tl::read_boxed<tl::LabeledPrice>(r480); });
-    return out;
-}
-
-
-void types::inputStickerSetItem::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (mask_coords.has_value()) flags_v |= (1u << 0);
-        if (keywords.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    document->serialize(tlw);
-    tlw.write_string(emoji);
-    if (mask_coords.has_value()) { mask_coords.value()->serialize(tlw); }
-    if (keywords.has_value()) { tlw.write_string(keywords.value()); }
-}
-
-types::inputStickerSetItem types::inputStickerSetItem::read_body(TlReader& rv) {
-    types::inputStickerSetItem out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.document = tl::read_boxed<tl::InputDocument>(rv);
-    out.emoji = rv.read_string();
-    if ((fl_flags & (1u << 0)) != 0) { out.mask_coords = tl::read_boxed<tl::MaskCoords>(rv); }
-    if ((fl_flags & (1u << 1)) != 0) { out.keywords = rv.read_string(); }
-    return out;
-}
-
-
-void types::inputPhoneCall::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(id);
-    tlw.write_int64(access_hash);
-}
-
-types::inputPhoneCall types::inputPhoneCall::read_body(TlReader& rv) {
-    types::inputPhoneCall out;
-    out.id = rv.read_int64();
-    out.access_hash = rv.read_int64();
-    return out;
-}
-
-
-void types::phoneCallEmpty::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(id);
-}
-
-types::phoneCallEmpty types::phoneCallEmpty::read_body(TlReader& rv) {
-    types::phoneCallEmpty out;
-    out.id = rv.read_int64();
-    return out;
-}
-
-
-void types::phoneCallWaiting::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (video) flags_v |= (1u << 6);
-        if (receive_date.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int64(id);
+    tlw.write_int32(id);
     tlw.write_int64(access_hash);
     tlw.write_int32(date);
     tlw.write_int64(admin_id);
     tlw.write_int64(participant_id);
-    protocol->serialize(tlw);
-    if (receive_date.has_value()) { tlw.write_int32(receive_date.value()); }
 }
 
-types::phoneCallWaiting types::phoneCallWaiting::read_body(TlReader& rv) {
-    types::phoneCallWaiting out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.video = (fl_flags & (1u << 6)) != 0;
-    out.id = rv.read_int64();
+types::encryptedChatWaiting types::encryptedChatWaiting::read_body(TlReader& rv) {
+    types::encryptedChatWaiting out;
+    out.id = rv.read_int32();
     out.access_hash = rv.read_int64();
     out.date = rv.read_int32();
     out.admin_id = rv.read_int64();
     out.participant_id = rv.read_int64();
-    out.protocol = tl::read_boxed<tl::PhoneCallProtocol>(rv);
-    if ((fl_flags & (1u << 0)) != 0) { out.receive_date = rv.read_int32(); }
     return out;
 }
 
 
-void types::phoneCallRequested::serialize(TlWriter& tlw) const {
+void types::encryptedChatRequested::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (video) flags_v |= (1u << 6);
+        if (folder_id.has_value()) flags_v |= (1u << 0);
         tlw.write_uint32(flags_v);
     }
-    tlw.write_int64(id);
+    if (folder_id.has_value()) { tlw.write_int32(folder_id.value()); }
+    tlw.write_int32(id);
     tlw.write_int64(access_hash);
     tlw.write_int32(date);
     tlw.write_int64(admin_id);
     tlw.write_int64(participant_id);
-    tlw.write_bytes(g_a_hash);
-    protocol->serialize(tlw);
+    tlw.write_bytes(g_a);
 }
 
-types::phoneCallRequested types::phoneCallRequested::read_body(TlReader& rv) {
-    types::phoneCallRequested out;
+types::encryptedChatRequested types::encryptedChatRequested::read_body(TlReader& rv) {
+    types::encryptedChatRequested out;
     std::uint32_t fl_flags = rv.read_uint32();
-    out.video = (fl_flags & (1u << 6)) != 0;
-    out.id = rv.read_int64();
+    if ((fl_flags & (1u << 0)) != 0) { out.folder_id = rv.read_int32(); }
+    out.id = rv.read_int32();
     out.access_hash = rv.read_int64();
     out.date = rv.read_int32();
     out.admin_id = rv.read_int64();
     out.participant_id = rv.read_int64();
-    out.g_a_hash = rv.read_bytes();
-    out.protocol = tl::read_boxed<tl::PhoneCallProtocol>(rv);
+    out.g_a = rv.read_bytes();
     return out;
 }
 
 
-void types::phoneCallAccepted::serialize(TlWriter& tlw) const {
+void types::encryptedChat::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (video) flags_v |= (1u << 6);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int64(id);
-    tlw.write_int64(access_hash);
-    tlw.write_int32(date);
-    tlw.write_int64(admin_id);
-    tlw.write_int64(participant_id);
-    tlw.write_bytes(g_b);
-    protocol->serialize(tlw);
-}
-
-types::phoneCallAccepted types::phoneCallAccepted::read_body(TlReader& rv) {
-    types::phoneCallAccepted out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.video = (fl_flags & (1u << 6)) != 0;
-    out.id = rv.read_int64();
-    out.access_hash = rv.read_int64();
-    out.date = rv.read_int32();
-    out.admin_id = rv.read_int64();
-    out.participant_id = rv.read_int64();
-    out.g_b = rv.read_bytes();
-    out.protocol = tl::read_boxed<tl::PhoneCallProtocol>(rv);
-    return out;
-}
-
-
-void types::phoneCall::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (p2p_allowed) flags_v |= (1u << 5);
-        if (video) flags_v |= (1u << 6);
-        if (conference_supported) flags_v |= (1u << 8);
-        if (custom_parameters.has_value()) flags_v |= (1u << 7);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int64(id);
+    tlw.write_int32(id);
     tlw.write_int64(access_hash);
     tlw.write_int32(date);
     tlw.write_int64(admin_id);
     tlw.write_int64(participant_id);
     tlw.write_bytes(g_a_or_b);
     tlw.write_int64(key_fingerprint);
-    protocol->serialize(tlw);
-    tl::write_vector(tlw, connections, [&](TlWriter& tlw483, const auto& e483) { e483->serialize(tlw483); });
-    tlw.write_int32(start_date);
-    if (custom_parameters.has_value()) { custom_parameters.value()->serialize(tlw); }
 }
 
-types::phoneCall types::phoneCall::read_body(TlReader& rv) {
-    types::phoneCall out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.p2p_allowed = (fl_flags & (1u << 5)) != 0;
-    out.video = (fl_flags & (1u << 6)) != 0;
-    out.conference_supported = (fl_flags & (1u << 8)) != 0;
-    out.id = rv.read_int64();
+types::encryptedChat types::encryptedChat::read_body(TlReader& rv) {
+    types::encryptedChat out;
+    out.id = rv.read_int32();
     out.access_hash = rv.read_int64();
     out.date = rv.read_int32();
     out.admin_id = rv.read_int64();
     out.participant_id = rv.read_int64();
     out.g_a_or_b = rv.read_bytes();
     out.key_fingerprint = rv.read_int64();
-    out.protocol = tl::read_boxed<tl::PhoneCallProtocol>(rv);
-    out.connections = tl::read_vector<std::shared_ptr<tl::PhoneConnection>>(rv, [&](TlReader& r482) -> std::shared_ptr<tl::PhoneConnection> { return tl::read_boxed<tl::PhoneConnection>(r482); });
-    out.start_date = rv.read_int32();
-    if ((fl_flags & (1u << 7)) != 0) { out.custom_parameters = tl::read_boxed<tl::DataJSON>(rv); }
     return out;
 }
 
 
-void types::phoneCallDiscarded::serialize(TlWriter& tlw) const {
+void types::encryptedChatDiscarded::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     {
         std::uint32_t flags_v = 0;
-        if (need_rating) flags_v |= (1u << 2);
-        if (need_debug) flags_v |= (1u << 3);
-        if (video) flags_v |= (1u << 6);
-        if (reason.has_value()) flags_v |= (1u << 0);
-        if (duration.has_value()) flags_v |= (1u << 1);
+        if (history_deleted) flags_v |= (1u << 0);
         tlw.write_uint32(flags_v);
     }
-    tlw.write_int64(id);
-    if (reason.has_value()) { reason.value()->serialize(tlw); }
-    if (duration.has_value()) { tlw.write_int32(duration.value()); }
-}
-
-types::phoneCallDiscarded types::phoneCallDiscarded::read_body(TlReader& rv) {
-    types::phoneCallDiscarded out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.need_rating = (fl_flags & (1u << 2)) != 0;
-    out.need_debug = (fl_flags & (1u << 3)) != 0;
-    out.video = (fl_flags & (1u << 6)) != 0;
-    out.id = rv.read_int64();
-    if ((fl_flags & (1u << 0)) != 0) { out.reason = tl::read_boxed<tl::PhoneCallDiscardReason>(rv); }
-    if ((fl_flags & (1u << 1)) != 0) { out.duration = rv.read_int32(); }
-    return out;
-}
-
-
-void types::phoneConnection::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (tcp) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int64(id);
-    tlw.write_string(ip);
-    tlw.write_string(ipv6);
-    tlw.write_int32(port);
-    tlw.write_bytes(peer_tag);
-}
-
-types::phoneConnection types::phoneConnection::read_body(TlReader& rv) {
-    types::phoneConnection out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.tcp = (fl_flags & (1u << 0)) != 0;
-    out.id = rv.read_int64();
-    out.ip = rv.read_string();
-    out.ipv6 = rv.read_string();
-    out.port = rv.read_int32();
-    out.peer_tag = rv.read_bytes();
-    return out;
-}
-
-
-void types::phoneConnectionWebrtc::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (turn) flags_v |= (1u << 0);
-        if (stun) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int64(id);
-    tlw.write_string(ip);
-    tlw.write_string(ipv6);
-    tlw.write_int32(port);
-    tlw.write_string(username);
-    tlw.write_string(password);
-}
-
-types::phoneConnectionWebrtc types::phoneConnectionWebrtc::read_body(TlReader& rv) {
-    types::phoneConnectionWebrtc out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.turn = (fl_flags & (1u << 0)) != 0;
-    out.stun = (fl_flags & (1u << 1)) != 0;
-    out.id = rv.read_int64();
-    out.ip = rv.read_string();
-    out.ipv6 = rv.read_string();
-    out.port = rv.read_int32();
-    out.username = rv.read_string();
-    out.password = rv.read_string();
-    return out;
-}
-
-
-void types::phoneCallProtocol::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (udp_p2p) flags_v |= (1u << 0);
-        if (udp_reflector) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int32(min_layer);
-    tlw.write_int32(max_layer);
-    tl::write_vector(tlw, library_versions, [&](TlWriter& tlw485, const auto& e485) { tlw485.write_string(e485); });
-}
-
-types::phoneCallProtocol types::phoneCallProtocol::read_body(TlReader& rv) {
-    types::phoneCallProtocol out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.udp_p2p = (fl_flags & (1u << 0)) != 0;
-    out.udp_reflector = (fl_flags & (1u << 1)) != 0;
-    out.min_layer = rv.read_int32();
-    out.max_layer = rv.read_int32();
-    out.library_versions = tl::read_vector<std::string>(rv, [&](TlReader& r484) -> std::string { return r484.read_string(); });
-    return out;
-}
-
-
-void types::phone_phoneCall::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    phone_call->serialize(tlw);
-    tl::write_vector(tlw, users, [&](TlWriter& tlw487, const auto& e487) { e487->serialize(tlw487); });
-}
-
-types::phone_phoneCall types::phone_phoneCall::read_body(TlReader& rv) {
-    types::phone_phoneCall out;
-    out.phone_call = tl::read_boxed<tl::PhoneCall>(rv);
-    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r486) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r486); });
-    return out;
-}
-
-
-void types::upload_cdnFileReuploadNeeded::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bytes(request_token);
-}
-
-types::upload_cdnFileReuploadNeeded types::upload_cdnFileReuploadNeeded::read_body(TlReader& rv) {
-    types::upload_cdnFileReuploadNeeded out;
-    out.request_token = rv.read_bytes();
-    return out;
-}
-
-
-void types::upload_cdnFile::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bytes(bytes);
-}
-
-types::upload_cdnFile types::upload_cdnFile::read_body(TlReader& rv) {
-    types::upload_cdnFile out;
-    out.bytes = rv.read_bytes();
-    return out;
-}
-
-
-void types::cdnPublicKey::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(dc_id);
-    tlw.write_string(public_key);
-}
-
-types::cdnPublicKey types::cdnPublicKey::read_body(TlReader& rv) {
-    types::cdnPublicKey out;
-    out.dc_id = rv.read_int32();
-    out.public_key = rv.read_string();
-    return out;
-}
-
-
-void types::cdnConfig::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, public_keys, [&](TlWriter& tlw489, const auto& e489) { e489->serialize(tlw489); });
-}
-
-types::cdnConfig types::cdnConfig::read_body(TlReader& rv) {
-    types::cdnConfig out;
-    out.public_keys = tl::read_vector<std::shared_ptr<tl::CdnPublicKey>>(rv, [&](TlReader& r488) -> std::shared_ptr<tl::CdnPublicKey> { return tl::read_boxed<tl::CdnPublicKey>(r488); });
-    return out;
-}
-
-
-void types::langPackString::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(key);
-    tlw.write_string(value);
-}
-
-types::langPackString types::langPackString::read_body(TlReader& rv) {
-    types::langPackString out;
-    out.key = rv.read_string();
-    out.value = rv.read_string();
-    return out;
-}
-
-
-void types::langPackStringPluralized::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (zero_value.has_value()) flags_v |= (1u << 0);
-        if (one_value.has_value()) flags_v |= (1u << 1);
-        if (two_value.has_value()) flags_v |= (1u << 2);
-        if (few_value.has_value()) flags_v |= (1u << 3);
-        if (many_value.has_value()) flags_v |= (1u << 4);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(key);
-    if (zero_value.has_value()) { tlw.write_string(zero_value.value()); }
-    if (one_value.has_value()) { tlw.write_string(one_value.value()); }
-    if (two_value.has_value()) { tlw.write_string(two_value.value()); }
-    if (few_value.has_value()) { tlw.write_string(few_value.value()); }
-    if (many_value.has_value()) { tlw.write_string(many_value.value()); }
-    tlw.write_string(other_value);
-}
-
-types::langPackStringPluralized types::langPackStringPluralized::read_body(TlReader& rv) {
-    types::langPackStringPluralized out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.key = rv.read_string();
-    if ((fl_flags & (1u << 0)) != 0) { out.zero_value = rv.read_string(); }
-    if ((fl_flags & (1u << 1)) != 0) { out.one_value = rv.read_string(); }
-    if ((fl_flags & (1u << 2)) != 0) { out.two_value = rv.read_string(); }
-    if ((fl_flags & (1u << 3)) != 0) { out.few_value = rv.read_string(); }
-    if ((fl_flags & (1u << 4)) != 0) { out.many_value = rv.read_string(); }
-    out.other_value = rv.read_string();
-    return out;
-}
-
-
-void types::langPackStringDeleted::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(key);
-}
-
-types::langPackStringDeleted types::langPackStringDeleted::read_body(TlReader& rv) {
-    types::langPackStringDeleted out;
-    out.key = rv.read_string();
-    return out;
-}
-
-
-void types::langPackDifference::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(lang_code);
-    tlw.write_int32(from_version);
-    tlw.write_int32(version);
-    tl::write_vector(tlw, strings, [&](TlWriter& tlw491, const auto& e491) { e491->serialize(tlw491); });
-}
-
-types::langPackDifference types::langPackDifference::read_body(TlReader& rv) {
-    types::langPackDifference out;
-    out.lang_code = rv.read_string();
-    out.from_version = rv.read_int32();
-    out.version = rv.read_int32();
-    out.strings = tl::read_vector<std::shared_ptr<tl::LangPackString>>(rv, [&](TlReader& r490) -> std::shared_ptr<tl::LangPackString> { return tl::read_boxed<tl::LangPackString>(r490); });
-    return out;
-}
-
-
-void types::langPackLanguage::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (official) flags_v |= (1u << 0);
-        if (rtl) flags_v |= (1u << 2);
-        if (beta) flags_v |= (1u << 3);
-        if (base_lang_code.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(name);
-    tlw.write_string(native_name);
-    tlw.write_string(lang_code);
-    if (base_lang_code.has_value()) { tlw.write_string(base_lang_code.value()); }
-    tlw.write_string(plural_code);
-    tlw.write_int32(strings_count);
-    tlw.write_int32(translated_count);
-    tlw.write_string(translations_url);
-}
-
-types::langPackLanguage types::langPackLanguage::read_body(TlReader& rv) {
-    types::langPackLanguage out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.official = (fl_flags & (1u << 0)) != 0;
-    out.rtl = (fl_flags & (1u << 2)) != 0;
-    out.beta = (fl_flags & (1u << 3)) != 0;
-    out.name = rv.read_string();
-    out.native_name = rv.read_string();
-    out.lang_code = rv.read_string();
-    if ((fl_flags & (1u << 1)) != 0) { out.base_lang_code = rv.read_string(); }
-    out.plural_code = rv.read_string();
-    out.strings_count = rv.read_int32();
-    out.translated_count = rv.read_int32();
-    out.translations_url = rv.read_string();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionChangeTitle::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(prev_value);
-    tlw.write_string(new_value);
-}
-
-types::channelAdminLogEventActionChangeTitle types::channelAdminLogEventActionChangeTitle::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionChangeTitle out;
-    out.prev_value = rv.read_string();
-    out.new_value = rv.read_string();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionChangeAbout::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(prev_value);
-    tlw.write_string(new_value);
-}
-
-types::channelAdminLogEventActionChangeAbout types::channelAdminLogEventActionChangeAbout::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionChangeAbout out;
-    out.prev_value = rv.read_string();
-    out.new_value = rv.read_string();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionChangeUsername::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(prev_value);
-    tlw.write_string(new_value);
-}
-
-types::channelAdminLogEventActionChangeUsername types::channelAdminLogEventActionChangeUsername::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionChangeUsername out;
-    out.prev_value = rv.read_string();
-    out.new_value = rv.read_string();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionChangePhoto::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    prev_photo->serialize(tlw);
-    new_photo->serialize(tlw);
-}
-
-types::channelAdminLogEventActionChangePhoto types::channelAdminLogEventActionChangePhoto::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionChangePhoto out;
-    out.prev_photo = tl::read_boxed<tl::Photo>(rv);
-    out.new_photo = tl::read_boxed<tl::Photo>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionToggleInvites::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bool(new_value);
-}
-
-types::channelAdminLogEventActionToggleInvites types::channelAdminLogEventActionToggleInvites::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionToggleInvites out;
-    out.new_value = rv.read_bool();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionToggleSignatures::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bool(new_value);
-}
-
-types::channelAdminLogEventActionToggleSignatures types::channelAdminLogEventActionToggleSignatures::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionToggleSignatures out;
-    out.new_value = rv.read_bool();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionUpdatePinned::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    message->serialize(tlw);
-}
-
-types::channelAdminLogEventActionUpdatePinned types::channelAdminLogEventActionUpdatePinned::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionUpdatePinned out;
-    out.message = tl::read_boxed<tl::Message>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionEditMessage::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    prev_message->serialize(tlw);
-    new_message->serialize(tlw);
-}
-
-types::channelAdminLogEventActionEditMessage types::channelAdminLogEventActionEditMessage::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionEditMessage out;
-    out.prev_message = tl::read_boxed<tl::Message>(rv);
-    out.new_message = tl::read_boxed<tl::Message>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionDeleteMessage::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    message->serialize(tlw);
-}
-
-types::channelAdminLogEventActionDeleteMessage types::channelAdminLogEventActionDeleteMessage::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionDeleteMessage out;
-    out.message = tl::read_boxed<tl::Message>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionParticipantJoin::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::channelAdminLogEventActionParticipantJoin types::channelAdminLogEventActionParticipantJoin::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionParticipantJoin out;
-    return out;
-}
-
-
-void types::channelAdminLogEventActionParticipantLeave::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::channelAdminLogEventActionParticipantLeave types::channelAdminLogEventActionParticipantLeave::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionParticipantLeave out;
-    return out;
-}
-
-
-void types::channelAdminLogEventActionParticipantInvite::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    participant->serialize(tlw);
-}
-
-types::channelAdminLogEventActionParticipantInvite types::channelAdminLogEventActionParticipantInvite::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionParticipantInvite out;
-    out.participant = tl::read_boxed<tl::ChannelParticipant>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionParticipantToggleBan::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    prev_participant->serialize(tlw);
-    new_participant->serialize(tlw);
-}
-
-types::channelAdminLogEventActionParticipantToggleBan types::channelAdminLogEventActionParticipantToggleBan::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionParticipantToggleBan out;
-    out.prev_participant = tl::read_boxed<tl::ChannelParticipant>(rv);
-    out.new_participant = tl::read_boxed<tl::ChannelParticipant>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionParticipantToggleAdmin::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    prev_participant->serialize(tlw);
-    new_participant->serialize(tlw);
-}
-
-types::channelAdminLogEventActionParticipantToggleAdmin types::channelAdminLogEventActionParticipantToggleAdmin::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionParticipantToggleAdmin out;
-    out.prev_participant = tl::read_boxed<tl::ChannelParticipant>(rv);
-    out.new_participant = tl::read_boxed<tl::ChannelParticipant>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionChangeStickerSet::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    prev_stickerset->serialize(tlw);
-    new_stickerset->serialize(tlw);
-}
-
-types::channelAdminLogEventActionChangeStickerSet types::channelAdminLogEventActionChangeStickerSet::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionChangeStickerSet out;
-    out.prev_stickerset = tl::read_boxed<tl::InputStickerSet>(rv);
-    out.new_stickerset = tl::read_boxed<tl::InputStickerSet>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionTogglePreHistoryHidden::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bool(new_value);
-}
-
-types::channelAdminLogEventActionTogglePreHistoryHidden types::channelAdminLogEventActionTogglePreHistoryHidden::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionTogglePreHistoryHidden out;
-    out.new_value = rv.read_bool();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionDefaultBannedRights::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    prev_banned_rights->serialize(tlw);
-    new_banned_rights->serialize(tlw);
-}
-
-types::channelAdminLogEventActionDefaultBannedRights types::channelAdminLogEventActionDefaultBannedRights::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionDefaultBannedRights out;
-    out.prev_banned_rights = tl::read_boxed<tl::ChatBannedRights>(rv);
-    out.new_banned_rights = tl::read_boxed<tl::ChatBannedRights>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionStopPoll::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    message->serialize(tlw);
-}
-
-types::channelAdminLogEventActionStopPoll types::channelAdminLogEventActionStopPoll::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionStopPoll out;
-    out.message = tl::read_boxed<tl::Message>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionChangeLinkedChat::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(prev_value);
-    tlw.write_int64(new_value);
-}
-
-types::channelAdminLogEventActionChangeLinkedChat types::channelAdminLogEventActionChangeLinkedChat::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionChangeLinkedChat out;
-    out.prev_value = rv.read_int64();
-    out.new_value = rv.read_int64();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionChangeLocation::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    prev_value->serialize(tlw);
-    new_value->serialize(tlw);
-}
-
-types::channelAdminLogEventActionChangeLocation types::channelAdminLogEventActionChangeLocation::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionChangeLocation out;
-    out.prev_value = tl::read_boxed<tl::ChannelLocation>(rv);
-    out.new_value = tl::read_boxed<tl::ChannelLocation>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionToggleSlowMode::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(prev_value);
-    tlw.write_int32(new_value);
-}
-
-types::channelAdminLogEventActionToggleSlowMode types::channelAdminLogEventActionToggleSlowMode::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionToggleSlowMode out;
-    out.prev_value = rv.read_int32();
-    out.new_value = rv.read_int32();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionStartGroupCall::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    call->serialize(tlw);
-}
-
-types::channelAdminLogEventActionStartGroupCall types::channelAdminLogEventActionStartGroupCall::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionStartGroupCall out;
-    out.call = tl::read_boxed<tl::InputGroupCall>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionDiscardGroupCall::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    call->serialize(tlw);
-}
-
-types::channelAdminLogEventActionDiscardGroupCall types::channelAdminLogEventActionDiscardGroupCall::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionDiscardGroupCall out;
-    out.call = tl::read_boxed<tl::InputGroupCall>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionParticipantMute::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    participant->serialize(tlw);
-}
-
-types::channelAdminLogEventActionParticipantMute types::channelAdminLogEventActionParticipantMute::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionParticipantMute out;
-    out.participant = tl::read_boxed<tl::GroupCallParticipant>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionParticipantUnmute::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    participant->serialize(tlw);
-}
-
-types::channelAdminLogEventActionParticipantUnmute types::channelAdminLogEventActionParticipantUnmute::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionParticipantUnmute out;
-    out.participant = tl::read_boxed<tl::GroupCallParticipant>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionToggleGroupCallSetting::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bool(join_muted);
-}
-
-types::channelAdminLogEventActionToggleGroupCallSetting types::channelAdminLogEventActionToggleGroupCallSetting::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionToggleGroupCallSetting out;
-    out.join_muted = rv.read_bool();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionParticipantJoinByInvite::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (via_chatlist) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    invite->serialize(tlw);
-}
-
-types::channelAdminLogEventActionParticipantJoinByInvite types::channelAdminLogEventActionParticipantJoinByInvite::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionParticipantJoinByInvite out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.via_chatlist = (fl_flags & (1u << 0)) != 0;
-    out.invite = tl::read_boxed<tl::ExportedChatInvite>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionExportedInviteDelete::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    invite->serialize(tlw);
-}
-
-types::channelAdminLogEventActionExportedInviteDelete types::channelAdminLogEventActionExportedInviteDelete::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionExportedInviteDelete out;
-    out.invite = tl::read_boxed<tl::ExportedChatInvite>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionExportedInviteRevoke::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    invite->serialize(tlw);
-}
-
-types::channelAdminLogEventActionExportedInviteRevoke types::channelAdminLogEventActionExportedInviteRevoke::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionExportedInviteRevoke out;
-    out.invite = tl::read_boxed<tl::ExportedChatInvite>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionExportedInviteEdit::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    prev_invite->serialize(tlw);
-    new_invite->serialize(tlw);
-}
-
-types::channelAdminLogEventActionExportedInviteEdit types::channelAdminLogEventActionExportedInviteEdit::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionExportedInviteEdit out;
-    out.prev_invite = tl::read_boxed<tl::ExportedChatInvite>(rv);
-    out.new_invite = tl::read_boxed<tl::ExportedChatInvite>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionParticipantVolume::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    participant->serialize(tlw);
-}
-
-types::channelAdminLogEventActionParticipantVolume types::channelAdminLogEventActionParticipantVolume::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionParticipantVolume out;
-    out.participant = tl::read_boxed<tl::GroupCallParticipant>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionChangeHistoryTTL::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(prev_value);
-    tlw.write_int32(new_value);
-}
-
-types::channelAdminLogEventActionChangeHistoryTTL types::channelAdminLogEventActionChangeHistoryTTL::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionChangeHistoryTTL out;
-    out.prev_value = rv.read_int32();
-    out.new_value = rv.read_int32();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionParticipantJoinByRequest::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    invite->serialize(tlw);
-    tlw.write_int64(approved_by);
-}
-
-types::channelAdminLogEventActionParticipantJoinByRequest types::channelAdminLogEventActionParticipantJoinByRequest::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionParticipantJoinByRequest out;
-    out.invite = tl::read_boxed<tl::ExportedChatInvite>(rv);
-    out.approved_by = rv.read_int64();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionToggleNoForwards::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bool(new_value);
-}
-
-types::channelAdminLogEventActionToggleNoForwards types::channelAdminLogEventActionToggleNoForwards::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionToggleNoForwards out;
-    out.new_value = rv.read_bool();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionSendMessage::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    message->serialize(tlw);
-}
-
-types::channelAdminLogEventActionSendMessage types::channelAdminLogEventActionSendMessage::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionSendMessage out;
-    out.message = tl::read_boxed<tl::Message>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionChangeAvailableReactions::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    prev_value->serialize(tlw);
-    new_value->serialize(tlw);
-}
-
-types::channelAdminLogEventActionChangeAvailableReactions types::channelAdminLogEventActionChangeAvailableReactions::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionChangeAvailableReactions out;
-    out.prev_value = tl::read_boxed<tl::ChatReactions>(rv);
-    out.new_value = tl::read_boxed<tl::ChatReactions>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionChangeUsernames::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, prev_value, [&](TlWriter& tlw494, const auto& e494) { tlw494.write_string(e494); });
-    tl::write_vector(tlw, new_value, [&](TlWriter& tlw495, const auto& e495) { tlw495.write_string(e495); });
-}
-
-types::channelAdminLogEventActionChangeUsernames types::channelAdminLogEventActionChangeUsernames::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionChangeUsernames out;
-    out.prev_value = tl::read_vector<std::string>(rv, [&](TlReader& r492) -> std::string { return r492.read_string(); });
-    out.new_value = tl::read_vector<std::string>(rv, [&](TlReader& r493) -> std::string { return r493.read_string(); });
-    return out;
-}
-
-
-void types::channelAdminLogEventActionToggleForum::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bool(new_value);
-}
-
-types::channelAdminLogEventActionToggleForum types::channelAdminLogEventActionToggleForum::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionToggleForum out;
-    out.new_value = rv.read_bool();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionCreateTopic::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    topic->serialize(tlw);
-}
-
-types::channelAdminLogEventActionCreateTopic types::channelAdminLogEventActionCreateTopic::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionCreateTopic out;
-    out.topic = tl::read_boxed<tl::ForumTopic>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionEditTopic::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    prev_topic->serialize(tlw);
-    new_topic->serialize(tlw);
-}
-
-types::channelAdminLogEventActionEditTopic types::channelAdminLogEventActionEditTopic::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionEditTopic out;
-    out.prev_topic = tl::read_boxed<tl::ForumTopic>(rv);
-    out.new_topic = tl::read_boxed<tl::ForumTopic>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionDeleteTopic::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    topic->serialize(tlw);
-}
-
-types::channelAdminLogEventActionDeleteTopic types::channelAdminLogEventActionDeleteTopic::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionDeleteTopic out;
-    out.topic = tl::read_boxed<tl::ForumTopic>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionPinTopic::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (prev_topic.has_value()) flags_v |= (1u << 0);
-        if (new_topic.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    if (prev_topic.has_value()) { prev_topic.value()->serialize(tlw); }
-    if (new_topic.has_value()) { new_topic.value()->serialize(tlw); }
-}
-
-types::channelAdminLogEventActionPinTopic types::channelAdminLogEventActionPinTopic::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionPinTopic out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    if ((fl_flags & (1u << 0)) != 0) { out.prev_topic = tl::read_boxed<tl::ForumTopic>(rv); }
-    if ((fl_flags & (1u << 1)) != 0) { out.new_topic = tl::read_boxed<tl::ForumTopic>(rv); }
-    return out;
-}
-
-
-void types::channelAdminLogEventActionToggleAntiSpam::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bool(new_value);
-}
-
-types::channelAdminLogEventActionToggleAntiSpam types::channelAdminLogEventActionToggleAntiSpam::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionToggleAntiSpam out;
-    out.new_value = rv.read_bool();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionChangePeerColor::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    prev_value->serialize(tlw);
-    new_value->serialize(tlw);
-}
-
-types::channelAdminLogEventActionChangePeerColor types::channelAdminLogEventActionChangePeerColor::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionChangePeerColor out;
-    out.prev_value = tl::read_boxed<tl::PeerColor>(rv);
-    out.new_value = tl::read_boxed<tl::PeerColor>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionChangeProfilePeerColor::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    prev_value->serialize(tlw);
-    new_value->serialize(tlw);
-}
-
-types::channelAdminLogEventActionChangeProfilePeerColor types::channelAdminLogEventActionChangeProfilePeerColor::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionChangeProfilePeerColor out;
-    out.prev_value = tl::read_boxed<tl::PeerColor>(rv);
-    out.new_value = tl::read_boxed<tl::PeerColor>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionChangeWallpaper::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    prev_value->serialize(tlw);
-    new_value->serialize(tlw);
-}
-
-types::channelAdminLogEventActionChangeWallpaper types::channelAdminLogEventActionChangeWallpaper::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionChangeWallpaper out;
-    out.prev_value = tl::read_boxed<tl::WallPaper>(rv);
-    out.new_value = tl::read_boxed<tl::WallPaper>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionChangeEmojiStatus::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    prev_value->serialize(tlw);
-    new_value->serialize(tlw);
-}
-
-types::channelAdminLogEventActionChangeEmojiStatus types::channelAdminLogEventActionChangeEmojiStatus::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionChangeEmojiStatus out;
-    out.prev_value = tl::read_boxed<tl::EmojiStatus>(rv);
-    out.new_value = tl::read_boxed<tl::EmojiStatus>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionChangeEmojiStickerSet::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    prev_stickerset->serialize(tlw);
-    new_stickerset->serialize(tlw);
-}
-
-types::channelAdminLogEventActionChangeEmojiStickerSet types::channelAdminLogEventActionChangeEmojiStickerSet::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionChangeEmojiStickerSet out;
-    out.prev_stickerset = tl::read_boxed<tl::InputStickerSet>(rv);
-    out.new_stickerset = tl::read_boxed<tl::InputStickerSet>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionToggleSignatureProfiles::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bool(new_value);
-}
-
-types::channelAdminLogEventActionToggleSignatureProfiles types::channelAdminLogEventActionToggleSignatureProfiles::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionToggleSignatureProfiles out;
-    out.new_value = rv.read_bool();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionParticipantSubExtend::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    prev_participant->serialize(tlw);
-    new_participant->serialize(tlw);
-}
-
-types::channelAdminLogEventActionParticipantSubExtend types::channelAdminLogEventActionParticipantSubExtend::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionParticipantSubExtend out;
-    out.prev_participant = tl::read_boxed<tl::ChannelParticipant>(rv);
-    out.new_participant = tl::read_boxed<tl::ChannelParticipant>(rv);
-    return out;
-}
-
-
-void types::channelAdminLogEventActionToggleAutotranslation::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bool(new_value);
-}
-
-types::channelAdminLogEventActionToggleAutotranslation types::channelAdminLogEventActionToggleAutotranslation::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionToggleAutotranslation out;
-    out.new_value = rv.read_bool();
-    return out;
-}
-
-
-void types::channelAdminLogEventActionParticipantEditRank::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(user_id);
-    tlw.write_string(prev_rank);
-    tlw.write_string(new_rank);
-}
-
-types::channelAdminLogEventActionParticipantEditRank types::channelAdminLogEventActionParticipantEditRank::read_body(TlReader& rv) {
-    types::channelAdminLogEventActionParticipantEditRank out;
-    out.user_id = rv.read_int64();
-    out.prev_rank = rv.read_string();
-    out.new_rank = rv.read_string();
-    return out;
-}
-
-
-void types::channelAdminLogEvent::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(id);
-    tlw.write_int32(date);
-    tlw.write_int64(user_id);
-    action->serialize(tlw);
-}
-
-types::channelAdminLogEvent types::channelAdminLogEvent::read_body(TlReader& rv) {
-    types::channelAdminLogEvent out;
-    out.id = rv.read_int64();
-    out.date = rv.read_int32();
-    out.user_id = rv.read_int64();
-    out.action = tl::read_boxed<tl::ChannelAdminLogEventAction>(rv);
-    return out;
-}
-
-
-void types::channels_adminLogResults::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, events, [&](TlWriter& tlw499, const auto& e499) { e499->serialize(tlw499); });
-    tl::write_vector(tlw, chats, [&](TlWriter& tlw500, const auto& e500) { e500->serialize(tlw500); });
-    tl::write_vector(tlw, users, [&](TlWriter& tlw501, const auto& e501) { e501->serialize(tlw501); });
-}
-
-types::channels_adminLogResults types::channels_adminLogResults::read_body(TlReader& rv) {
-    types::channels_adminLogResults out;
-    out.events = tl::read_vector<std::shared_ptr<tl::ChannelAdminLogEvent>>(rv, [&](TlReader& r496) -> std::shared_ptr<tl::ChannelAdminLogEvent> { return tl::read_boxed<tl::ChannelAdminLogEvent>(r496); });
-    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r497) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r497); });
-    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r498) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r498); });
-    return out;
-}
-
-
-void types::channelAdminLogEventsFilter::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (join) flags_v |= (1u << 0);
-        if (leave) flags_v |= (1u << 1);
-        if (invite) flags_v |= (1u << 2);
-        if (ban) flags_v |= (1u << 3);
-        if (unban) flags_v |= (1u << 4);
-        if (kick) flags_v |= (1u << 5);
-        if (unkick) flags_v |= (1u << 6);
-        if (promote) flags_v |= (1u << 7);
-        if (demote) flags_v |= (1u << 8);
-        if (info) flags_v |= (1u << 9);
-        if (settings) flags_v |= (1u << 10);
-        if (pinned) flags_v |= (1u << 11);
-        if (edit) flags_v |= (1u << 12);
-        if (delete_) flags_v |= (1u << 13);
-        if (group_call) flags_v |= (1u << 14);
-        if (invites) flags_v |= (1u << 15);
-        if (send) flags_v |= (1u << 16);
-        if (forums) flags_v |= (1u << 17);
-        if (sub_extend) flags_v |= (1u << 18);
-        if (edit_rank) flags_v |= (1u << 19);
-        tlw.write_uint32(flags_v);
-    }
-}
-
-types::channelAdminLogEventsFilter types::channelAdminLogEventsFilter::read_body(TlReader& rv) {
-    types::channelAdminLogEventsFilter out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.join = (fl_flags & (1u << 0)) != 0;
-    out.leave = (fl_flags & (1u << 1)) != 0;
-    out.invite = (fl_flags & (1u << 2)) != 0;
-    out.ban = (fl_flags & (1u << 3)) != 0;
-    out.unban = (fl_flags & (1u << 4)) != 0;
-    out.kick = (fl_flags & (1u << 5)) != 0;
-    out.unkick = (fl_flags & (1u << 6)) != 0;
-    out.promote = (fl_flags & (1u << 7)) != 0;
-    out.demote = (fl_flags & (1u << 8)) != 0;
-    out.info = (fl_flags & (1u << 9)) != 0;
-    out.settings = (fl_flags & (1u << 10)) != 0;
-    out.pinned = (fl_flags & (1u << 11)) != 0;
-    out.edit = (fl_flags & (1u << 12)) != 0;
-    out.delete_ = (fl_flags & (1u << 13)) != 0;
-    out.group_call = (fl_flags & (1u << 14)) != 0;
-    out.invites = (fl_flags & (1u << 15)) != 0;
-    out.send = (fl_flags & (1u << 16)) != 0;
-    out.forums = (fl_flags & (1u << 17)) != 0;
-    out.sub_extend = (fl_flags & (1u << 18)) != 0;
-    out.edit_rank = (fl_flags & (1u << 19)) != 0;
-    return out;
-}
-
-
-void types::popularContact::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(client_id);
-    tlw.write_int32(importers);
-}
-
-types::popularContact types::popularContact::read_body(TlReader& rv) {
-    types::popularContact out;
-    out.client_id = rv.read_int64();
-    out.importers = rv.read_int32();
-    return out;
-}
-
-
-void types::messages_favedStickersNotModified::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::messages_favedStickersNotModified types::messages_favedStickersNotModified::read_body(TlReader& rv) {
-    types::messages_favedStickersNotModified out;
-    return out;
-}
-
-
-void types::messages_favedStickers::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-    tl::write_vector(tlw, packs, [&](TlWriter& tlw504, const auto& e504) { e504->serialize(tlw504); });
-    tl::write_vector(tlw, stickers, [&](TlWriter& tlw505, const auto& e505) { e505->serialize(tlw505); });
-}
-
-types::messages_favedStickers types::messages_favedStickers::read_body(TlReader& rv) {
-    types::messages_favedStickers out;
-    out.hash = rv.read_int64();
-    out.packs = tl::read_vector<std::shared_ptr<tl::StickerPack>>(rv, [&](TlReader& r502) -> std::shared_ptr<tl::StickerPack> { return tl::read_boxed<tl::StickerPack>(r502); });
-    out.stickers = tl::read_vector<std::shared_ptr<tl::Document>>(rv, [&](TlReader& r503) -> std::shared_ptr<tl::Document> { return tl::read_boxed<tl::Document>(r503); });
-    return out;
-}
-
-
-void types::recentMeUrlUnknown::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(url);
-}
-
-types::recentMeUrlUnknown types::recentMeUrlUnknown::read_body(TlReader& rv) {
-    types::recentMeUrlUnknown out;
-    out.url = rv.read_string();
-    return out;
-}
-
-
-void types::recentMeUrlUser::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(url);
-    tlw.write_int64(user_id);
-}
-
-types::recentMeUrlUser types::recentMeUrlUser::read_body(TlReader& rv) {
-    types::recentMeUrlUser out;
-    out.url = rv.read_string();
-    out.user_id = rv.read_int64();
-    return out;
-}
-
-
-void types::recentMeUrlChat::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(url);
-    tlw.write_int64(chat_id);
-}
-
-types::recentMeUrlChat types::recentMeUrlChat::read_body(TlReader& rv) {
-    types::recentMeUrlChat out;
-    out.url = rv.read_string();
-    out.chat_id = rv.read_int64();
-    return out;
-}
-
-
-void types::recentMeUrlChatInvite::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(url);
-    chat_invite->serialize(tlw);
-}
-
-types::recentMeUrlChatInvite types::recentMeUrlChatInvite::read_body(TlReader& rv) {
-    types::recentMeUrlChatInvite out;
-    out.url = rv.read_string();
-    out.chat_invite = tl::read_boxed<tl::ChatInvite>(rv);
-    return out;
-}
-
-
-void types::recentMeUrlStickerSet::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(url);
-    set->serialize(tlw);
-}
-
-types::recentMeUrlStickerSet types::recentMeUrlStickerSet::read_body(TlReader& rv) {
-    types::recentMeUrlStickerSet out;
-    out.url = rv.read_string();
-    out.set = tl::read_boxed<tl::StickerSetCovered>(rv);
-    return out;
-}
-
-
-void types::help_recentMeUrls::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, urls, [&](TlWriter& tlw509, const auto& e509) { e509->serialize(tlw509); });
-    tl::write_vector(tlw, chats, [&](TlWriter& tlw510, const auto& e510) { e510->serialize(tlw510); });
-    tl::write_vector(tlw, users, [&](TlWriter& tlw511, const auto& e511) { e511->serialize(tlw511); });
-}
-
-types::help_recentMeUrls types::help_recentMeUrls::read_body(TlReader& rv) {
-    types::help_recentMeUrls out;
-    out.urls = tl::read_vector<std::shared_ptr<tl::RecentMeUrl>>(rv, [&](TlReader& r506) -> std::shared_ptr<tl::RecentMeUrl> { return tl::read_boxed<tl::RecentMeUrl>(r506); });
-    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r507) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r507); });
-    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r508) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r508); });
-    return out;
-}
-
-
-void types::inputSingleMedia::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (entities.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    media->serialize(tlw);
-    tlw.write_int64(random_id);
-    tlw.write_string(message);
-    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw513, const auto& e513) { e513->serialize(tlw513); }); }
-}
-
-types::inputSingleMedia types::inputSingleMedia::read_body(TlReader& rv) {
-    types::inputSingleMedia out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.media = tl::read_boxed<tl::InputMedia>(rv);
-    out.random_id = rv.read_int64();
-    out.message = rv.read_string();
-    if ((fl_flags & (1u << 0)) != 0) { out.entities = tl::read_vector<std::shared_ptr<tl::MessageEntity>>(rv, [&](TlReader& r512) -> std::shared_ptr<tl::MessageEntity> { return tl::read_boxed<tl::MessageEntity>(r512); }); }
-    return out;
-}
-
-
-void types::webAuthorization::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-    tlw.write_int64(bot_id);
-    tlw.write_string(domain);
-    tlw.write_string(browser);
-    tlw.write_string(platform);
-    tlw.write_int32(date_created);
-    tlw.write_int32(date_active);
-    tlw.write_string(ip);
-    tlw.write_string(region);
-}
-
-types::webAuthorization types::webAuthorization::read_body(TlReader& rv) {
-    types::webAuthorization out;
-    out.hash = rv.read_int64();
-    out.bot_id = rv.read_int64();
-    out.domain = rv.read_string();
-    out.browser = rv.read_string();
-    out.platform = rv.read_string();
-    out.date_created = rv.read_int32();
-    out.date_active = rv.read_int32();
-    out.ip = rv.read_string();
-    out.region = rv.read_string();
-    return out;
-}
-
-
-void types::account_webAuthorizations::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, authorizations, [&](TlWriter& tlw516, const auto& e516) { e516->serialize(tlw516); });
-    tl::write_vector(tlw, users, [&](TlWriter& tlw517, const auto& e517) { e517->serialize(tlw517); });
-}
-
-types::account_webAuthorizations types::account_webAuthorizations::read_body(TlReader& rv) {
-    types::account_webAuthorizations out;
-    out.authorizations = tl::read_vector<std::shared_ptr<tl::WebAuthorization>>(rv, [&](TlReader& r514) -> std::shared_ptr<tl::WebAuthorization> { return tl::read_boxed<tl::WebAuthorization>(r514); });
-    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r515) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r515); });
-    return out;
-}
-
-
-void types::inputMessageID::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
     tlw.write_int32(id);
 }
 
-types::inputMessageID types::inputMessageID::read_body(TlReader& rv) {
-    types::inputMessageID out;
+types::encryptedChatDiscarded types::encryptedChatDiscarded::read_body(TlReader& rv) {
+    types::encryptedChatDiscarded out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.history_deleted = (fl_flags & (1u << 0)) != 0;
     out.id = rv.read_int32();
     return out;
 }
 
 
-void types::inputMessageReplyTo::serialize(TlWriter& tlw) const {
+void types::inputEncryptedChat::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    tlw.write_int32(id);
-}
-
-types::inputMessageReplyTo types::inputMessageReplyTo::read_body(TlReader& rv) {
-    types::inputMessageReplyTo out;
-    out.id = rv.read_int32();
-    return out;
-}
-
-
-void types::inputMessagePinned::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::inputMessagePinned types::inputMessagePinned::read_body(TlReader& rv) {
-    types::inputMessagePinned out;
-    return out;
-}
-
-
-void types::inputMessageCallbackQuery::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(id);
-    tlw.write_int64(query_id);
-}
-
-types::inputMessageCallbackQuery types::inputMessageCallbackQuery::read_body(TlReader& rv) {
-    types::inputMessageCallbackQuery out;
-    out.id = rv.read_int32();
-    out.query_id = rv.read_int64();
-    return out;
-}
-
-
-void types::inputDialogPeer::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-}
-
-types::inputDialogPeer types::inputDialogPeer::read_body(TlReader& rv) {
-    types::inputDialogPeer out;
-    out.peer = tl::read_boxed<tl::InputPeer>(rv);
-    return out;
-}
-
-
-void types::inputDialogPeerFolder::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(folder_id);
-}
-
-types::inputDialogPeerFolder types::inputDialogPeerFolder::read_body(TlReader& rv) {
-    types::inputDialogPeerFolder out;
-    out.folder_id = rv.read_int32();
-    return out;
-}
-
-
-void types::inputDialogPeerCommunity::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    community->serialize(tlw);
-}
-
-types::inputDialogPeerCommunity types::inputDialogPeerCommunity::read_body(TlReader& rv) {
-    types::inputDialogPeerCommunity out;
-    out.community = tl::read_boxed<tl::InputChannel>(rv);
-    return out;
-}
-
-
-void types::dialogPeer::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    peer->serialize(tlw);
-}
-
-types::dialogPeer types::dialogPeer::read_body(TlReader& rv) {
-    types::dialogPeer out;
-    out.peer = tl::read_boxed<tl::Peer>(rv);
-    return out;
-}
-
-
-void types::dialogPeerFolder::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(folder_id);
-}
-
-types::dialogPeerFolder types::dialogPeerFolder::read_body(TlReader& rv) {
-    types::dialogPeerFolder out;
-    out.folder_id = rv.read_int32();
-    return out;
-}
-
-
-void types::dialogPeerCommunity::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(community_id);
-}
-
-types::dialogPeerCommunity types::dialogPeerCommunity::read_body(TlReader& rv) {
-    types::dialogPeerCommunity out;
-    out.community_id = rv.read_int64();
-    return out;
-}
-
-
-void types::messages_foundStickerSetsNotModified::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::messages_foundStickerSetsNotModified types::messages_foundStickerSetsNotModified::read_body(TlReader& rv) {
-    types::messages_foundStickerSetsNotModified out;
-    return out;
-}
-
-
-void types::messages_foundStickerSets::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(hash);
-    tl::write_vector(tlw, sets, [&](TlWriter& tlw519, const auto& e519) { e519->serialize(tlw519); });
-}
-
-types::messages_foundStickerSets types::messages_foundStickerSets::read_body(TlReader& rv) {
-    types::messages_foundStickerSets out;
-    out.hash = rv.read_int64();
-    out.sets = tl::read_vector<std::shared_ptr<tl::StickerSetCovered>>(rv, [&](TlReader& r518) -> std::shared_ptr<tl::StickerSetCovered> { return tl::read_boxed<tl::StickerSetCovered>(r518); });
-    return out;
-}
-
-
-void types::fileHash::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(offset);
-    tlw.write_int32(limit);
-    tlw.write_bytes(hash);
-}
-
-types::fileHash types::fileHash::read_body(TlReader& rv) {
-    types::fileHash out;
-    out.offset = rv.read_int64();
-    out.limit = rv.read_int32();
-    out.hash = rv.read_bytes();
-    return out;
-}
-
-
-void types::inputClientProxy::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(address);
-    tlw.write_int32(port);
-}
-
-types::inputClientProxy types::inputClientProxy::read_body(TlReader& rv) {
-    types::inputClientProxy out;
-    out.address = rv.read_string();
-    out.port = rv.read_int32();
-    return out;
-}
-
-
-void types::help_termsOfServiceUpdateEmpty::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(expires);
-}
-
-types::help_termsOfServiceUpdateEmpty types::help_termsOfServiceUpdateEmpty::read_body(TlReader& rv) {
-    types::help_termsOfServiceUpdateEmpty out;
-    out.expires = rv.read_int32();
-    return out;
-}
-
-
-void types::help_termsOfServiceUpdate::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(expires);
-    terms_of_service->serialize(tlw);
-}
-
-types::help_termsOfServiceUpdate types::help_termsOfServiceUpdate::read_body(TlReader& rv) {
-    types::help_termsOfServiceUpdate out;
-    out.expires = rv.read_int32();
-    out.terms_of_service = tl::read_boxed<tl::help_TermsOfService>(rv);
-    return out;
-}
-
-
-void types::inputSecureFileUploaded::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(id);
-    tlw.write_int32(parts);
-    tlw.write_string(md5_checksum);
-    tlw.write_bytes(file_hash);
-    tlw.write_bytes(secret);
-}
-
-types::inputSecureFileUploaded types::inputSecureFileUploaded::read_body(TlReader& rv) {
-    types::inputSecureFileUploaded out;
-    out.id = rv.read_int64();
-    out.parts = rv.read_int32();
-    out.md5_checksum = rv.read_string();
-    out.file_hash = rv.read_bytes();
-    out.secret = rv.read_bytes();
-    return out;
-}
-
-
-void types::inputSecureFile::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(id);
+    tlw.write_int32(chat_id);
     tlw.write_int64(access_hash);
 }
 
-types::inputSecureFile types::inputSecureFile::read_body(TlReader& rv) {
-    types::inputSecureFile out;
-    out.id = rv.read_int64();
+types::inputEncryptedChat types::inputEncryptedChat::read_body(TlReader& rv) {
+    types::inputEncryptedChat out;
+    out.chat_id = rv.read_int32();
     out.access_hash = rv.read_int64();
     return out;
 }
 
 
-void types::secureFileEmpty::serialize(TlWriter& tlw) const {
+void types::encryptedFileEmpty::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
 }
 
-types::secureFileEmpty types::secureFileEmpty::read_body(TlReader& rv) {
-    types::secureFileEmpty out;
+types::encryptedFileEmpty types::encryptedFileEmpty::read_body(TlReader& rv) {
+    types::encryptedFileEmpty out;
     return out;
 }
 
 
-void types::secureFile::serialize(TlWriter& tlw) const {
+void types::encryptedFile::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     tlw.write_int64(id);
     tlw.write_int64(access_hash);
     tlw.write_int64(size);
     tlw.write_int32(dc_id);
-    tlw.write_int32(date);
-    tlw.write_bytes(file_hash);
-    tlw.write_bytes(secret);
+    tlw.write_int32(key_fingerprint);
 }
 
-types::secureFile types::secureFile::read_body(TlReader& rv) {
-    types::secureFile out;
+types::encryptedFile types::encryptedFile::read_body(TlReader& rv) {
+    types::encryptedFile out;
     out.id = rv.read_int64();
     out.access_hash = rv.read_int64();
     out.size = rv.read_int64();
     out.dc_id = rv.read_int32();
-    out.date = rv.read_int32();
-    out.file_hash = rv.read_bytes();
-    out.secret = rv.read_bytes();
+    out.key_fingerprint = rv.read_int32();
     return out;
 }
 
 
-void types::secureData::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bytes(data);
-    tlw.write_bytes(data_hash);
-    tlw.write_bytes(secret);
-}
-
-types::secureData types::secureData::read_body(TlReader& rv) {
-    types::secureData out;
-    out.data = rv.read_bytes();
-    out.data_hash = rv.read_bytes();
-    out.secret = rv.read_bytes();
-    return out;
-}
-
-
-void types::securePlainPhone::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(phone);
-}
-
-types::securePlainPhone types::securePlainPhone::read_body(TlReader& rv) {
-    types::securePlainPhone out;
-    out.phone = rv.read_string();
-    return out;
-}
-
-
-void types::securePlainEmail::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(email);
-}
-
-types::securePlainEmail types::securePlainEmail::read_body(TlReader& rv) {
-    types::securePlainEmail out;
-    out.email = rv.read_string();
-    return out;
-}
-
-
-void types::secureValueTypePersonalDetails::serialize(TlWriter& tlw) const {
+void types::inputEncryptedFileEmpty::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
 }
 
-types::secureValueTypePersonalDetails types::secureValueTypePersonalDetails::read_body(TlReader& rv) {
-    types::secureValueTypePersonalDetails out;
+types::inputEncryptedFileEmpty types::inputEncryptedFileEmpty::read_body(TlReader& rv) {
+    types::inputEncryptedFileEmpty out;
     return out;
 }
 
 
-void types::secureValueTypePassport::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::secureValueTypePassport types::secureValueTypePassport::read_body(TlReader& rv) {
-    types::secureValueTypePassport out;
-    return out;
-}
-
-
-void types::secureValueTypeDriverLicense::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::secureValueTypeDriverLicense types::secureValueTypeDriverLicense::read_body(TlReader& rv) {
-    types::secureValueTypeDriverLicense out;
-    return out;
-}
-
-
-void types::secureValueTypeIdentityCard::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::secureValueTypeIdentityCard types::secureValueTypeIdentityCard::read_body(TlReader& rv) {
-    types::secureValueTypeIdentityCard out;
-    return out;
-}
-
-
-void types::secureValueTypeInternalPassport::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::secureValueTypeInternalPassport types::secureValueTypeInternalPassport::read_body(TlReader& rv) {
-    types::secureValueTypeInternalPassport out;
-    return out;
-}
-
-
-void types::secureValueTypeAddress::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::secureValueTypeAddress types::secureValueTypeAddress::read_body(TlReader& rv) {
-    types::secureValueTypeAddress out;
-    return out;
-}
-
-
-void types::secureValueTypeUtilityBill::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::secureValueTypeUtilityBill types::secureValueTypeUtilityBill::read_body(TlReader& rv) {
-    types::secureValueTypeUtilityBill out;
-    return out;
-}
-
-
-void types::secureValueTypeBankStatement::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::secureValueTypeBankStatement types::secureValueTypeBankStatement::read_body(TlReader& rv) {
-    types::secureValueTypeBankStatement out;
-    return out;
-}
-
-
-void types::secureValueTypeRentalAgreement::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::secureValueTypeRentalAgreement types::secureValueTypeRentalAgreement::read_body(TlReader& rv) {
-    types::secureValueTypeRentalAgreement out;
-    return out;
-}
-
-
-void types::secureValueTypePassportRegistration::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::secureValueTypePassportRegistration types::secureValueTypePassportRegistration::read_body(TlReader& rv) {
-    types::secureValueTypePassportRegistration out;
-    return out;
-}
-
-
-void types::secureValueTypeTemporaryRegistration::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::secureValueTypeTemporaryRegistration types::secureValueTypeTemporaryRegistration::read_body(TlReader& rv) {
-    types::secureValueTypeTemporaryRegistration out;
-    return out;
-}
-
-
-void types::secureValueTypePhone::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::secureValueTypePhone types::secureValueTypePhone::read_body(TlReader& rv) {
-    types::secureValueTypePhone out;
-    return out;
-}
-
-
-void types::secureValueTypeEmail::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::secureValueTypeEmail types::secureValueTypeEmail::read_body(TlReader& rv) {
-    types::secureValueTypeEmail out;
-    return out;
-}
-
-
-void types::secureValue::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (data.has_value()) flags_v |= (1u << 0);
-        if (front_side.has_value()) flags_v |= (1u << 1);
-        if (reverse_side.has_value()) flags_v |= (1u << 2);
-        if (selfie.has_value()) flags_v |= (1u << 3);
-        if (translation.has_value()) flags_v |= (1u << 6);
-        if (files.has_value()) flags_v |= (1u << 4);
-        if (plain_data.has_value()) flags_v |= (1u << 5);
-        tlw.write_uint32(flags_v);
-    }
-    type->serialize(tlw);
-    if (data.has_value()) { data.value()->serialize(tlw); }
-    if (front_side.has_value()) { front_side.value()->serialize(tlw); }
-    if (reverse_side.has_value()) { reverse_side.value()->serialize(tlw); }
-    if (selfie.has_value()) { selfie.value()->serialize(tlw); }
-    if (translation.has_value()) { tl::write_vector(tlw, translation.value(), [&](TlWriter& tlw522, const auto& e522) { e522->serialize(tlw522); }); }
-    if (files.has_value()) { tl::write_vector(tlw, files.value(), [&](TlWriter& tlw523, const auto& e523) { e523->serialize(tlw523); }); }
-    if (plain_data.has_value()) { plain_data.value()->serialize(tlw); }
-    tlw.write_bytes(hash);
-}
-
-types::secureValue types::secureValue::read_body(TlReader& rv) {
-    types::secureValue out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.type = tl::read_boxed<tl::SecureValueType>(rv);
-    if ((fl_flags & (1u << 0)) != 0) { out.data = tl::read_boxed<tl::SecureData>(rv); }
-    if ((fl_flags & (1u << 1)) != 0) { out.front_side = tl::read_boxed<tl::SecureFile>(rv); }
-    if ((fl_flags & (1u << 2)) != 0) { out.reverse_side = tl::read_boxed<tl::SecureFile>(rv); }
-    if ((fl_flags & (1u << 3)) != 0) { out.selfie = tl::read_boxed<tl::SecureFile>(rv); }
-    if ((fl_flags & (1u << 6)) != 0) { out.translation = tl::read_vector<std::shared_ptr<tl::SecureFile>>(rv, [&](TlReader& r520) -> std::shared_ptr<tl::SecureFile> { return tl::read_boxed<tl::SecureFile>(r520); }); }
-    if ((fl_flags & (1u << 4)) != 0) { out.files = tl::read_vector<std::shared_ptr<tl::SecureFile>>(rv, [&](TlReader& r521) -> std::shared_ptr<tl::SecureFile> { return tl::read_boxed<tl::SecureFile>(r521); }); }
-    if ((fl_flags & (1u << 5)) != 0) { out.plain_data = tl::read_boxed<tl::SecurePlainData>(rv); }
-    out.hash = rv.read_bytes();
-    return out;
-}
-
-
-void types::inputSecureValue::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (data.has_value()) flags_v |= (1u << 0);
-        if (front_side.has_value()) flags_v |= (1u << 1);
-        if (reverse_side.has_value()) flags_v |= (1u << 2);
-        if (selfie.has_value()) flags_v |= (1u << 3);
-        if (translation.has_value()) flags_v |= (1u << 6);
-        if (files.has_value()) flags_v |= (1u << 4);
-        if (plain_data.has_value()) flags_v |= (1u << 5);
-        tlw.write_uint32(flags_v);
-    }
-    type->serialize(tlw);
-    if (data.has_value()) { data.value()->serialize(tlw); }
-    if (front_side.has_value()) { front_side.value()->serialize(tlw); }
-    if (reverse_side.has_value()) { reverse_side.value()->serialize(tlw); }
-    if (selfie.has_value()) { selfie.value()->serialize(tlw); }
-    if (translation.has_value()) { tl::write_vector(tlw, translation.value(), [&](TlWriter& tlw526, const auto& e526) { e526->serialize(tlw526); }); }
-    if (files.has_value()) { tl::write_vector(tlw, files.value(), [&](TlWriter& tlw527, const auto& e527) { e527->serialize(tlw527); }); }
-    if (plain_data.has_value()) { plain_data.value()->serialize(tlw); }
-}
-
-types::inputSecureValue types::inputSecureValue::read_body(TlReader& rv) {
-    types::inputSecureValue out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.type = tl::read_boxed<tl::SecureValueType>(rv);
-    if ((fl_flags & (1u << 0)) != 0) { out.data = tl::read_boxed<tl::SecureData>(rv); }
-    if ((fl_flags & (1u << 1)) != 0) { out.front_side = tl::read_boxed<tl::InputSecureFile>(rv); }
-    if ((fl_flags & (1u << 2)) != 0) { out.reverse_side = tl::read_boxed<tl::InputSecureFile>(rv); }
-    if ((fl_flags & (1u << 3)) != 0) { out.selfie = tl::read_boxed<tl::InputSecureFile>(rv); }
-    if ((fl_flags & (1u << 6)) != 0) { out.translation = tl::read_vector<std::shared_ptr<tl::InputSecureFile>>(rv, [&](TlReader& r524) -> std::shared_ptr<tl::InputSecureFile> { return tl::read_boxed<tl::InputSecureFile>(r524); }); }
-    if ((fl_flags & (1u << 4)) != 0) { out.files = tl::read_vector<std::shared_ptr<tl::InputSecureFile>>(rv, [&](TlReader& r525) -> std::shared_ptr<tl::InputSecureFile> { return tl::read_boxed<tl::InputSecureFile>(r525); }); }
-    if ((fl_flags & (1u << 5)) != 0) { out.plain_data = tl::read_boxed<tl::SecurePlainData>(rv); }
-    return out;
-}
-
-
-void types::secureValueHash::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    type->serialize(tlw);
-    tlw.write_bytes(hash);
-}
-
-types::secureValueHash types::secureValueHash::read_body(TlReader& rv) {
-    types::secureValueHash out;
-    out.type = tl::read_boxed<tl::SecureValueType>(rv);
-    out.hash = rv.read_bytes();
-    return out;
-}
-
-
-void types::secureValueErrorData::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    type->serialize(tlw);
-    tlw.write_bytes(data_hash);
-    tlw.write_string(field);
-    tlw.write_string(text);
-}
-
-types::secureValueErrorData types::secureValueErrorData::read_body(TlReader& rv) {
-    types::secureValueErrorData out;
-    out.type = tl::read_boxed<tl::SecureValueType>(rv);
-    out.data_hash = rv.read_bytes();
-    out.field = rv.read_string();
-    out.text = rv.read_string();
-    return out;
-}
-
-
-void types::secureValueErrorFrontSide::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    type->serialize(tlw);
-    tlw.write_bytes(file_hash);
-    tlw.write_string(text);
-}
-
-types::secureValueErrorFrontSide types::secureValueErrorFrontSide::read_body(TlReader& rv) {
-    types::secureValueErrorFrontSide out;
-    out.type = tl::read_boxed<tl::SecureValueType>(rv);
-    out.file_hash = rv.read_bytes();
-    out.text = rv.read_string();
-    return out;
-}
-
-
-void types::secureValueErrorReverseSide::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    type->serialize(tlw);
-    tlw.write_bytes(file_hash);
-    tlw.write_string(text);
-}
-
-types::secureValueErrorReverseSide types::secureValueErrorReverseSide::read_body(TlReader& rv) {
-    types::secureValueErrorReverseSide out;
-    out.type = tl::read_boxed<tl::SecureValueType>(rv);
-    out.file_hash = rv.read_bytes();
-    out.text = rv.read_string();
-    return out;
-}
-
-
-void types::secureValueErrorSelfie::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    type->serialize(tlw);
-    tlw.write_bytes(file_hash);
-    tlw.write_string(text);
-}
-
-types::secureValueErrorSelfie types::secureValueErrorSelfie::read_body(TlReader& rv) {
-    types::secureValueErrorSelfie out;
-    out.type = tl::read_boxed<tl::SecureValueType>(rv);
-    out.file_hash = rv.read_bytes();
-    out.text = rv.read_string();
-    return out;
-}
-
-
-void types::secureValueErrorFile::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    type->serialize(tlw);
-    tlw.write_bytes(file_hash);
-    tlw.write_string(text);
-}
-
-types::secureValueErrorFile types::secureValueErrorFile::read_body(TlReader& rv) {
-    types::secureValueErrorFile out;
-    out.type = tl::read_boxed<tl::SecureValueType>(rv);
-    out.file_hash = rv.read_bytes();
-    out.text = rv.read_string();
-    return out;
-}
-
-
-void types::secureValueErrorFiles::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    type->serialize(tlw);
-    tl::write_vector(tlw, file_hash, [&](TlWriter& tlw529, const auto& e529) { tlw529.write_bytes(e529); });
-    tlw.write_string(text);
-}
-
-types::secureValueErrorFiles types::secureValueErrorFiles::read_body(TlReader& rv) {
-    types::secureValueErrorFiles out;
-    out.type = tl::read_boxed<tl::SecureValueType>(rv);
-    out.file_hash = tl::read_vector<Bytes>(rv, [&](TlReader& r528) -> Bytes { return r528.read_bytes(); });
-    out.text = rv.read_string();
-    return out;
-}
-
-
-void types::secureValueError::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    type->serialize(tlw);
-    tlw.write_bytes(hash);
-    tlw.write_string(text);
-}
-
-types::secureValueError types::secureValueError::read_body(TlReader& rv) {
-    types::secureValueError out;
-    out.type = tl::read_boxed<tl::SecureValueType>(rv);
-    out.hash = rv.read_bytes();
-    out.text = rv.read_string();
-    return out;
-}
-
-
-void types::secureValueErrorTranslationFile::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    type->serialize(tlw);
-    tlw.write_bytes(file_hash);
-    tlw.write_string(text);
-}
-
-types::secureValueErrorTranslationFile types::secureValueErrorTranslationFile::read_body(TlReader& rv) {
-    types::secureValueErrorTranslationFile out;
-    out.type = tl::read_boxed<tl::SecureValueType>(rv);
-    out.file_hash = rv.read_bytes();
-    out.text = rv.read_string();
-    return out;
-}
-
-
-void types::secureValueErrorTranslationFiles::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    type->serialize(tlw);
-    tl::write_vector(tlw, file_hash, [&](TlWriter& tlw531, const auto& e531) { tlw531.write_bytes(e531); });
-    tlw.write_string(text);
-}
-
-types::secureValueErrorTranslationFiles types::secureValueErrorTranslationFiles::read_body(TlReader& rv) {
-    types::secureValueErrorTranslationFiles out;
-    out.type = tl::read_boxed<tl::SecureValueType>(rv);
-    out.file_hash = tl::read_vector<Bytes>(rv, [&](TlReader& r530) -> Bytes { return r530.read_bytes(); });
-    out.text = rv.read_string();
-    return out;
-}
-
-
-void types::secureCredentialsEncrypted::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bytes(data);
-    tlw.write_bytes(hash);
-    tlw.write_bytes(secret);
-}
-
-types::secureCredentialsEncrypted types::secureCredentialsEncrypted::read_body(TlReader& rv) {
-    types::secureCredentialsEncrypted out;
-    out.data = rv.read_bytes();
-    out.hash = rv.read_bytes();
-    out.secret = rv.read_bytes();
-    return out;
-}
-
-
-void types::account_authorizationForm::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (privacy_policy_url.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    tl::write_vector(tlw, required_types, [&](TlWriter& tlw536, const auto& e536) { e536->serialize(tlw536); });
-    tl::write_vector(tlw, values, [&](TlWriter& tlw537, const auto& e537) { e537->serialize(tlw537); });
-    tl::write_vector(tlw, errors, [&](TlWriter& tlw538, const auto& e538) { e538->serialize(tlw538); });
-    tl::write_vector(tlw, users, [&](TlWriter& tlw539, const auto& e539) { e539->serialize(tlw539); });
-    if (privacy_policy_url.has_value()) { tlw.write_string(privacy_policy_url.value()); }
-}
-
-types::account_authorizationForm types::account_authorizationForm::read_body(TlReader& rv) {
-    types::account_authorizationForm out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.required_types = tl::read_vector<std::shared_ptr<tl::SecureRequiredType>>(rv, [&](TlReader& r532) -> std::shared_ptr<tl::SecureRequiredType> { return tl::read_boxed<tl::SecureRequiredType>(r532); });
-    out.values = tl::read_vector<std::shared_ptr<tl::SecureValue>>(rv, [&](TlReader& r533) -> std::shared_ptr<tl::SecureValue> { return tl::read_boxed<tl::SecureValue>(r533); });
-    out.errors = tl::read_vector<std::shared_ptr<tl::SecureValueError>>(rv, [&](TlReader& r534) -> std::shared_ptr<tl::SecureValueError> { return tl::read_boxed<tl::SecureValueError>(r534); });
-    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r535) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r535); });
-    if ((fl_flags & (1u << 0)) != 0) { out.privacy_policy_url = rv.read_string(); }
-    return out;
-}
-
-
-void types::account_sentEmailCode::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(email_pattern);
-    tlw.write_int32(length);
-}
-
-types::account_sentEmailCode types::account_sentEmailCode::read_body(TlReader& rv) {
-    types::account_sentEmailCode out;
-    out.email_pattern = rv.read_string();
-    out.length = rv.read_int32();
-    return out;
-}
-
-
-void types::help_deepLinkInfoEmpty::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::help_deepLinkInfoEmpty types::help_deepLinkInfoEmpty::read_body(TlReader& rv) {
-    types::help_deepLinkInfoEmpty out;
-    return out;
-}
-
-
-void types::help_deepLinkInfo::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (update_app) flags_v |= (1u << 0);
-        if (entities.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(message);
-    if (entities.has_value()) { tl::write_vector(tlw, entities.value(), [&](TlWriter& tlw541, const auto& e541) { e541->serialize(tlw541); }); }
-}
-
-types::help_deepLinkInfo types::help_deepLinkInfo::read_body(TlReader& rv) {
-    types::help_deepLinkInfo out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.update_app = (fl_flags & (1u << 0)) != 0;
-    out.message = rv.read_string();
-    if ((fl_flags & (1u << 1)) != 0) { out.entities = tl::read_vector<std::shared_ptr<tl::MessageEntity>>(rv, [&](TlReader& r540) -> std::shared_ptr<tl::MessageEntity> { return tl::read_boxed<tl::MessageEntity>(r540); }); }
-    return out;
-}
-
-
-void types::savedPhoneContact::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(phone);
-    tlw.write_string(first_name);
-    tlw.write_string(last_name);
-    tlw.write_int32(date);
-}
-
-types::savedPhoneContact types::savedPhoneContact::read_body(TlReader& rv) {
-    types::savedPhoneContact out;
-    out.phone = rv.read_string();
-    out.first_name = rv.read_string();
-    out.last_name = rv.read_string();
-    out.date = rv.read_int32();
-    return out;
-}
-
-
-void types::account_takeout::serialize(TlWriter& tlw) const {
+void types::inputEncryptedFileUploaded::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     tlw.write_int64(id);
+    tlw.write_int32(parts);
+    tlw.write_string(md5_checksum);
+    tlw.write_int32(key_fingerprint);
 }
 
-types::account_takeout types::account_takeout::read_body(TlReader& rv) {
-    types::account_takeout out;
+types::inputEncryptedFileUploaded types::inputEncryptedFileUploaded::read_body(TlReader& rv) {
+    types::inputEncryptedFileUploaded out;
     out.id = rv.read_int64();
+    out.parts = rv.read_int32();
+    out.md5_checksum = rv.read_string();
+    out.key_fingerprint = rv.read_int32();
     return out;
 }
 
 
-void types::passwordKdfAlgoUnknown::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::passwordKdfAlgoUnknown types::passwordKdfAlgoUnknown::read_body(TlReader& rv) {
-    types::passwordKdfAlgoUnknown out;
-    return out;
-}
-
-
-void types::passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bytes(salt1);
-    tlw.write_bytes(salt2);
-    tlw.write_int32(g);
-    tlw.write_bytes(p);
-}
-
-types::passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow types::passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow::read_body(TlReader& rv) {
-    types::passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow out;
-    out.salt1 = rv.read_bytes();
-    out.salt2 = rv.read_bytes();
-    out.g = rv.read_int32();
-    out.p = rv.read_bytes();
-    return out;
-}
-
-
-void types::securePasswordKdfAlgoUnknown::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::securePasswordKdfAlgoUnknown types::securePasswordKdfAlgoUnknown::read_body(TlReader& rv) {
-    types::securePasswordKdfAlgoUnknown out;
-    return out;
-}
-
-
-void types::securePasswordKdfAlgoPBKDF2HMACSHA512iter100000::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bytes(salt);
-}
-
-types::securePasswordKdfAlgoPBKDF2HMACSHA512iter100000 types::securePasswordKdfAlgoPBKDF2HMACSHA512iter100000::read_body(TlReader& rv) {
-    types::securePasswordKdfAlgoPBKDF2HMACSHA512iter100000 out;
-    out.salt = rv.read_bytes();
-    return out;
-}
-
-
-void types::securePasswordKdfAlgoSHA512::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bytes(salt);
-}
-
-types::securePasswordKdfAlgoSHA512 types::securePasswordKdfAlgoSHA512::read_body(TlReader& rv) {
-    types::securePasswordKdfAlgoSHA512 out;
-    out.salt = rv.read_bytes();
-    return out;
-}
-
-
-void types::secureSecretSettings::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    secure_algo->serialize(tlw);
-    tlw.write_bytes(secure_secret);
-    tlw.write_int64(secure_secret_id);
-}
-
-types::secureSecretSettings types::secureSecretSettings::read_body(TlReader& rv) {
-    types::secureSecretSettings out;
-    out.secure_algo = tl::read_boxed<tl::SecurePasswordKdfAlgo>(rv);
-    out.secure_secret = rv.read_bytes();
-    out.secure_secret_id = rv.read_int64();
-    return out;
-}
-
-
-void types::inputCheckPasswordEmpty::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::inputCheckPasswordEmpty types::inputCheckPasswordEmpty::read_body(TlReader& rv) {
-    types::inputCheckPasswordEmpty out;
-    return out;
-}
-
-
-void types::inputCheckPasswordSRP::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(srp_id);
-    tlw.write_bytes(A);
-    tlw.write_bytes(M1);
-}
-
-types::inputCheckPasswordSRP types::inputCheckPasswordSRP::read_body(TlReader& rv) {
-    types::inputCheckPasswordSRP out;
-    out.srp_id = rv.read_int64();
-    out.A = rv.read_bytes();
-    out.M1 = rv.read_bytes();
-    return out;
-}
-
-
-void types::secureRequiredType::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (native_names) flags_v |= (1u << 0);
-        if (selfie_required) flags_v |= (1u << 1);
-        if (translation_required) flags_v |= (1u << 2);
-        tlw.write_uint32(flags_v);
-    }
-    type->serialize(tlw);
-}
-
-types::secureRequiredType types::secureRequiredType::read_body(TlReader& rv) {
-    types::secureRequiredType out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.native_names = (fl_flags & (1u << 0)) != 0;
-    out.selfie_required = (fl_flags & (1u << 1)) != 0;
-    out.translation_required = (fl_flags & (1u << 2)) != 0;
-    out.type = tl::read_boxed<tl::SecureValueType>(rv);
-    return out;
-}
-
-
-void types::secureRequiredTypeOneOf::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, types, [&](TlWriter& tlw543, const auto& e543) { e543->serialize(tlw543); });
-}
-
-types::secureRequiredTypeOneOf types::secureRequiredTypeOneOf::read_body(TlReader& rv) {
-    types::secureRequiredTypeOneOf out;
-    out.types = tl::read_vector<std::shared_ptr<tl::SecureRequiredType>>(rv, [&](TlReader& r542) -> std::shared_ptr<tl::SecureRequiredType> { return tl::read_boxed<tl::SecureRequiredType>(r542); });
-    return out;
-}
-
-
-void types::help_passportConfigNotModified::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::help_passportConfigNotModified types::help_passportConfigNotModified::read_body(TlReader& rv) {
-    types::help_passportConfigNotModified out;
-    return out;
-}
-
-
-void types::help_passportConfig::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(hash);
-    countries_langs->serialize(tlw);
-}
-
-types::help_passportConfig types::help_passportConfig::read_body(TlReader& rv) {
-    types::help_passportConfig out;
-    out.hash = rv.read_int32();
-    out.countries_langs = tl::read_boxed<tl::DataJSON>(rv);
-    return out;
-}
-
-
-void types::inputAppEvent::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_double(time);
-    tlw.write_string(type);
-    tlw.write_int64(peer);
-    data->serialize(tlw);
-}
-
-types::inputAppEvent types::inputAppEvent::read_body(TlReader& rv) {
-    types::inputAppEvent out;
-    out.time = rv.read_double();
-    out.type = rv.read_string();
-    out.peer = rv.read_int64();
-    out.data = tl::read_boxed<tl::JSONValue>(rv);
-    return out;
-}
-
-
-void types::jsonObjectValue::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(key);
-    value->serialize(tlw);
-}
-
-types::jsonObjectValue types::jsonObjectValue::read_body(TlReader& rv) {
-    types::jsonObjectValue out;
-    out.key = rv.read_string();
-    out.value = tl::read_boxed<tl::JSONValue>(rv);
-    return out;
-}
-
-
-void types::jsonNull::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::jsonNull types::jsonNull::read_body(TlReader& rv) {
-    types::jsonNull out;
-    return out;
-}
-
-
-void types::jsonBool::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_bool(value);
-}
-
-types::jsonBool types::jsonBool::read_body(TlReader& rv) {
-    types::jsonBool out;
-    out.value = rv.read_bool();
-    return out;
-}
-
-
-void types::jsonNumber::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_double(value);
-}
-
-types::jsonNumber types::jsonNumber::read_body(TlReader& rv) {
-    types::jsonNumber out;
-    out.value = rv.read_double();
-    return out;
-}
-
-
-void types::jsonString::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(value);
-}
-
-types::jsonString types::jsonString::read_body(TlReader& rv) {
-    types::jsonString out;
-    out.value = rv.read_string();
-    return out;
-}
-
-
-void types::jsonArray::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, value, [&](TlWriter& tlw545, const auto& e545) { e545->serialize(tlw545); });
-}
-
-types::jsonArray types::jsonArray::read_body(TlReader& rv) {
-    types::jsonArray out;
-    out.value = tl::read_vector<std::shared_ptr<tl::JSONValue>>(rv, [&](TlReader& r544) -> std::shared_ptr<tl::JSONValue> { return tl::read_boxed<tl::JSONValue>(r544); });
-    return out;
-}
-
-
-void types::jsonObject::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, value, [&](TlWriter& tlw547, const auto& e547) { e547->serialize(tlw547); });
-}
-
-types::jsonObject types::jsonObject::read_body(TlReader& rv) {
-    types::jsonObject out;
-    out.value = tl::read_vector<std::shared_ptr<tl::JSONObjectValue>>(rv, [&](TlReader& r546) -> std::shared_ptr<tl::JSONObjectValue> { return tl::read_boxed<tl::JSONObjectValue>(r546); });
-    return out;
-}
-
-
-void types::pageTableCell::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (header) flags_v |= (1u << 0);
-        if (align_center) flags_v |= (1u << 3);
-        if (align_right) flags_v |= (1u << 4);
-        if (valign_middle) flags_v |= (1u << 5);
-        if (valign_bottom) flags_v |= (1u << 6);
-        if (text.has_value()) flags_v |= (1u << 7);
-        if (colspan.has_value()) flags_v |= (1u << 1);
-        if (rowspan.has_value()) flags_v |= (1u << 2);
-        tlw.write_uint32(flags_v);
-    }
-    if (text.has_value()) { text.value()->serialize(tlw); }
-    if (colspan.has_value()) { tlw.write_int32(colspan.value()); }
-    if (rowspan.has_value()) { tlw.write_int32(rowspan.value()); }
-}
-
-types::pageTableCell types::pageTableCell::read_body(TlReader& rv) {
-    types::pageTableCell out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.header = (fl_flags & (1u << 0)) != 0;
-    out.align_center = (fl_flags & (1u << 3)) != 0;
-    out.align_right = (fl_flags & (1u << 4)) != 0;
-    out.valign_middle = (fl_flags & (1u << 5)) != 0;
-    out.valign_bottom = (fl_flags & (1u << 6)) != 0;
-    if ((fl_flags & (1u << 7)) != 0) { out.text = tl::read_boxed<tl::RichText>(rv); }
-    if ((fl_flags & (1u << 1)) != 0) { out.colspan = rv.read_int32(); }
-    if ((fl_flags & (1u << 2)) != 0) { out.rowspan = rv.read_int32(); }
-    return out;
-}
-
-
-void types::pageTableRow::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tl::write_vector(tlw, cells, [&](TlWriter& tlw549, const auto& e549) { e549->serialize(tlw549); });
-}
-
-types::pageTableRow types::pageTableRow::read_body(TlReader& rv) {
-    types::pageTableRow out;
-    out.cells = tl::read_vector<std::shared_ptr<tl::PageTableCell>>(rv, [&](TlReader& r548) -> std::shared_ptr<tl::PageTableCell> { return tl::read_boxed<tl::PageTableCell>(r548); });
-    return out;
-}
-
-
-void types::pageCaption::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    text->serialize(tlw);
-    credit->serialize(tlw);
-}
-
-types::pageCaption types::pageCaption::read_body(TlReader& rv) {
-    types::pageCaption out;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    out.credit = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageListItemText::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (checkbox) flags_v |= (1u << 0);
-        if (checked) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    text->serialize(tlw);
-}
-
-types::pageListItemText types::pageListItemText::read_body(TlReader& rv) {
-    types::pageListItemText out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.checkbox = (fl_flags & (1u << 0)) != 0;
-    out.checked = (fl_flags & (1u << 1)) != 0;
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    return out;
-}
-
-
-void types::pageListItemBlocks::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (checkbox) flags_v |= (1u << 0);
-        if (checked) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    tl::write_vector(tlw, blocks, [&](TlWriter& tlw551, const auto& e551) { e551->serialize(tlw551); });
-}
-
-types::pageListItemBlocks types::pageListItemBlocks::read_body(TlReader& rv) {
-    types::pageListItemBlocks out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.checkbox = (fl_flags & (1u << 0)) != 0;
-    out.checked = (fl_flags & (1u << 1)) != 0;
-    out.blocks = tl::read_vector<std::shared_ptr<tl::PageBlock>>(rv, [&](TlReader& r550) -> std::shared_ptr<tl::PageBlock> { return tl::read_boxed<tl::PageBlock>(r550); });
-    return out;
-}
-
-
-void types::pageListOrderedItemText::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (checkbox) flags_v |= (1u << 0);
-        if (checked) flags_v |= (1u << 1);
-        if (num.has_value()) flags_v |= (1u << 2);
-        if (value.has_value()) flags_v |= (1u << 3);
-        if (type.has_value()) flags_v |= (1u << 4);
-        tlw.write_uint32(flags_v);
-    }
-    if (num.has_value()) { tlw.write_string(num.value()); }
-    text->serialize(tlw);
-    if (value.has_value()) { tlw.write_int32(value.value()); }
-    if (type.has_value()) { tlw.write_string(type.value()); }
-}
-
-types::pageListOrderedItemText types::pageListOrderedItemText::read_body(TlReader& rv) {
-    types::pageListOrderedItemText out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.checkbox = (fl_flags & (1u << 0)) != 0;
-    out.checked = (fl_flags & (1u << 1)) != 0;
-    if ((fl_flags & (1u << 2)) != 0) { out.num = rv.read_string(); }
-    out.text = tl::read_boxed<tl::RichText>(rv);
-    if ((fl_flags & (1u << 3)) != 0) { out.value = rv.read_int32(); }
-    if ((fl_flags & (1u << 4)) != 0) { out.type = rv.read_string(); }
-    return out;
-}
-
-
-void types::pageListOrderedItemBlocks::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (checkbox) flags_v |= (1u << 0);
-        if (checked) flags_v |= (1u << 1);
-        if (num.has_value()) flags_v |= (1u << 2);
-        if (value.has_value()) flags_v |= (1u << 3);
-        if (type.has_value()) flags_v |= (1u << 4);
-        tlw.write_uint32(flags_v);
-    }
-    if (num.has_value()) { tlw.write_string(num.value()); }
-    tl::write_vector(tlw, blocks, [&](TlWriter& tlw553, const auto& e553) { e553->serialize(tlw553); });
-    if (value.has_value()) { tlw.write_int32(value.value()); }
-    if (type.has_value()) { tlw.write_string(type.value()); }
-}
-
-types::pageListOrderedItemBlocks types::pageListOrderedItemBlocks::read_body(TlReader& rv) {
-    types::pageListOrderedItemBlocks out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.checkbox = (fl_flags & (1u << 0)) != 0;
-    out.checked = (fl_flags & (1u << 1)) != 0;
-    if ((fl_flags & (1u << 2)) != 0) { out.num = rv.read_string(); }
-    out.blocks = tl::read_vector<std::shared_ptr<tl::PageBlock>>(rv, [&](TlReader& r552) -> std::shared_ptr<tl::PageBlock> { return tl::read_boxed<tl::PageBlock>(r552); });
-    if ((fl_flags & (1u << 3)) != 0) { out.value = rv.read_int32(); }
-    if ((fl_flags & (1u << 4)) != 0) { out.type = rv.read_string(); }
-    return out;
-}
-
-
-void types::pageRelatedArticle::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (title.has_value()) flags_v |= (1u << 0);
-        if (description.has_value()) flags_v |= (1u << 1);
-        if (photo_id.has_value()) flags_v |= (1u << 2);
-        if (author.has_value()) flags_v |= (1u << 3);
-        if (published_date.has_value()) flags_v |= (1u << 4);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(url);
-    tlw.write_int64(webpage_id);
-    if (title.has_value()) { tlw.write_string(title.value()); }
-    if (description.has_value()) { tlw.write_string(description.value()); }
-    if (photo_id.has_value()) { tlw.write_int64(photo_id.value()); }
-    if (author.has_value()) { tlw.write_string(author.value()); }
-    if (published_date.has_value()) { tlw.write_int32(published_date.value()); }
-}
-
-types::pageRelatedArticle types::pageRelatedArticle::read_body(TlReader& rv) {
-    types::pageRelatedArticle out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.url = rv.read_string();
-    out.webpage_id = rv.read_int64();
-    if ((fl_flags & (1u << 0)) != 0) { out.title = rv.read_string(); }
-    if ((fl_flags & (1u << 1)) != 0) { out.description = rv.read_string(); }
-    if ((fl_flags & (1u << 2)) != 0) { out.photo_id = rv.read_int64(); }
-    if ((fl_flags & (1u << 3)) != 0) { out.author = rv.read_string(); }
-    if ((fl_flags & (1u << 4)) != 0) { out.published_date = rv.read_int32(); }
-    return out;
-}
-
-
-void types::page::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (part) flags_v |= (1u << 0);
-        if (rtl) flags_v |= (1u << 1);
-        if (v2) flags_v |= (1u << 2);
-        if (views.has_value()) flags_v |= (1u << 3);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_string(url);
-    tl::write_vector(tlw, blocks, [&](TlWriter& tlw557, const auto& e557) { e557->serialize(tlw557); });
-    tl::write_vector(tlw, photos, [&](TlWriter& tlw558, const auto& e558) { e558->serialize(tlw558); });
-    tl::write_vector(tlw, documents, [&](TlWriter& tlw559, const auto& e559) { e559->serialize(tlw559); });
-    if (views.has_value()) { tlw.write_int32(views.value()); }
-}
-
-types::page types::page::read_body(TlReader& rv) {
-    types::page out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.part = (fl_flags & (1u << 0)) != 0;
-    out.rtl = (fl_flags & (1u << 1)) != 0;
-    out.v2 = (fl_flags & (1u << 2)) != 0;
-    out.url = rv.read_string();
-    out.blocks = tl::read_vector<std::shared_ptr<tl::PageBlock>>(rv, [&](TlReader& r554) -> std::shared_ptr<tl::PageBlock> { return tl::read_boxed<tl::PageBlock>(r554); });
-    out.photos = tl::read_vector<std::shared_ptr<tl::Photo>>(rv, [&](TlReader& r555) -> std::shared_ptr<tl::Photo> { return tl::read_boxed<tl::Photo>(r555); });
-    out.documents = tl::read_vector<std::shared_ptr<tl::Document>>(rv, [&](TlReader& r556) -> std::shared_ptr<tl::Document> { return tl::read_boxed<tl::Document>(r556); });
-    if ((fl_flags & (1u << 3)) != 0) { out.views = rv.read_int32(); }
-    return out;
-}
-
-
-void types::help_supportName::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(name);
-}
-
-types::help_supportName types::help_supportName::read_body(TlReader& rv) {
-    types::help_supportName out;
-    out.name = rv.read_string();
-    return out;
-}
-
-
-void types::help_userInfoEmpty::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-}
-
-types::help_userInfoEmpty types::help_userInfoEmpty::read_body(TlReader& rv) {
-    types::help_userInfoEmpty out;
-    return out;
-}
-
-
-void types::help_userInfo::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(message);
-    tl::write_vector(tlw, entities, [&](TlWriter& tlw561, const auto& e561) { e561->serialize(tlw561); });
-    tlw.write_string(author);
-    tlw.write_int32(date);
-}
-
-types::help_userInfo types::help_userInfo::read_body(TlReader& rv) {
-    types::help_userInfo out;
-    out.message = rv.read_string();
-    out.entities = tl::read_vector<std::shared_ptr<tl::MessageEntity>>(rv, [&](TlReader& r560) -> std::shared_ptr<tl::MessageEntity> { return tl::read_boxed<tl::MessageEntity>(r560); });
-    out.author = rv.read_string();
-    out.date = rv.read_int32();
-    return out;
-}
-
-
-void types::pollAnswer::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (media.has_value()) flags_v |= (1u << 0);
-        if (added_by.has_value()) flags_v |= (1u << 1);
-        if (date.has_value()) flags_v |= (1u << 1);
-        tlw.write_uint32(flags_v);
-    }
-    text->serialize(tlw);
-    tlw.write_bytes(option);
-    if (media.has_value()) { media.value()->serialize(tlw); }
-    if (added_by.has_value()) { added_by.value()->serialize(tlw); }
-    if (date.has_value()) { tlw.write_int32(date.value()); }
-}
-
-types::pollAnswer types::pollAnswer::read_body(TlReader& rv) {
-    types::pollAnswer out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.text = tl::read_boxed<tl::TextWithEntities>(rv);
-    out.option = rv.read_bytes();
-    if ((fl_flags & (1u << 0)) != 0) { out.media = tl::read_boxed<tl::MessageMedia>(rv); }
-    if ((fl_flags & (1u << 1)) != 0) { out.added_by = tl::read_boxed<tl::Peer>(rv); }
-    if ((fl_flags & (1u << 1)) != 0) { out.date = rv.read_int32(); }
-    return out;
-}
-
-
-void types::inputPollAnswer::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (media.has_value()) flags_v |= (1u << 0);
-        tlw.write_uint32(flags_v);
-    }
-    text->serialize(tlw);
-    if (media.has_value()) { media.value()->serialize(tlw); }
-}
-
-types::inputPollAnswer types::inputPollAnswer::read_body(TlReader& rv) {
-    types::inputPollAnswer out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.text = tl::read_boxed<tl::TextWithEntities>(rv);
-    if ((fl_flags & (1u << 0)) != 0) { out.media = tl::read_boxed<tl::InputMedia>(rv); }
-    return out;
-}
-
-
-void types::poll::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int64(id);
-    {
-        std::uint32_t flags_v = 0;
-        if (closed) flags_v |= (1u << 0);
-        if (public_voters) flags_v |= (1u << 1);
-        if (multiple_choice) flags_v |= (1u << 2);
-        if (quiz) flags_v |= (1u << 3);
-        if (open_answers) flags_v |= (1u << 6);
-        if (revoting_disabled) flags_v |= (1u << 7);
-        if (shuffle_answers) flags_v |= (1u << 8);
-        if (hide_results_until_close) flags_v |= (1u << 9);
-        if (creator) flags_v |= (1u << 10);
-        if (subscribers_only) flags_v |= (1u << 11);
-        if (close_period.has_value()) flags_v |= (1u << 4);
-        if (close_date.has_value()) flags_v |= (1u << 5);
-        if (countries_iso2.has_value()) flags_v |= (1u << 12);
-        tlw.write_uint32(flags_v);
-    }
-    question->serialize(tlw);
-    tl::write_vector(tlw, answers, [&](TlWriter& tlw564, const auto& e564) { e564->serialize(tlw564); });
-    if (close_period.has_value()) { tlw.write_int32(close_period.value()); }
-    if (close_date.has_value()) { tlw.write_int32(close_date.value()); }
-    if (countries_iso2.has_value()) { tl::write_vector(tlw, countries_iso2.value(), [&](TlWriter& tlw565, const auto& e565) { tlw565.write_string(e565); }); }
-    tlw.write_int64(hash);
-}
-
-types::poll types::poll::read_body(TlReader& rv) {
-    types::poll out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.id = rv.read_int64();
-    out.closed = (fl_flags & (1u << 0)) != 0;
-    out.public_voters = (fl_flags & (1u << 1)) != 0;
-    out.multiple_choice = (fl_flags & (1u << 2)) != 0;
-    out.quiz = (fl_flags & (1u << 3)) != 0;
-    out.open_answers = (fl_flags & (1u << 6)) != 0;
-    out.revoting_disabled = (fl_flags & (1u << 7)) != 0;
-    out.shuffle_answers = (fl_flags & (1u << 8)) != 0;
-    out.hide_results_until_close = (fl_flags & (1u << 9)) != 0;
-    out.creator = (fl_flags & (1u << 10)) != 0;
-    out.subscribers_only = (fl_flags & (1u << 11)) != 0;
-    out.question = tl::read_boxed<tl::TextWithEntities>(rv);
-    out.answers = tl::read_vector<std::shared_ptr<tl::PollAnswer>>(rv, [&](TlReader& r562) -> std::shared_ptr<tl::PollAnswer> { return tl::read_boxed<tl::PollAnswer>(r562); });
-    if ((fl_flags & (1u << 4)) != 0) { out.close_period = rv.read_int32(); }
-    if ((fl_flags & (1u << 5)) != 0) { out.close_date = rv.read_int32(); }
-    if ((fl_flags & (1u << 12)) != 0) { out.countries_iso2 = tl::read_vector<std::string>(rv, [&](TlReader& r563) -> std::string { return r563.read_string(); }); }
-    out.hash = rv.read_int64();
-    return out;
-}
-
-
-void types::pollAnswerVoters::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (chosen) flags_v |= (1u << 0);
-        if (correct) flags_v |= (1u << 1);
-        if (voters.has_value()) flags_v |= (1u << 2);
-        if (recent_voters.has_value()) flags_v |= (1u << 2);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_bytes(option);
-    if (voters.has_value()) { tlw.write_int32(voters.value()); }
-    if (recent_voters.has_value()) { tl::write_vector(tlw, recent_voters.value(), [&](TlWriter& tlw567, const auto& e567) { e567->serialize(tlw567); }); }
-}
-
-types::pollAnswerVoters types::pollAnswerVoters::read_body(TlReader& rv) {
-    types::pollAnswerVoters out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.chosen = (fl_flags & (1u << 0)) != 0;
-    out.correct = (fl_flags & (1u << 1)) != 0;
-    out.option = rv.read_bytes();
-    if ((fl_flags & (1u << 2)) != 0) { out.voters = rv.read_int32(); }
-    if ((fl_flags & (1u << 2)) != 0) { out.recent_voters = tl::read_vector<std::shared_ptr<tl::Peer>>(rv, [&](TlReader& r566) -> std::shared_ptr<tl::Peer> { return tl::read_boxed<tl::Peer>(r566); }); }
-    return out;
-}
-
-
-void types::pollResults::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (min_) flags_v |= (1u << 0);
-        if (has_unread_votes) flags_v |= (1u << 6);
-        if (can_view_stats) flags_v |= (1u << 7);
-        if (results.has_value()) flags_v |= (1u << 1);
-        if (total_voters.has_value()) flags_v |= (1u << 2);
-        if (recent_voters.has_value()) flags_v |= (1u << 3);
-        if (solution.has_value()) flags_v |= (1u << 4);
-        if (solution_entities.has_value()) flags_v |= (1u << 4);
-        if (solution_media.has_value()) flags_v |= (1u << 5);
-        tlw.write_uint32(flags_v);
-    }
-    if (results.has_value()) { tl::write_vector(tlw, results.value(), [&](TlWriter& tlw571, const auto& e571) { e571->serialize(tlw571); }); }
-    if (total_voters.has_value()) { tlw.write_int32(total_voters.value()); }
-    if (recent_voters.has_value()) { tl::write_vector(tlw, recent_voters.value(), [&](TlWriter& tlw572, const auto& e572) { e572->serialize(tlw572); }); }
-    if (solution.has_value()) { tlw.write_string(solution.value()); }
-    if (solution_entities.has_value()) { tl::write_vector(tlw, solution_entities.value(), [&](TlWriter& tlw573, const auto& e573) { e573->serialize(tlw573); }); }
-    if (solution_media.has_value()) { solution_media.value()->serialize(tlw); }
-}
-
-types::pollResults types::pollResults::read_body(TlReader& rv) {
-    types::pollResults out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.min_ = (fl_flags & (1u << 0)) != 0;
-    out.has_unread_votes = (fl_flags & (1u << 6)) != 0;
-    out.can_view_stats = (fl_flags & (1u << 7)) != 0;
-    if ((fl_flags & (1u << 1)) != 0) { out.results = tl::read_vector<std::shared_ptr<tl::PollAnswerVoters>>(rv, [&](TlReader& r568) -> std::shared_ptr<tl::PollAnswerVoters> { return tl::read_boxed<tl::PollAnswerVoters>(r568); }); }
-    if ((fl_flags & (1u << 2)) != 0) { out.total_voters = rv.read_int32(); }
-    if ((fl_flags & (1u << 3)) != 0) { out.recent_voters = tl::read_vector<std::shared_ptr<tl::Peer>>(rv, [&](TlReader& r569) -> std::shared_ptr<tl::Peer> { return tl::read_boxed<tl::Peer>(r569); }); }
-    if ((fl_flags & (1u << 4)) != 0) { out.solution = rv.read_string(); }
-    if ((fl_flags & (1u << 4)) != 0) { out.solution_entities = tl::read_vector<std::shared_ptr<tl::MessageEntity>>(rv, [&](TlReader& r570) -> std::shared_ptr<tl::MessageEntity> { return tl::read_boxed<tl::MessageEntity>(r570); }); }
-    if ((fl_flags & (1u << 5)) != 0) { out.solution_media = tl::read_boxed<tl::MessageMedia>(rv); }
-    return out;
-}
-
-
-void types::chatOnlines::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_int32(onlines);
-}
-
-types::chatOnlines types::chatOnlines::read_body(TlReader& rv) {
-    types::chatOnlines out;
-    out.onlines = rv.read_int32();
-    return out;
-}
-
-
-void types::statsURL::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    tlw.write_string(url);
-}
-
-types::statsURL types::statsURL::read_body(TlReader& rv) {
-    types::statsURL out;
-    out.url = rv.read_string();
-    return out;
-}
-
-
-void types::chatAdminRights::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (change_info) flags_v |= (1u << 0);
-        if (post_messages) flags_v |= (1u << 1);
-        if (edit_messages) flags_v |= (1u << 2);
-        if (delete_messages) flags_v |= (1u << 3);
-        if (ban_users) flags_v |= (1u << 4);
-        if (invite_users) flags_v |= (1u << 5);
-        if (pin_messages) flags_v |= (1u << 7);
-        if (add_admins) flags_v |= (1u << 9);
-        if (anonymous) flags_v |= (1u << 10);
-        if (manage_call) flags_v |= (1u << 11);
-        if (other) flags_v |= (1u << 12);
-        if (manage_topics) flags_v |= (1u << 13);
-        if (post_stories) flags_v |= (1u << 14);
-        if (edit_stories) flags_v |= (1u << 15);
-        if (delete_stories) flags_v |= (1u << 16);
-        if (manage_direct_messages) flags_v |= (1u << 17);
-        if (manage_ranks) flags_v |= (1u << 18);
-        if (manage_linked_peers) flags_v |= (1u << 19);
-        if (manage_welcome_messages) flags_v |= (1u << 20);
-        tlw.write_uint32(flags_v);
-    }
-}
-
-types::chatAdminRights types::chatAdminRights::read_body(TlReader& rv) {
-    types::chatAdminRights out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.change_info = (fl_flags & (1u << 0)) != 0;
-    out.post_messages = (fl_flags & (1u << 1)) != 0;
-    out.edit_messages = (fl_flags & (1u << 2)) != 0;
-    out.delete_messages = (fl_flags & (1u << 3)) != 0;
-    out.ban_users = (fl_flags & (1u << 4)) != 0;
-    out.invite_users = (fl_flags & (1u << 5)) != 0;
-    out.pin_messages = (fl_flags & (1u << 7)) != 0;
-    out.add_admins = (fl_flags & (1u << 9)) != 0;
-    out.anonymous = (fl_flags & (1u << 10)) != 0;
-    out.manage_call = (fl_flags & (1u << 11)) != 0;
-    out.other = (fl_flags & (1u << 12)) != 0;
-    out.manage_topics = (fl_flags & (1u << 13)) != 0;
-    out.post_stories = (fl_flags & (1u << 14)) != 0;
-    out.edit_stories = (fl_flags & (1u << 15)) != 0;
-    out.delete_stories = (fl_flags & (1u << 16)) != 0;
-    out.manage_direct_messages = (fl_flags & (1u << 17)) != 0;
-    out.manage_ranks = (fl_flags & (1u << 18)) != 0;
-    out.manage_linked_peers = (fl_flags & (1u << 19)) != 0;
-    out.manage_welcome_messages = (fl_flags & (1u << 20)) != 0;
-    return out;
-}
-
-
-void types::chatBannedRights::serialize(TlWriter& tlw) const {
-    tlw.write_uint32(kId);
-    {
-        std::uint32_t flags_v = 0;
-        if (view_messages) flags_v |= (1u << 0);
-        if (send_messages) flags_v |= (1u << 1);
-        if (send_media) flags_v |= (1u << 2);
-        if (send_stickers) flags_v |= (1u << 3);
-        if (send_gifs) flags_v |= (1u << 4);
-        if (send_games) flags_v |= (1u << 5);
-        if (send_inline) flags_v |= (1u << 6);
-        if (embed_links) flags_v |= (1u << 7);
-        if (send_polls) flags_v |= (1u << 8);
-        if (change_info) flags_v |= (1u << 10);
-        if (invite_users) flags_v |= (1u << 15);
-        if (pin_messages) flags_v |= (1u << 17);
-        if (manage_topics) flags_v |= (1u << 18);
-        if (send_photos) flags_v |= (1u << 19);
-        if (send_videos) flags_v |= (1u << 20);
-        if (send_roundvideos) flags_v |= (1u << 21);
-        if (send_audios) flags_v |= (1u << 22);
-        if (send_voices) flags_v |= (1u << 23);
-        if (send_docs) flags_v |= (1u << 24);
-        if (send_plain) flags_v |= (1u << 25);
-        if (edit_rank) flags_v |= (1u << 26);
-        if (send_reactions) flags_v |= (1u << 27);
-        if (manage_linked_peers) flags_v |= (1u << 28);
-        tlw.write_uint32(flags_v);
-    }
-    tlw.write_int32(until_date);
-}
-
-types::chatBannedRights types::chatBannedRights::read_body(TlReader& rv) {
-    types::chatBannedRights out;
-    std::uint32_t fl_flags = rv.read_uint32();
-    out.view_messages = (fl_flags & (1u << 0)) != 0;
-    out.send_messages = (fl_flags & (1u << 1)) != 0;
-    out.send_media = (fl_flags & (1u << 2)) != 0;
-    out.send_stickers = (fl_flags & (1u << 3)) != 0;
-    out.send_gifs = (fl_flags & (1u << 4)) != 0;
-    out.send_games = (fl_flags & (1u << 5)) != 0;
-    out.send_inline = (fl_flags & (1u << 6)) != 0;
-    out.embed_links = (fl_flags & (1u << 7)) != 0;
-    out.send_polls = (fl_flags & (1u << 8)) != 0;
-    out.change_info = (fl_flags & (1u << 10)) != 0;
-    out.invite_users = (fl_flags & (1u << 15)) != 0;
-    out.pin_messages = (fl_flags & (1u << 17)) != 0;
-    out.manage_topics = (fl_flags & (1u << 18)) != 0;
-    out.send_photos = (fl_flags & (1u << 19)) != 0;
-    out.send_videos = (fl_flags & (1u << 20)) != 0;
-    out.send_roundvideos = (fl_flags & (1u << 21)) != 0;
-    out.send_audios = (fl_flags & (1u << 22)) != 0;
-    out.send_voices = (fl_flags & (1u << 23)) != 0;
-    out.send_docs = (fl_flags & (1u << 24)) != 0;
-    out.send_plain = (fl_flags & (1u << 25)) != 0;
-    out.edit_rank = (fl_flags & (1u << 26)) != 0;
-    out.send_reactions = (fl_flags & (1u << 27)) != 0;
-    out.manage_linked_peers = (fl_flags & (1u << 28)) != 0;
-    out.until_date = rv.read_int32();
-    return out;
-}
-
-
-void types::inputWallPaper::serialize(TlWriter& tlw) const {
+void types::inputEncryptedFile::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     tlw.write_int64(id);
     tlw.write_int64(access_hash);
 }
 
-types::inputWallPaper types::inputWallPaper::read_body(TlReader& rv) {
-    types::inputWallPaper out;
+types::inputEncryptedFile types::inputEncryptedFile::read_body(TlReader& rv) {
+    types::inputEncryptedFile out;
     out.id = rv.read_int64();
     out.access_hash = rv.read_int64();
     return out;
 }
 
 
-void types::inputWallPaperSlug::serialize(TlWriter& tlw) const {
+void types::inputEncryptedFileBigUploaded::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
-    tlw.write_string(slug);
+    tlw.write_int64(id);
+    tlw.write_int32(parts);
+    tlw.write_int32(key_fingerprint);
 }
 
-types::inputWallPaperSlug types::inputWallPaperSlug::read_body(TlReader& rv) {
-    types::inputWallPaperSlug out;
-    out.slug = rv.read_string();
+types::inputEncryptedFileBigUploaded types::inputEncryptedFileBigUploaded::read_body(TlReader& rv) {
+    types::inputEncryptedFileBigUploaded out;
+    out.id = rv.read_int64();
+    out.parts = rv.read_int32();
+    out.key_fingerprint = rv.read_int32();
     return out;
 }
 
 
-void types::inputWallPaperNoFile::serialize(TlWriter& tlw) const {
+void types::encryptedMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(random_id);
+    tlw.write_int32(chat_id);
+    tlw.write_int32(date);
+    tlw.write_bytes(bytes);
+    file->serialize(tlw);
+}
+
+types::encryptedMessage types::encryptedMessage::read_body(TlReader& rv) {
+    types::encryptedMessage out;
+    out.random_id = rv.read_int64();
+    out.chat_id = rv.read_int32();
+    out.date = rv.read_int32();
+    out.bytes = rv.read_bytes();
+    out.file = tl::read_boxed<tl::EncryptedFile>(rv);
+    return out;
+}
+
+
+void types::encryptedMessageService::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(random_id);
+    tlw.write_int32(chat_id);
+    tlw.write_int32(date);
+    tlw.write_bytes(bytes);
+}
+
+types::encryptedMessageService types::encryptedMessageService::read_body(TlReader& rv) {
+    types::encryptedMessageService out;
+    out.random_id = rv.read_int64();
+    out.chat_id = rv.read_int32();
+    out.date = rv.read_int32();
+    out.bytes = rv.read_bytes();
+    return out;
+}
+
+
+void types::messages_dhConfigNotModified::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_bytes(random);
+}
+
+types::messages_dhConfigNotModified types::messages_dhConfigNotModified::read_body(TlReader& rv) {
+    types::messages_dhConfigNotModified out;
+    out.random = rv.read_bytes();
+    return out;
+}
+
+
+void types::messages_dhConfig::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(g);
+    tlw.write_bytes(p);
+    tlw.write_int32(version);
+    tlw.write_bytes(random);
+}
+
+types::messages_dhConfig types::messages_dhConfig::read_body(TlReader& rv) {
+    types::messages_dhConfig out;
+    out.g = rv.read_int32();
+    out.p = rv.read_bytes();
+    out.version = rv.read_int32();
+    out.random = rv.read_bytes();
+    return out;
+}
+
+
+void types::messages_sentEncryptedMessage::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(date);
+}
+
+types::messages_sentEncryptedMessage types::messages_sentEncryptedMessage::read_body(TlReader& rv) {
+    types::messages_sentEncryptedMessage out;
+    out.date = rv.read_int32();
+    return out;
+}
+
+
+void types::messages_sentEncryptedFile::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(date);
+    file->serialize(tlw);
+}
+
+types::messages_sentEncryptedFile types::messages_sentEncryptedFile::read_body(TlReader& rv) {
+    types::messages_sentEncryptedFile out;
+    out.date = rv.read_int32();
+    out.file = tl::read_boxed<tl::EncryptedFile>(rv);
+    return out;
+}
+
+
+void types::inputDocumentEmpty::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::inputDocumentEmpty types::inputDocumentEmpty::read_body(TlReader& rv) {
+    types::inputDocumentEmpty out;
+    return out;
+}
+
+
+void types::inputDocument::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(id);
+    tlw.write_int64(access_hash);
+    tlw.write_bytes(file_reference);
+}
+
+types::inputDocument types::inputDocument::read_body(TlReader& rv) {
+    types::inputDocument out;
+    out.id = rv.read_int64();
+    out.access_hash = rv.read_int64();
+    out.file_reference = rv.read_bytes();
+    return out;
+}
+
+
+void types::documentEmpty::serialize(TlWriter& tlw) const {
     tlw.write_uint32(kId);
     tlw.write_int64(id);
 }
 
-types::inputWallPaperNoFile types::inputWallPaperNoFile::read_body(TlReader& rv) {
-    types::inputWallPaperNoFile out;
+types::documentEmpty types::documentEmpty::read_body(TlReader& rv) {
+    types::documentEmpty out;
     out.id = rv.read_int64();
+    return out;
+}
+
+
+void types::document::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (thumbs.has_value()) flags_v |= (1u << 0);
+        if (video_thumbs.has_value()) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(id);
+    tlw.write_int64(access_hash);
+    tlw.write_bytes(file_reference);
+    tlw.write_int32(date);
+    tlw.write_string(mime_type);
+    tlw.write_int64(size);
+    if (thumbs.has_value()) { tl::write_vector(tlw, thumbs.value(), [&](TlWriter& tlw279, const auto& e279) { e279->serialize(tlw279); }); }
+    if (video_thumbs.has_value()) { tl::write_vector(tlw, video_thumbs.value(), [&](TlWriter& tlw280, const auto& e280) { e280->serialize(tlw280); }); }
+    tlw.write_int32(dc_id);
+    tl::write_vector(tlw, attributes, [&](TlWriter& tlw281, const auto& e281) { e281->serialize(tlw281); });
+}
+
+types::document types::document::read_body(TlReader& rv) {
+    types::document out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.id = rv.read_int64();
+    out.access_hash = rv.read_int64();
+    out.file_reference = rv.read_bytes();
+    out.date = rv.read_int32();
+    out.mime_type = rv.read_string();
+    out.size = rv.read_int64();
+    if ((fl_flags & (1u << 0)) != 0) { out.thumbs = tl::read_vector<std::shared_ptr<tl::PhotoSize>>(rv, [&](TlReader& r276) -> std::shared_ptr<tl::PhotoSize> { return tl::read_boxed<tl::PhotoSize>(r276); }); }
+    if ((fl_flags & (1u << 1)) != 0) { out.video_thumbs = tl::read_vector<std::shared_ptr<tl::VideoSize>>(rv, [&](TlReader& r277) -> std::shared_ptr<tl::VideoSize> { return tl::read_boxed<tl::VideoSize>(r277); }); }
+    out.dc_id = rv.read_int32();
+    out.attributes = tl::read_vector<std::shared_ptr<tl::DocumentAttribute>>(rv, [&](TlReader& r278) -> std::shared_ptr<tl::DocumentAttribute> { return tl::read_boxed<tl::DocumentAttribute>(r278); });
+    return out;
+}
+
+
+void types::help_support::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(phone_number);
+    user->serialize(tlw);
+}
+
+types::help_support types::help_support::read_body(TlReader& rv) {
+    types::help_support out;
+    out.phone_number = rv.read_string();
+    out.user = tl::read_boxed<tl::User>(rv);
+    return out;
+}
+
+
+void types::notifyPeer::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+}
+
+types::notifyPeer types::notifyPeer::read_body(TlReader& rv) {
+    types::notifyPeer out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    return out;
+}
+
+
+void types::notifyUsers::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::notifyUsers types::notifyUsers::read_body(TlReader& rv) {
+    types::notifyUsers out;
+    return out;
+}
+
+
+void types::notifyChats::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::notifyChats types::notifyChats::read_body(TlReader& rv) {
+    types::notifyChats out;
+    return out;
+}
+
+
+void types::notifyBroadcasts::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::notifyBroadcasts types::notifyBroadcasts::read_body(TlReader& rv) {
+    types::notifyBroadcasts out;
+    return out;
+}
+
+
+void types::notifyForumTopic::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    peer->serialize(tlw);
+    tlw.write_int32(top_msg_id);
+}
+
+types::notifyForumTopic types::notifyForumTopic::read_body(TlReader& rv) {
+    types::notifyForumTopic out;
+    out.peer = tl::read_boxed<tl::Peer>(rv);
+    out.top_msg_id = rv.read_int32();
+    return out;
+}
+
+
+void types::notifyCommunity::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(community_id);
+}
+
+types::notifyCommunity types::notifyCommunity::read_body(TlReader& rv) {
+    types::notifyCommunity out;
+    out.community_id = rv.read_int64();
+    return out;
+}
+
+
+void types::sendMessageTypingAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::sendMessageTypingAction types::sendMessageTypingAction::read_body(TlReader& rv) {
+    types::sendMessageTypingAction out;
+    return out;
+}
+
+
+void types::sendMessageCancelAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::sendMessageCancelAction types::sendMessageCancelAction::read_body(TlReader& rv) {
+    types::sendMessageCancelAction out;
+    return out;
+}
+
+
+void types::sendMessageRecordVideoAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::sendMessageRecordVideoAction types::sendMessageRecordVideoAction::read_body(TlReader& rv) {
+    types::sendMessageRecordVideoAction out;
+    return out;
+}
+
+
+void types::sendMessageUploadVideoAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(progress);
+}
+
+types::sendMessageUploadVideoAction types::sendMessageUploadVideoAction::read_body(TlReader& rv) {
+    types::sendMessageUploadVideoAction out;
+    out.progress = rv.read_int32();
+    return out;
+}
+
+
+void types::sendMessageRecordAudioAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::sendMessageRecordAudioAction types::sendMessageRecordAudioAction::read_body(TlReader& rv) {
+    types::sendMessageRecordAudioAction out;
+    return out;
+}
+
+
+void types::sendMessageUploadAudioAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(progress);
+}
+
+types::sendMessageUploadAudioAction types::sendMessageUploadAudioAction::read_body(TlReader& rv) {
+    types::sendMessageUploadAudioAction out;
+    out.progress = rv.read_int32();
+    return out;
+}
+
+
+void types::sendMessageUploadPhotoAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(progress);
+}
+
+types::sendMessageUploadPhotoAction types::sendMessageUploadPhotoAction::read_body(TlReader& rv) {
+    types::sendMessageUploadPhotoAction out;
+    out.progress = rv.read_int32();
+    return out;
+}
+
+
+void types::sendMessageUploadDocumentAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(progress);
+}
+
+types::sendMessageUploadDocumentAction types::sendMessageUploadDocumentAction::read_body(TlReader& rv) {
+    types::sendMessageUploadDocumentAction out;
+    out.progress = rv.read_int32();
+    return out;
+}
+
+
+void types::sendMessageGeoLocationAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::sendMessageGeoLocationAction types::sendMessageGeoLocationAction::read_body(TlReader& rv) {
+    types::sendMessageGeoLocationAction out;
+    return out;
+}
+
+
+void types::sendMessageChooseContactAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::sendMessageChooseContactAction types::sendMessageChooseContactAction::read_body(TlReader& rv) {
+    types::sendMessageChooseContactAction out;
+    return out;
+}
+
+
+void types::sendMessageGamePlayAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::sendMessageGamePlayAction types::sendMessageGamePlayAction::read_body(TlReader& rv) {
+    types::sendMessageGamePlayAction out;
+    return out;
+}
+
+
+void types::sendMessageRecordRoundAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::sendMessageRecordRoundAction types::sendMessageRecordRoundAction::read_body(TlReader& rv) {
+    types::sendMessageRecordRoundAction out;
+    return out;
+}
+
+
+void types::sendMessageUploadRoundAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(progress);
+}
+
+types::sendMessageUploadRoundAction types::sendMessageUploadRoundAction::read_body(TlReader& rv) {
+    types::sendMessageUploadRoundAction out;
+    out.progress = rv.read_int32();
+    return out;
+}
+
+
+void types::speakingInGroupCallAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::speakingInGroupCallAction types::speakingInGroupCallAction::read_body(TlReader& rv) {
+    types::speakingInGroupCallAction out;
+    return out;
+}
+
+
+void types::sendMessageHistoryImportAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int32(progress);
+}
+
+types::sendMessageHistoryImportAction types::sendMessageHistoryImportAction::read_body(TlReader& rv) {
+    types::sendMessageHistoryImportAction out;
+    out.progress = rv.read_int32();
+    return out;
+}
+
+
+void types::sendMessageChooseStickerAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::sendMessageChooseStickerAction types::sendMessageChooseStickerAction::read_body(TlReader& rv) {
+    types::sendMessageChooseStickerAction out;
+    return out;
+}
+
+
+void types::sendMessageEmojiInteraction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(emoticon);
+    tlw.write_int32(msg_id);
+    interaction->serialize(tlw);
+}
+
+types::sendMessageEmojiInteraction types::sendMessageEmojiInteraction::read_body(TlReader& rv) {
+    types::sendMessageEmojiInteraction out;
+    out.emoticon = rv.read_string();
+    out.msg_id = rv.read_int32();
+    out.interaction = tl::read_boxed<tl::DataJSON>(rv);
+    return out;
+}
+
+
+void types::sendMessageEmojiInteractionSeen::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_string(emoticon);
+}
+
+types::sendMessageEmojiInteractionSeen types::sendMessageEmojiInteractionSeen::read_body(TlReader& rv) {
+    types::sendMessageEmojiInteractionSeen out;
+    out.emoticon = rv.read_string();
+    return out;
+}
+
+
+void types::sendMessageTextDraftAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (can_stop) flags_v |= (1u << 0);
+        if (keep_on_stop) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(random_id);
+    text->serialize(tlw);
+}
+
+types::sendMessageTextDraftAction types::sendMessageTextDraftAction::read_body(TlReader& rv) {
+    types::sendMessageTextDraftAction out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.can_stop = (fl_flags & (1u << 0)) != 0;
+    out.keep_on_stop = (fl_flags & (1u << 1)) != 0;
+    out.random_id = rv.read_int64();
+    out.text = tl::read_boxed<tl::TextWithEntities>(rv);
+    return out;
+}
+
+
+void types::inputSendMessageRichMessageDraftAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (can_stop) flags_v |= (1u << 0);
+        if (keep_on_stop) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(random_id);
+    rich_message->serialize(tlw);
+}
+
+types::inputSendMessageRichMessageDraftAction types::inputSendMessageRichMessageDraftAction::read_body(TlReader& rv) {
+    types::inputSendMessageRichMessageDraftAction out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.can_stop = (fl_flags & (1u << 0)) != 0;
+    out.keep_on_stop = (fl_flags & (1u << 1)) != 0;
+    out.random_id = rv.read_int64();
+    out.rich_message = tl::read_boxed<tl::InputRichMessage>(rv);
+    return out;
+}
+
+
+void types::sendMessageRichMessageDraftAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    {
+        std::uint32_t flags_v = 0;
+        if (can_stop) flags_v |= (1u << 0);
+        if (keep_on_stop) flags_v |= (1u << 1);
+        tlw.write_uint32(flags_v);
+    }
+    tlw.write_int64(random_id);
+    rich_message->serialize(tlw);
+}
+
+types::sendMessageRichMessageDraftAction types::sendMessageRichMessageDraftAction::read_body(TlReader& rv) {
+    types::sendMessageRichMessageDraftAction out;
+    std::uint32_t fl_flags = rv.read_uint32();
+    out.can_stop = (fl_flags & (1u << 0)) != 0;
+    out.keep_on_stop = (fl_flags & (1u << 1)) != 0;
+    out.random_id = rv.read_int64();
+    out.rich_message = tl::read_boxed<tl::RichMessage>(rv);
+    return out;
+}
+
+
+void types::sendMessageStopDraftAction::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tlw.write_int64(random_id);
+}
+
+types::sendMessageStopDraftAction types::sendMessageStopDraftAction::read_body(TlReader& rv) {
+    types::sendMessageStopDraftAction out;
+    out.random_id = rv.read_int64();
+    return out;
+}
+
+
+void types::contacts_found::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+    tl::write_vector(tlw, my_results, [&](TlWriter& tlw286, const auto& e286) { e286->serialize(tlw286); });
+    tl::write_vector(tlw, results, [&](TlWriter& tlw287, const auto& e287) { e287->serialize(tlw287); });
+    tl::write_vector(tlw, chats, [&](TlWriter& tlw288, const auto& e288) { e288->serialize(tlw288); });
+    tl::write_vector(tlw, users, [&](TlWriter& tlw289, const auto& e289) { e289->serialize(tlw289); });
+}
+
+types::contacts_found types::contacts_found::read_body(TlReader& rv) {
+    types::contacts_found out;
+    out.my_results = tl::read_vector<std::shared_ptr<tl::Peer>>(rv, [&](TlReader& r282) -> std::shared_ptr<tl::Peer> { return tl::read_boxed<tl::Peer>(r282); });
+    out.results = tl::read_vector<std::shared_ptr<tl::Peer>>(rv, [&](TlReader& r283) -> std::shared_ptr<tl::Peer> { return tl::read_boxed<tl::Peer>(r283); });
+    out.chats = tl::read_vector<std::shared_ptr<tl::Chat>>(rv, [&](TlReader& r284) -> std::shared_ptr<tl::Chat> { return tl::read_boxed<tl::Chat>(r284); });
+    out.users = tl::read_vector<std::shared_ptr<tl::User>>(rv, [&](TlReader& r285) -> std::shared_ptr<tl::User> { return tl::read_boxed<tl::User>(r285); });
+    return out;
+}
+
+
+void types::inputPrivacyKeyStatusTimestamp::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::inputPrivacyKeyStatusTimestamp types::inputPrivacyKeyStatusTimestamp::read_body(TlReader& rv) {
+    types::inputPrivacyKeyStatusTimestamp out;
+    return out;
+}
+
+
+void types::inputPrivacyKeyChatInvite::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::inputPrivacyKeyChatInvite types::inputPrivacyKeyChatInvite::read_body(TlReader& rv) {
+    types::inputPrivacyKeyChatInvite out;
+    return out;
+}
+
+
+void types::inputPrivacyKeyPhoneCall::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::inputPrivacyKeyPhoneCall types::inputPrivacyKeyPhoneCall::read_body(TlReader& rv) {
+    types::inputPrivacyKeyPhoneCall out;
+    return out;
+}
+
+
+void types::inputPrivacyKeyPhoneP2P::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::inputPrivacyKeyPhoneP2P types::inputPrivacyKeyPhoneP2P::read_body(TlReader& rv) {
+    types::inputPrivacyKeyPhoneP2P out;
+    return out;
+}
+
+
+void types::inputPrivacyKeyForwards::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::inputPrivacyKeyForwards types::inputPrivacyKeyForwards::read_body(TlReader& rv) {
+    types::inputPrivacyKeyForwards out;
+    return out;
+}
+
+
+void types::inputPrivacyKeyProfilePhoto::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::inputPrivacyKeyProfilePhoto types::inputPrivacyKeyProfilePhoto::read_body(TlReader& rv) {
+    types::inputPrivacyKeyProfilePhoto out;
+    return out;
+}
+
+
+void types::inputPrivacyKeyPhoneNumber::serialize(TlWriter& tlw) const {
+    tlw.write_uint32(kId);
+}
+
+types::inputPrivacyKeyPhoneNumber types::inputPrivacyKeyPhoneNumber::read_body(TlReader& rv) {
+    types::inputPrivacyKeyPhoneNumber out;
     return out;
 }
 

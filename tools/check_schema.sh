@@ -42,4 +42,25 @@ if [ "$schema_layer" = "$client_layer" ]; then
 else
     echo "FAIL layer mismatch: schema=$schema_layer client=$client_layer"; status=1
 fi
+
+# Stale generated files: the checked-in api_impl set must be exactly the set the generator writes.
+generated_names="$(cd "$WORK/src/mtproto/schema" && ls api_impl_*.cpp | sort)"
+checked_in_names="$(cd "$ROOT/src/mtproto/schema" && ls api_impl_*.cpp | sort)"
+if [ "$generated_names" = "$checked_in_names" ]; then
+    echo "OK   api_impl file set matches the generator ($(echo "$generated_names" | wc -l) files)"
+else
+    echo "FAIL api_impl file set differs from the generator (stale or missing files)"; status=1
+fi
+
+# Checksums of the schema inputs, generator and generated files (schema/SHA256SUMS.txt).
+if [ -f "$ROOT/schema/SHA256SUMS.txt" ]; then
+    if (cd "$ROOT" && sha256sum --quiet -c schema/SHA256SUMS.txt >/dev/null 2>&1); then
+        echo "OK   schema/SHA256SUMS.txt ($(wc -l < "$ROOT/schema/SHA256SUMS.txt") entries)"
+    else
+        echo "FAIL schema/SHA256SUMS.txt does not match the files; run bash tools/update_schema_checksums.sh after a reviewed change"
+        status=1
+    fi
+else
+    echo "FAIL schema/SHA256SUMS.txt is missing"; status=1
+fi
 exit $status

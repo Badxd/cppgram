@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "cppgram/mtproto/schema/api.h"
+#include "cppgram/parser.h"
 #include "cppgram/types.h"
 
 namespace cppgram::detail {
@@ -44,5 +45,18 @@ std::optional<Chat> chat_from_tl(const mtproto::tl::Chat& chat);
 MediaInfo media_from_tl(const mtproto::tl::MessageMedia& media);
 std::optional<PollInfo> poll_from_tl(const mtproto::tl::MessageMedia& media);
 std::optional<Sticker> sticker_from_tl(const mtproto::tl::MessageMedia& media);
+// Media info of a sticker or other document. Empty documents give nullopt.
+std::optional<MediaInfo> media_info_from_document(const mtproto::tl::Document& doc);
+StickerSetInfo sticker_set_info_from_tl(const mtproto::tl::types::stickerSet& set);
+// Entity of a formatted text. Kinds this client does not model give nullopt.
+std::shared_ptr<mtproto::tl::MessageEntity> to_tl_entity(const TextEntity& e);
+std::optional<TextEntity> text_entity_from_tl(const mtproto::tl::MessageEntity& e);
+// Saved star gift (payments.savedStarGifts entry). Empty entries give nullopt.
+std::optional<SavedStarGiftInfo> saved_star_gift_from_tl(const mtproto::tl::SavedStarGift& wrapper);
+// Regular star gift (payments.starGifts or resaleStarGifts entry). Other variants give nullopt.
+std::optional<StarGiftInfo> star_gift_info_from_tl(const mtproto::tl::StarGift& wrapper);
+// DialogInfo for each dialog, with the top message attached when it is among the decoded messages.
+std::vector<DialogInfo> dialogs_from_tl(const std::vector<std::shared_ptr<mtproto::tl::Dialog>>& dialogs,
+                                        const std::vector<Message>& messages, const PeerCache& cache);
 
 }  // namespace cppgram::detail

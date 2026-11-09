@@ -1,9 +1,21 @@
-# Repository workflow
+# Working on cppgram
 
-- Use the repository's `make` targets for formatting, linting, generation, builds, and tests whenever a matching target exists.
-- Run `make api-generate` after changing the API schema, code generator, or generator configuration.
-- Run `make format` and `make lint`; do not invoke `clang-format` directly on generated files. `ApiMethods.cpp` and `ApiMethods.inc.h` require the dedicated formatting commands encoded in the `Makefile`.
-- Run the complete build and test suite with `make test`. It installs the required dependencies, builds the C++ library and tests, runs the C++ tests, and runs the API codegen tests.
-- Do not split a normal full verification into `make build-with-test`, `make test-only`, and `make test-api-codegen`; those targets are implementation details or for deliberately narrow reruns after `make test` has already built their prerequisites.
-- Do not override `BUILD_DIR` for normal builds or tests. The Conan layout writes its toolchain to the repository's standard build directory, so a custom `BUILD_DIR` can make CMake look for a toolchain that Conan did not place there.
-- Preserve public source compatibility when updating the Telegram Bot API. Do not reorder, remove, or change the types or defaults of existing positional `Api` method parameters, and do not remove existing fields from `*Args` structs. Append new optional parameters or expose them through `*Args`; when Telegram replaces parameters, keep the legacy API and translate it to the new wire representation. Add regression tests for the preserved signatures and translation.
+Guidance for people and coding agents working in this repository.
+
+- Use the `make` targets. They are listed in `Makefile` and in `README.md`.
+- Build and test: `make test`. It configures a Release build with tests, builds, and runs `ctest`.
+- After changing `schema/*.tl` or the generator, run `make tl-generate` and `make schema-check`.
+- After changing `VERSION`, `app_version` in `include/cppgram/client.h`, or the version in the changelog, run
+  `bash tools/check_version.sh`.
+- After changing `CMakeLists.txt` source lists, run `python3 tools/check_cmake_sources.py`.
+- Formatting: `make format-check` checks the files in `tools/format_allowlist.txt` only. Do not reformat unrelated files.
+  Do not run `clang-format -i` on generated files under `src/mtproto/schema/` or `include/cppgram/mtproto/schema/`.
+- Generated files, do not hand-edit: `include/cppgram/mtproto/schema/api.h`, `src/mtproto/schema/api_impl_*.cpp`.
+  `src/ApiMethods.cpp` and `include/cppgram/bot/ApiMethods.inc.h` are also generated; their generator is not in this
+  repository (see `HOW_TO_UPDATE_TELEGRAM_API.md`).
+- Do not add live Telegram calls to ordinary tests. Live code runs only through the manual `live` workflow and the
+  binaries in `examples/live_tests` and `examples/live_check.cpp`, and those need owner credentials.
+- Never put credentials, session files, phone numbers or OTPs in the repository, in logs, or in test fixtures. Test
+  fixtures use labelled placeholders.
+- Do not claim a result that was not run. Mark it NOT RUN, and say which environment it was or was not run in.
+- Versioning and release steps: `HOW_TO_RELEASE.md`.

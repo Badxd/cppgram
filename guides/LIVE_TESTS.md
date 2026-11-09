@@ -74,7 +74,7 @@ Only the runner and the library are built. The fuzzers and the test suite are no
     cmake --build build/live --target cppgram_live_tests
 
 Ninja builds in parallel. If `ccache` is installed, it is used automatically (`CPPGRAM_USE_CCACHE=OFF` turns it off).
-Release is the CMake default. The Dockerfile sets `-O0` because live runs are network-bound.
+Release is the CMake default.
 
 ## Running
 
@@ -93,15 +93,6 @@ Release is the CMake default. The Dockerfile sets `-O0` because live runs are ne
 Run one test at a time. Each one writes its own `live-*.session` file, which is created fresh in `TG_LIVE_DIR`.
 Do not run `all` against a real account unless you intend every test to run in one go.
 
-## Heroku
-
-`heroku.yml` builds the image with the Dockerfile. The runtime image contains both `cppgram_live_check` and
-`cppgram_live_tests`. Set the config vars in the dashboard (`Settings → Config Vars`), then run a test:
-
-    heroku run --type=worker --app APP_NAME /app/cppgram_live_tests reconnect
-
-The worker runs in a container with an ephemeral filesystem. The session file is lost when the container stops, so
-`session_restore` creates its own file in a single run and does not depend on earlier runs.
 
 ## Offline checks for the runner
 

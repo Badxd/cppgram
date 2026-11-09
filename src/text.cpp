@@ -4,6 +4,7 @@
 #include <random>
 #include <stdexcept>
 
+#include "cppgram/convert.h"
 #include "cppgram/parser.h"
 
 namespace cppgram {
@@ -16,32 +17,6 @@ namespace {
 
 std::int64_t random_id_text() {
     return detail::secure_random_i64();
-}
-
-std::shared_ptr<tl::MessageEntity> to_tl_entity(const TextEntity& e) {
-    switch (e.kind) {
-        case TextEntity::Kind::Bold:
-            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityBold{e.offset, e.length}});
-        case TextEntity::Kind::Italic:
-            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityItalic{e.offset, e.length}});
-        case TextEntity::Kind::Underline:
-            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityUnderline{e.offset, e.length}});
-        case TextEntity::Kind::Strike:
-            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityStrike{e.offset, e.length}});
-        case TextEntity::Kind::Spoiler:
-            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntitySpoiler{e.offset, e.length}});
-        case TextEntity::Kind::Code:
-            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityCode{e.offset, e.length}});
-        case TextEntity::Kind::Pre:
-            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityPre{e.offset, e.length, e.language}});
-        case TextEntity::Kind::TextUrl:
-            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityTextUrl{e.offset, e.length, e.url}});
-        case TextEntity::Kind::MentionName:
-            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityMentionName{e.offset, e.length, e.user_id}});
-        case TextEntity::Kind::Blockquote:
-            return std::make_shared<tl::MessageEntity>(tl::MessageEntity{ty::messageEntityBlockquote{false, e.offset, e.length}});
-    }
-    throw std::logic_error("unknown entity kind");
 }
 
 }  // namespace
@@ -60,7 +35,7 @@ Message Client::send_text(const PeerRef& target, const std::string& text, ParseM
     req.effect = effect_id;
     if (!formatted.entities.empty()) {
         std::vector<std::shared_ptr<tl::MessageEntity>> entities;
-        for (const auto& e : formatted.entities) entities.push_back(to_tl_entity(e));
+        for (const auto& e : formatted.entities) entities.push_back(detail::to_tl_entity(e));
         req.entities = std::move(entities);
     }
     const tl::Updates updates = call_rpc(req);
@@ -77,7 +52,7 @@ Message Client::edit_text(const PeerRef& target, std::int32_t message_id, const 
     req.message = formatted.text;
     if (!formatted.entities.empty()) {
         std::vector<std::shared_ptr<tl::MessageEntity>> entities;
-        for (const auto& e : formatted.entities) entities.push_back(to_tl_entity(e));
+        for (const auto& e : formatted.entities) entities.push_back(detail::to_tl_entity(e));
         req.entities = std::move(entities);
     }
     const tl::Updates updates = call_rpc(req);

@@ -216,38 +216,154 @@ enum class MemberFilter { Recent, Admins };
 
 namespace cppgram {
 
-// Inline (under-message) keyboard button. Build with the static helpers.
+// One line of an invoice or a shipping price (labeledPrice).
+struct LabeledPriceInfo {
+    std::string label;
+    std::int64_t amount = 0;  // smallest currency unit
+};
+
+// Colour and icon of a keyboard button (keyboardButtonStyle). Unset fields are Telegram's defaults.
+struct ButtonStyle {
+    bool primary = false;   // bg_primary
+    bool danger = false;    // bg_danger
+    bool success = false;   // bg_success
+    std::optional<std::int64_t> icon;  // custom emoji document id
+};
+
+// Peer kinds a switch-inline button may query (inlineQueryPeerType*). Empty on InlineButton means any peer.
+enum class InlineQueryPeer { SameBotPm, Pm, Chat, Megagroup, Broadcast, BotPm };
+
+// Inline (under-message) keyboard button. Build with the static helpers. Every Telegram inline button type is
+// represented: callback (with optional password confirmation), url, login url, web app, switch-inline, copy, buy,
+// game, user profile and disabled. Unused fields keep their defaults for the kinds that do not read them.
 struct InlineButton {
-    enum class Kind { Callback, Url, SwitchInline, Copy };
+    enum class Kind { Callback, Url, SwitchInline, Copy, LoginUrl, WebApp, Buy, Game, UserProfile, Disabled };
     Kind kind = Kind::Callback;
     std::string text;
-    std::string value;        // callback data, url, switch-inline query, or text to copy
-    bool same_peer = false;   // switch-inline only: query the current chat
+    // Callback: callback data (may hold arbitrary bytes). Url, LoginUrl, WebApp: the URL. SwitchInline: the query.
+    // Copy: the text to copy. Buy, Game, UserProfile, Disabled: unused.
+    std::string value;
+    bool same_peer = false;                  // SwitchInline: query the current chat
+    bool requires_password = false;          // Callback: the user must confirm with the 2FA password
+    std::vector<InlineQueryPeer> peer_types; // SwitchInline: peer kinds to query, empty means any
+    std::optional<std::string> fwd_text;     // LoginUrl: text used when forwarding
+    std::int32_t login_button_id = 0;        // LoginUrl, received only: id used to confirm the login
+    bool request_write_access = false;       // LoginUrl, sent only: ask the user to allow messages from the bot
+    std::int64_t user_id = 0;                // UserProfile: the user. LoginUrl: the bot (0 = the sending bot)
+    std::int64_t user_access_hash = 0;       // UserProfile and LoginUrl with user_id: access hash of that user
+    std::optional<ButtonStyle> style;
 
     static InlineButton callback(std::string text, std::string data) {
-        return {Kind::Callback, std::move(text), std::move(data), false};
+        InlineButton b;
+        b.kind = Kind::Callback;
+        b.text = std::move(text);
+        b.value = std::move(data);
+        return b;
     }
     static InlineButton url(std::string text, std::string url) {
-        return {Kind::Url, std::move(text), std::move(url), false};
+        InlineButton b;
+        b.kind = Kind::Url;
+        b.text = std::move(text);
+        b.value = std::move(url);
+        return b;
     }
     static InlineButton switch_inline(std::string text, std::string query, bool current_chat = false) {
-        return {Kind::SwitchInline, std::move(text), std::move(query), current_chat};
+        InlineButton b;
+        b.kind = Kind::SwitchInline;
+        b.text = std::move(text);
+        b.value = std::move(query);
+        b.same_peer = current_chat;
+        return b;
     }
     static InlineButton copy_text(std::string text, std::string to_copy) {
-        return {Kind::Copy, std::move(text), std::move(to_copy), false};
+        InlineButton b;
+        b.kind = Kind::Copy;
+        b.text = std::move(text);
+        b.value = std::move(to_copy);
+        return b;
+    }
+    static InlineButton login_url(std::string text, std::string url, std::optional<std::string> fwd_text = std::nullopt,
+                                  bool request_write_access = false) {
+        InlineButton b;
+        b.kind = Kind::LoginUrl;
+        b.text = std::move(text);
+        b.value = std::move(url);
+        b.fwd_text = std::move(fwd_text);
+        b.request_write_access = request_write_access;
+        return b;
+    }
+    static InlineButton web_app(std::string text, std::string url) {
+        InlineButton b;
+        b.kind = Kind::WebApp;
+        b.text = std::move(text);
+        b.value = std::move(url);
+        return b;
+    }
+    static InlineButton buy(std::string text) {
+        InlineButton b;
+        b.kind = Kind::Buy;
+        b.text = std::move(text);
+        return b;
+    }
+    static InlineButton game(std::string text) {
+        InlineButton b;
+        b.kind = Kind::Game;
+        b.text = std::move(text);
+        return b;
+    }
+    static InlineButton user_profile(std::string text, std::int64_t user_id, std::int64_t access_hash) {
+        InlineButton b;
+        b.kind = Kind::UserProfile;
+        b.text = std::move(text);
+        b.user_id = user_id;
+        b.user_access_hash = access_hash;
+        return b;
+    }
+    static InlineButton disabled(std::string text) {
+        InlineButton b;
+        b.kind = Kind::Disabled;
+        b.text = std::move(text);
+        return b;
     }
 };
 
 using InlineKeyboard = std::vector<std::vector<InlineButton>>;
 
-// Reply keyboard (replaces the user's keyboard). Each inner vector is one row of button labels.
+// Kind of a reply keyboard button. Text sends its label. The Request kinds ask the user for something and send the
+// result back to the bot. WebApp opens a Web App.
+enum class ReplyButtonKind { Text, RequestPhone, RequestGeoLocation, RequestPoll, RequestUser, RequestChat, RequestChannel, WebApp };
+
+// Reply keyboard button with its type. Used through ReplyKeyboard::typed_rows.
+struct ReplyKeyboardButton {
+    ReplyButtonKind kind = ReplyButtonKind::Text;
+    std::string text;
+    std::string url;                       // WebApp: the URL
+    std::optional<bool> poll_quiz;         // RequestPoll: nullopt any poll, true quiz only, false regular only
+    std::int32_t request_id = 0;           // Request kinds: id echoed back with the shared peer or poll
+    std::int32_t max_quantity = 1;         // RequestUser, RequestChat, RequestChannel: how many may be chosen
+    std::optional<bool> bot;               // RequestUser: bot accounts only (true) or no bots (false)
+    std::optional<bool> premium;           // RequestUser: Premium accounts only (true)
+    bool chat_creator = false;             // RequestChat, RequestChannel: the user must be the creator
+    bool chat_bot_participant = false;     // RequestChat: a bot must be a participant
+    std::optional<bool> has_username;      // RequestChat, RequestChannel
+    std::optional<bool> forum;             // RequestChat: forum groups only (true) or no forums (false)
+    std::optional<ButtonStyle> style;
+};
+
+// Reply keyboard (replaces the user's keyboard). Set one form:
+//   - rows: each inner vector is one row of plain text buttons (the original form);
+//   - typed_rows: buttons with a kind (phone, location, poll, peer request, web app). typed_rows replaces rows;
+//   - force_reply or hide: send replyKeyboardForceReply or replyKeyboardHide. These replace both row forms.
 struct ReplyKeyboard {
     std::vector<std::vector<std::string>> rows;
+    std::vector<std::vector<ReplyKeyboardButton>> typed_rows;
     bool resize = true;
     bool one_time = false;
     bool selective = false;
     bool persistent = false;
     std::string placeholder;
+    bool force_reply = false;
+    bool hide = false;
 };
 
 }  // namespace cppgram
@@ -260,6 +376,14 @@ struct StickerSetInfo {
     std::string title;
     std::string short_name;
     std::int32_t count = 0;
+    std::int32_t hash = 0;
+    bool archived = false;
+    bool official = false;
+    bool masks = false;
+    bool emojis = false;
+    bool creator = false;
+    std::optional<std::int32_t> installed_date;
+    std::optional<std::int64_t> thumb_document_id;
 };
 
 struct StickerSetContent {
@@ -353,6 +477,11 @@ struct FolderInfo {
     std::string title;
     std::vector<PeerRef> include_peers;
     std::vector<PeerRef> exclude_peers;
+    // Peers pinned to the top of the folder. Written back on edit.
+    std::vector<PeerRef> pinned_peers;
+    std::optional<std::string> emoticon;
+    std::optional<std::int32_t> color;
+    bool title_noanimate = false;
     bool contacts = false;
     bool non_contacts = false;
     bool groups = false;
@@ -361,6 +490,15 @@ struct FolderInfo {
     bool exclude_muted = false;
     bool exclude_read = false;
     bool exclude_archived = false;
+    // Shared (chatlist) folder: created through the chatlist invite API and not editable with edit_folder.
+    bool shared = false;
+    bool has_my_invites = false;  // shared folders only
+};
+
+// A folder Telegram suggests (messages.getSuggestedDialogFilters).
+struct SuggestedFolderInfo {
+    FolderInfo folder;
+    std::string description;
 };
 
 // An exported invite link with its admin, usage and state (phase 2 invite API).
@@ -416,8 +554,17 @@ struct FolderInviteInfo {
 
 struct FolderInviteCheck {
     bool already_joined = false;
+    std::int32_t filter_id = 0;  // set when already_joined, the local folder that holds the list
     std::string title;
+    std::optional<std::string> emoticon;
     std::int32_t peer_count = 0;
+    std::vector<PeerRef> missing_peers;  // peers in the list that the caller is not in yet
+    std::vector<PeerRef> already_peers;  // peers in the list that the caller already has
+};
+
+// Peers that a shared folder's owner added after the caller joined (chatlists.getChatlistUpdates).
+struct FolderUpdatesInfo {
+    std::vector<PeerRef> missing_peers;
 };
 
 struct BoostsStatusInfo {

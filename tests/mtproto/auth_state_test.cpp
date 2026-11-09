@@ -43,6 +43,14 @@ TEST(AuthState, WrongPasswordStaysPasswordRequired) {
     EXPECT_EQ(*next_auth_state(AuthState::Authenticating, AuthEvent::InvalidPassword), AuthState::PasswordRequired);
 }
 
+// Regression: recover_password runs from the 2FA prompt and must be able to report SignedIn there. Before this
+// transition existed, a successful recovery threw logic_error after Telegram had already signed the client in.
+TEST(AuthState, RecoveryCompletesLoginFromPasswordRequired) {
+    auto next = next_auth_state(AuthState::PasswordRequired, AuthEvent::SignedIn);
+    ASSERT_TRUE(next.has_value());
+    EXPECT_EQ(*next, AuthState::Authorized);
+}
+
 TEST(AuthState, DisconnectIsLegalFromEveryState) {
     for (auto s : kAllStates) {
         auto next = next_auth_state(s, AuthEvent::Disconnected);

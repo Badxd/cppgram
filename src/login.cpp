@@ -15,6 +15,28 @@ namespace fn = mtproto::tl::functions;
 namespace ty = mtproto::tl::types;
 namespace tl = mtproto::tl;
 
+namespace {
+
+// Maps an auth.sentCode to the public result. Shared by send_login_code and resend_login_code.
+LoginCodeInfo sent_code_info(const ty::auth_sentCode& sent) {
+    LoginCodeInfo info;
+    info.phone_code_hash = sent.phone_code_hash;
+    if (sent.timeout) info.timeout_seconds = *sent.timeout;
+    info.delivery = "other";
+    if (sent.type) {
+        const auto& t = sent.type->value;
+        if (std::holds_alternative<ty::auth_sentCodeTypeApp>(t)) info.delivery = "app";
+        else if (std::holds_alternative<ty::auth_sentCodeTypeSms>(t)) info.delivery = "sms";
+        else if (std::holds_alternative<ty::auth_sentCodeTypeCall>(t)) info.delivery = "call";
+        else if (std::holds_alternative<ty::auth_sentCodeTypeFlashCall>(t)) info.delivery = "flash_call";
+        else if (std::holds_alternative<ty::auth_sentCodeTypeEmailCode>(t)) info.delivery = "email";
+    }
+    return info;
+}
+
+} // namespace
+
+
 void Client::apply_auth_event(AuthEvent event) {
     const auto next = next_auth_state(auth_state_, event);
     if (!next) {
@@ -79,18 +101,7 @@ LoginCodeInfo Client::send_login_code(const std::string& phone_number) {
         apply_auth_event(AuthEvent::PermanentFailure);
         throw std::runtime_error("auth.sendCode requires a payment (store product); cppgram cannot complete it");
     }
-    const auto& sent = std::get<ty::auth_sentCode>(res.value);
-    info.phone_code_hash = sent.phone_code_hash;
-    if (sent.timeout) info.timeout_seconds = *sent.timeout;
-    info.delivery = "other";
-    if (sent.type) {
-        const auto& t = sent.type->value;
-        if (std::holds_alternative<ty::auth_sentCodeTypeApp>(t)) info.delivery = "app";
-        else if (std::holds_alternative<ty::auth_sentCodeTypeSms>(t)) info.delivery = "sms";
-        else if (std::holds_alternative<ty::auth_sentCodeTypeCall>(t)) info.delivery = "call";
-        else if (std::holds_alternative<ty::auth_sentCodeTypeFlashCall>(t)) info.delivery = "flash_call";
-        else if (std::holds_alternative<ty::auth_sentCodeTypeEmailCode>(t)) info.delivery = "email";
-    }
+    info = sent_code_info(std::get<ty::auth_sentCode>(res.value));
     apply_auth_event(AuthEvent::CodeRequested);
     return info;
 }
@@ -150,6 +161,34 @@ bool Client::sign_in_password(const std::string& password) {
     apply_auth_event(AuthEvent::SignedIn);
     log::write(log::Level::Info, "login", "signed in with 2FA password");
     return true;
+}
+
+LoginCodeInfo Client::resend_login_code(const std::string& phone_number, const std::string& phone_code_hash,
+                                        const std::string& reason) {
+    require_session();
+    if (phone_code_hash.empty()) throw std::invalid_argument("resend_login_code needs the phone_code_hash from send_login_code");
+    fn::auth_resendCode req;
+    req.phone_number = phone_number;
+    req.phone_code_hash = phone_code_hash;
+    if (!reason.empty()) req.reason = reason;
+    tl::auth_SentCode res;
+    try {
+        res = call_rpc(req);
+    } catch (const mtproto::RpcError& e) {
+        note_rpc_error(e.code(), e.rpc_message());
+        throw;
+    }
+    log::write(log::Level::Info, "login", "login code resent");
+    if (std::holds_alternative<ty::auth_sentCodeSuccess>(res.value)) {
+        apply_auth_event(AuthEvent::SignedIn);
+        LoginCodeInfo info;
+        info.delivery = "authorized";
+        return info;
+    }
+    if (std::holds_alternative<ty::auth_sentCodePaymentRequired>(res.value)) {
+        throw std::runtime_error("auth.resendCode requires a payment (store product); cppgram cannot complete it");
+    }
+    return sent_code_info(std::get<ty::auth_sentCode>(res.value));
 }
 
 }  // namespace cppgram
