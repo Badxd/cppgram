@@ -18,6 +18,7 @@
 
 #include "cppgram/auth_state.h"
 #include "cppgram/async.h"
+#include "cppgram/dc.h"
 #include "cppgram/errors.h"
 #include "cppgram/metrics.h"
 #include "cppgram/channel_pts.h"
@@ -39,10 +40,23 @@ namespace cppgram {
 // a plain secret, or "dd" followed by 32 characters for a padded-intermediate secret. Fake-TLS ("ee") secrets
 // are rejected. The secret is never logged.
 struct MtprotoProxyOptions {
+    // Transport inside the proxy. Auto follows the secret: plain uses intermediate, dd uses padded intermediate.
+    // Explicit values are checked against the secret: Padded needs a dd secret, a dd secret needs Auto or Padded,
+    // and Abridged needs a plain secret. Mismatches throw std::invalid_argument before any network use.
+    enum class Framing { Auto, Intermediate, PaddedIntermediate, Abridged };
     std::string host;
     std::uint16_t port = 443;
     std::string secret;
     int connect_timeout_ms = 10000;
+    Framing framing = Framing::Auto;
+};
+
+// A fixed address for one Telegram DC. Used before help.getConfig has listed the DCs, for example when a saved
+// session belongs to another DC, and for private test servers.
+struct DcAddress {
+    std::int32_t id = 0;
+    std::string ip;
+    std::uint16_t port = 443;
 };
 
 struct ClientOptions {
@@ -53,6 +67,10 @@ struct ClientOptions {
     std::string dc_ip = "149.154.167.51";
     std::uint16_t dc_port = 443;
     std::int32_t dc_id = 2;
+    // Fixed DC addresses, checked first when the client must reach DC N: after a USER_MIGRATE_N or
+    // PHONE_MIGRATE_N error, or when a saved session belongs to DC N. Then the addresses from help.getConfig,
+    // then the built-in table. Empty by default.
+    std::vector<DcAddress> dc_addresses;
     std::string session_path = "cppgram.session";
     // Base64 session from export_session_string(). Used only when no saved session exists yet.
     std::string session_string;
@@ -2235,6 +2253,29 @@ private:
         bool cdn = false;
     };
     std::vector<DcEndpoint> dc_endpoints_;
+    // Set by migrate_to_dc(). The next connect_impl() ignores any saved key, because an auth key belongs to one DC.
+    bool force_new_auth_key_ = false;
+    DcEndpoint endpoint_for_dc(std::int32_t dc_id) const;
+    void migrate_to_dc(std::int32_t dc_id);
+    // DC that issued the phone_code_hash of the current login (0 when no code is pending). sign_in_code() uses
+    // the same DC, because a hash is valid only on the DC that issued it.
+    std::int32_t login_dc_ = 0;
+    // Runs one login request. PHONE_MIGRATE_N and NETWORK_MIGRATE_N move the connection to DC N, and the request
+    // is repeated there with the same arguments. The login state is kept across the move (migrate_to_dc() keeps it).
+    // At most two moves are made. Any other error is rethrown unchanged.
+    template <typename Request>
+    typename Request::Result call_login_rpc(const Request& request) {
+        constexpr int kMaxLoginMigrations = 2;
+        for (int moves = 0;; ++moves) {
+            try {
+                return call_rpc(request);
+            } catch (const mtproto::RpcError& e) {
+                const std::int32_t dc = migrate_dc_from_error(e.rpc_message());
+                if (dc == 0 || moves >= kMaxLoginMigrations) throw;
+                migrate_to_dc(dc);
+            }
+        }
+    }
     std::int64_t download_via_cdn(const mtproto::tl::types::upload_fileCdnRedirect& redirect, std::ofstream& out);
     void handle_membership_update(const mtproto::tl::Update& update);
     std::shared_ptr<mtproto::tl::InputUser> input_user_ptr(PeerRef user) const;
@@ -2334,8 +2375,14 @@ private:
     void notify_rpc_error(std::int32_t code, const std::string& name);
     void notify_connection(ConnectionEvent event);
     void connect_impl();
+    // establish_connection(): drops any open connection, then connect_impl(). It does not touch the login state, so
+    // migrate_to_dc() can use it. drop_connection(): closes the session and sets Disconnected, without clearing the
+    // pending login. connect() and disconnect() call these and also clear the pending login.
+    void establish_connection();
+    void drop_connection();
     // Sets the authorization state and notifies on_auth_state when it changes.
     void set_auth_state(AuthState next);
+    void recover_login_state() noexcept;
     void report_handler_error(const std::string& stage, const std::exception& e);
     std::vector<CallbackHandler> callback_handlers_;
     std::vector<RawUpdateHandler> raw_update_handlers_;

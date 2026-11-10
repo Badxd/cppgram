@@ -75,6 +75,8 @@ std::optional<AuthState> next_auth_state(AuthState from, AuthEvent event) noexce
         case AuthState::RecoverableError:
             switch (event) {
                 case AuthEvent::ConnectStarted: return AuthState::Connecting;
+                // auth_can_login() accepts this state, so a login must be able to start from it.
+                case AuthEvent::LoginStarted: return AuthState::Authenticating;
                 case AuthEvent::PermanentFailure: return AuthState::PermanentError;
                 default: return std::nullopt;
             }

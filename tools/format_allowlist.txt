@@ -53,3 +53,4 @@ tests/mtproto/schema_layer_test.cpp
 tests/security/errors_test.cpp
 tests/security/log_test.cpp
 tests/security/webapp_test.cpp
+tests/mtproto/proxy_transport_audit_test.cpp

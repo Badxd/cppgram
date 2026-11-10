@@ -122,3 +122,11 @@ TEST(AuthErrorMapping, MappedEventsAreAcceptedInAuthenticating) {
         EXPECT_TRUE(next_auth_state(AuthState::Authenticating, ev).has_value()) << msg;
     }
 }
+
+// A failed login step can leave RecoverableError, which auth_can_login() accepts. A new login must start from it.
+TEST(AuthState, LoginCanStartFromRecoverableError) {
+    ASSERT_TRUE(auth_can_login(AuthState::RecoverableError));
+    const auto next = next_auth_state(AuthState::RecoverableError, AuthEvent::LoginStarted);
+    ASSERT_TRUE(next.has_value());
+    EXPECT_EQ(*next, AuthState::Authenticating);
+}

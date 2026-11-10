@@ -205,3 +205,84 @@ how it decodes replies from a scripted fake. They do not show Telegram's behavio
     headers, and a CMake Windows block that is not supported.
 61. **Release zip reproducibility** depends on the packaging script's fixed timestamp and sorted entries. Its SHA-256 is
     reported outside the archive, because a zip cannot contain its own hash.
+
+## Limitations of the DC migration pass
+
+62. **A connection drop on the same DC still clears a pending phone code.** `reconnect_after_drop()` calls `connect()`,
+    which clears the login. A migration keeps the login (fixed in this pass), but a drop does not. The fake DC cannot
+    drop an open connection, so this path is not tested. Keeping the login across a same-DC reconnect is the next step.
+63. **Only the bot and phone login steps follow a migrate reply.** An RPC other than `importBotAuthorization`,
+    `sendCode`, `signIn` and `resendCode` that returns `USER_MIGRATE_N` is not retried on the new DC. TDLib retries any
+    query (`td/telegram/net/NetQueryDispatcher.cpp`). This is a gap.
+64. **A migration replaces the saved key.** The session holds one key, so moving to DC N discards the key for the old DC.
+    The file is replaced only after the new handshake succeeds, so a failed migration keeps the old key.
+65. **Fake-DC tests show reaction to the expected reply, not the live reply.** The `USER_MIGRATE_5` answers are written from
+    the TL schema. No live Telegram server was contacted, so the real reply and its timing are not observed here.
+66. **Saved-session routing needs a known address.** A saved session on a DC with no address in `dc_addresses`, the
+    `help.getConfig` list or the built-in table fails with `no address known for DC N`. The config list is not available
+    before the first connection, so a private DC needs `dc_addresses`.
+67. **`connect` changes the options for a saved DC.** When a saved session names another DC, `options_.dc_id`, `dc_ip` and
+    `dc_port` are updated to that DC. Code that reads the options after connect sees the saved DC.
+68. **Two RPC error types.** A raw RPC error is `mtproto::RpcError` with a numeric code. Other failures use the public
+    `errors::` types. This pass did not unify them.
+69. **Not audited in this pass:** sign-in state machine, FLOOD_WAIT policy, reconnect budget, proxy and SOCKS5 behaviour,
+    updates, and cancellation. Their existing tests pass, but no new review was done.
+70. **Sanitizers, Clang and live tests were not run for this pass.** See `TEST_RESULTS.md`.
+71. **Phone migration is checked on fake DCs only.** The `PHONE_MIGRATE_5` reply and the DC 5 answers are written from the
+    TL schema. No Telegram account, server or phone number was used.
+72. **The 2FA step after migration is checked only up to a wrong-password reply.** The fake DC rejects every password.
+    A correct password, the full SRP check and a completed login after migration are not tested.
+73. **Cancellation is not honoured during a migration's TCP connect.** It is checked between hops only. A hop blocked in
+    the connect waits for `connect_timeout_ms`.
+74. **Connection notifications fire for every migration hop.** An application may see a disconnect and a connect for one
+    login step.
+75. **The session keeps one key.** A phone login that moves to DC N discards the key for the old DC (see item 64). This
+    is the same design as bot login.
+76. **Sign-up for a new phone number is not handled.** Only sign-in for an existing account is covered.
+77. **A failed migration clears the pending login.** When a hop cannot connect, the previous DC settings come back, the
+    saved key is kept, and the pending code is dropped. The state is `Disconnected`. The user must reconnect and send a
+    new code. The state is consistent, but the old code is not reused.
+78. **A sign-in that gets a migrate reply drops the code.** The code was issued by `login_dc_`, and the account is on
+    another DC. The code is not sent to that DC, and the login must start again. The rule follows from "a hash is valid
+    only on the DC that issued it". What Telegram does with a code submitted to a non-home DC has not been observed on a
+    live server.
+79. **A successful bot login ends a pending phone login.** The session now belongs to the bot account. Before this pass a
+    bot login left the phone state in place.
+80. **Other login behaviour is unchanged.** `login_bot` still moves only on `USER_MIGRATE_N`. The sign-up path is still not
+    supported. `resend_login_code` without a pending login still runs on the current DC.
+81. **Sanitizers, Clang and the full build of this pass were not run for the login-state change.** See `TEST_RESULTS.md`.
+
+## Proxy and transport phase
+
+These items apply to the MTProto proxy (MTProxy) and SOCKS5 work in this phase. Numbering starts at P1 to keep it apart
+from the earlier items.
+
+- **P1. Live timeout root cause not identified.** The code and the offline tests show no wire defect. The earlier VPS
+  timeout was not reproduced, and no live trace was taken. The change adds diagnostics that name the likely causes. It is
+  not a fix. Run the steps in `VPS_LIVE_TEST_GUIDE.md` to find the cause.
+- **P2. Shared-reading risk.** The client, the loopback stub and the Python reference were all written from the same
+  published layout rules. A misreading shared by all three would pass every offline test. Only a live proxy can rule that
+  out.
+- **P3. Fake-TLS (`ee`) secrets are unsupported.** They are refused before the network with `std::invalid_argument`.
+- **P4. Secret formats.** Only hex is accepted (32 digits for plain, `dd` + 32 for padded intermediate). The TDLib source
+  also accepts base64url and base64 secrets, and raw binary. Those forms were not added here, because they were not
+  verified against a live server or a written spec in this phase.
+- **P5. Secret not wiped from memory.** The parsed key stays in the `ProxySecret` object until it is destroyed. It is not
+  zeroed. The secret is never logged, and tests check that error text does not echo it.
+- **P6. DC id is always written.** The handshake writes the DC field every time. TDLib writes it only when it is
+  non-zero. The client always passes a DC, so the results match for normal use.
+- **P7. Client framing override not tested end to end.** `MtprotoProxyOptions::framing` is wired in `Client::connect_impl`.
+  No test runs it through `Client`. The connection-level tests cover the framing and the guard.
+- **P8. Padded and abridged replies from a real server are untested.** The stub sends padded and abridged frames without
+  padding. The client's handling of padding bytes in a received frame is not tested against a real proxy.
+- **P9. SOCKS5 user and password path is untested.** The SOCKS5 stub tests cover the no-auth method only. Username and
+  password negotiation has no stub test in this phase.
+- **P10. Abridged framing has no live check.** The framing follows the published tag and length rules. No live server
+  has accepted an abridged handshake from this client.
+- **P11. Build and analysis coverage.** The build was incremental. No clean build, no full Clang build, and no ASan, UBSan
+  or TSan run was done in this phase (see `TEST_RESULTS.md`).
+- **P12. Formatting debt.** Files this phase touched were already unformatted in the baseline. This phase added 34
+  clang-format violations in lines it wrote. They were not reformatted, to keep the diff focused.
+- **P13. Diagnostics wording.** Messages for a silent proxy say "check the proxy secret, the dd prefix and the DC id".
+  Their cause list is a guide, not a diagnosis. A proxy with a healthy secret can still stay silent because of an upstream
+  failure.

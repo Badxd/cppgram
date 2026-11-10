@@ -1,0 +1,54 @@
+Local change history for the login-state pass (no git repository, no commits, no push, no branch, no PR).
+Base: cppgram-phone-migration-fix.zip, the previous release (638 of 638 offline tests).
+Changes listed in the order they were made.
+
+1. include/cppgram/client.h
+   - call_login_rpc(): no longer saves and restores the auth state itself. migrate_to_dc() keeps it.
+   - Declarations of establish_connection() and drop_connection().
+2. src/client.cpp
+   - connect(): clears login_dc_, then calls establish_connection(). Public behaviour unchanged except the cleared login.
+   - establish_connection() (new): drop_connection(), then connect_impl(). Logs and rethrows on failure, as before.
+   - disconnect(): clears login_dc_, then calls drop_connection().
+   - drop_connection() (new): the previous disconnect() body. It does not clear the login.
+   - migrate_to_dc(): keeps CodeRequired, PasswordRequired and Authenticating across the move. On failure restores the
+     previous DC settings, resets force_new_auth_key_, clears login_dc_, and rethrows. An unknown DC still throws before
+     any change.
+   - login_bot(): on success clears login_dc_ and moves a pending CodeRequired or PasswordRequired to Unauthenticated
+     before SessionRestored.
+3. src/login.cpp
+   - send_login_code(): clears login_dc_ before a new code starts. login_dc_ is set on success, as before.
+   - sign_in_code(): refuses without login_dc_. Moves to login_dc_ before LoginStarted. Calls call_rpc directly. A
+     PHONE/NETWORK/USER_MIGRATE_N reply drops the pending code and throws AuthenticationError (decision 1 in FINAL_REPORT.md).
+   - sign_in_password(): moves to login_dc_ before LoginStarted. Clears login_dc_ on success. Adds recover_login_state()
+     on non-RPC failures.
+   - resend_login_code(): with a pending login, moves to login_dc_ first. Records the answering DC for the new hash. Clears
+     login_dc_ when already authorized.
+4. src/auth_state.cpp
+   - RecoverableError accepts LoginStarted (goes to Authenticating). auth_can_login() already accepted this state.
+5. tests/mtproto/auth_migration_state_test.cpp (new)
+   - Nine tests on a three-DC fleet (DC 2 home, DC 5 issuing, DC 3 unrelated target). Described in TEST_RESULTS.md.
+6. tests/mtproto/auth_state_test.cpp
+   - AuthState.LoginCanStartFromRecoverableError.
+7. tests/mtproto/phone_migration_fake_dc_test.cpp
+   - SignInAfterAnotherMigrationNeedsANewCode renamed to SignInAfterAnotherMigrationStillUsesTheIssuingDc. It now asserts
+     the fixed behaviour (it pinned the old limitation).
+8. tests/CMakeLists.txt
+   - Adds auth_migration_state_test.cpp to cppgram_mtproto_test.
+9. CHANGELOG.md
+   - New "Login state across DC migration" subsection in the Unreleased section.
+10. REFERENCE_COMPARISON.md
+    - Migration row updated for the login steps and the remaining gaps.
+11. KNOWN_LIMITATIONS.md
+    - Item 62 rewritten (same-DC drop still clears a pending code). Items 77 to 81 added.
+12. TEST_RESULTS.md, FINAL_REPORT.md, commit-history.txt rewritten for this pass.
+
+Not changed in this pass: the bot-login migration hop logic, saved-session routing, reconnect_after_drop(), the obfuscated
+transport, the auth key handshake, the TL schema and generated files, the session file format, and all other public API.
+
+Proxy and transport phase
+- No commits were created in this phase. The change set is the working tree of this archive, relative to
+  cppgram-login-state-fix.zip.
+- Changed: include/cppgram/mtproto/obfuscated.h, src/mtproto/obfuscated.cpp, include/cppgram/mtproto/connection.h,
+  src/mtproto/connection.cpp, include/cppgram/client.h, src/client.cpp, tests/CMakeLists.txt, tools/format_allowlist.txt.
+- Added: tests/mtproto/proxy_transport_audit_test.cpp, PROXY_AUDIT.md, VPS_LIVE_TEST_GUIDE.md.
+- Documents appended: TEST_RESULTS.md, KNOWN_LIMITATIONS.md, REFERENCE_COMPARISON.md, FINAL_REPORT.md.

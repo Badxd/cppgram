@@ -1,6 +1,8 @@
 // cppgram - MTProto obfuscated transport ("obfuscated2") used to talk to MTProto proxies.
 //
 // Client handshake (64 bytes, sent first, in the clear except the last 8 bytes which are encrypted):
+//   protocol tag: 0xeeeeeeee (intermediate), 0xdddddddd (padded intermediate) or 0xefefefef (abridged, the 0xef
+//   short tag padded to 4 bytes). The DC field: plain DC number, negated for media DCs, +10000 for test DCs.
 //   bytes  0..56  random (rejected if they match a reserved prefix, see obfuscated_init_valid)
 //   bytes 56..60  protocol tag: 0xeeeeeeee (intermediate) or 0xdddddddd (padded intermediate)
 //   bytes 60..62  DC id, int16 little-endian
@@ -46,6 +48,7 @@ private:
 enum class ObfuscatedFraming {
     Intermediate,        // tag 0xeeeeeeee, frames: u32 length + payload
     PaddedIntermediate,  // tag 0xdddddddd, frames: u32 length (payload + padding) + payload + 0..15 random bytes
+    Abridged,            // tag 0xefefefef, frames: u8 word count (or 0x7f + 3 bytes LE) + payload; payload % 4 == 0
 };
 
 constexpr std::size_t kObfuscatedInitSize = 64;

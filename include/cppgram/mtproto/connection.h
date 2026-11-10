@@ -68,8 +68,14 @@ public:
     // Connects to an MTProto proxy (obfuscated transport) and sends the 64-byte handshake for dc_id.
     // The secret must be a plain or padded-intermediate secret; fake-TLS secrets throw std::invalid_argument.
     // Connect failures and timeouts throw ProxyError with transient() == true.
+    // The framing follows the secret: plain secrets use intermediate, dd secrets use padded intermediate.
     void connect_obfuscated(const std::string& proxy_host, std::uint16_t proxy_port, const ProxySecret& secret,
                             std::int16_t dc_id, std::chrono::milliseconds timeout);
+    // Same, with the framing chosen by the caller. Padded intermediate needs a dd secret, and a dd secret needs padded
+    // intermediate; any other combination throws std::invalid_argument before the network is used. Abridged is allowed
+    // with a plain secret only.
+    void connect_obfuscated(const std::string& proxy_host, std::uint16_t proxy_port, const ProxySecret& secret,
+                            std::int16_t dc_id, std::chrono::milliseconds timeout, ObfuscatedFraming framing);
     // Timeout for establishing a TCP connection, in milliseconds (default 10000).
     void set_connect_timeout(int milliseconds) noexcept { connect_timeout_ms_ = milliseconds; }
     // Receive and send timeout in milliseconds (0 = block forever). Expiry throws ConnectionTimeout.
@@ -86,6 +92,10 @@ public:
 
 private:
     void send_all(const Bytes& data);
+    // Receive failures. Before the proxy has sent any byte, a timeout or a close is reported as a ProxyError that names
+    // the likely causes (secret, framing, DC id, proxy upstream). After that they keep their usual types.
+    void throw_receive_timeout();
+    void throw_receive_closed();
 
     Transport transport_;
     int fd_ = -1;
@@ -93,6 +103,7 @@ private:
     int connect_timeout_ms_ = 10000;
     int io_timeout_ms_ = 0;
     std::optional<ObfuscatedClient> obfuscated_;
+    std::size_t obfuscated_rx_bytes_ = 0;  // encrypted bytes received from the proxy since the handshake
 };
 
 }  // namespace cppgram::mtproto

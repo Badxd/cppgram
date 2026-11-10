@@ -15,6 +15,7 @@ constexpr std::size_t kTagPos = 56;
 constexpr std::size_t kDcPos = 60;
 constexpr std::uint8_t kTagIntermediate[4] = {0xee, 0xee, 0xee, 0xee};
 constexpr std::uint8_t kTagPadded[4] = {0xdd, 0xdd, 0xdd, 0xdd};
+constexpr std::uint8_t kTagAbridged[4] = {0xef, 0xef, 0xef, 0xef};
 constexpr std::size_t kMaxPadding = 15;
 
 Bytes make_key(const Bytes& raw_key, const std::array<std::uint8_t, 16>& secret) {
@@ -113,7 +114,12 @@ ObfuscatedClient ObfuscatedClient::create(ObfuscatedFraming framing, std::int16_
         }
     }
 
-    const std::uint8_t* tag = framing == ObfuscatedFraming::Intermediate ? kTagIntermediate : kTagPadded;
+    const std::uint8_t* tag = kTagIntermediate;
+    switch (framing) {
+        case ObfuscatedFraming::Intermediate: tag = kTagIntermediate; break;
+        case ObfuscatedFraming::PaddedIntermediate: tag = kTagPadded; break;
+        case ObfuscatedFraming::Abridged: tag = kTagAbridged; break;
+    }
     std::memcpy(init.data() + kTagPos, tag, 4);
     const auto dc_unsigned = static_cast<std::uint16_t>(dc_id);
     init[kDcPos] = static_cast<std::uint8_t>(dc_unsigned & 0xFF);
@@ -135,6 +141,22 @@ ObfuscatedClient ObfuscatedClient::create(ObfuscatedFraming framing, std::int16_
 
 Bytes ObfuscatedClient::frame(const Bytes& payload) const {
     Bytes out;
+    if (framing_ == ObfuscatedFraming::Abridged) {
+        if (payload.size() % 4 != 0) throw std::invalid_argument("abridged payload must be a multiple of 4 bytes");
+        const std::size_t words = payload.size() / 4;
+        if (words < 0x7f) {
+            out.push_back(static_cast<std::uint8_t>(words));
+        } else if (words < (1u << 24)) {
+            out.push_back(0x7f);
+            out.push_back(static_cast<std::uint8_t>(words));
+            out.push_back(static_cast<std::uint8_t>(words >> 8));
+            out.push_back(static_cast<std::uint8_t>(words >> 16));
+        } else {
+            throw std::invalid_argument("abridged payload too large");
+        }
+        out.insert(out.end(), payload.begin(), payload.end());
+        return out;
+    }
     if (framing_ == ObfuscatedFraming::Intermediate) {
         out.reserve(4 + payload.size());
         const auto len = static_cast<std::uint32_t>(payload.size());
@@ -179,6 +201,8 @@ ObfuscatedServerView parse_obfuscated_handshake(const Bytes& handshake, const st
         framing = ObfuscatedFraming::Intermediate;
     } else if (std::equal(tail.begin(), tail.begin() + 4, kTagPadded)) {
         framing = ObfuscatedFraming::PaddedIntermediate;
+    } else if (std::equal(tail.begin(), tail.begin() + 4, kTagAbridged)) {
+        framing = ObfuscatedFraming::Abridged;
     } else {
         throw std::invalid_argument("obfuscated handshake has an unknown protocol tag");
     }

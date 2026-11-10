@@ -2,6 +2,48 @@
 
 Versions follow [Semantic Versioning](https://semver.org/). Until 1.0.0, a minor version may change the public API.
 
+## Unreleased - DC migration and saved-session routing
+
+### Login state across DC migration
+- A pending phone code survives a migration caused by another request. Example: `send_login_code` on DC 5, then
+  `login_bot` moved to DC 3. `sign_in_code` goes back to DC 5 before it submits the code.
+- A pending 2FA challenge survives a migration. `sign_in_password` goes back to the DC that accepted the sign-in.
+- `resend_login_code` goes to the issuing DC when a login is pending, and records the DC that issued the new hash.
+- A migration keeps the login steps in progress (`CodeRequired`, `PasswordRequired`, `Authenticating`). Any other state
+  is reset as before.
+- `connect()` and `disconnect()` clear a pending login. `log_out()` does too, through `disconnect()`.
+- A failed migration hop restores the previous DC settings, clears the pending login and keeps the saved key. The
+  client ends `Disconnected`.
+- A sign-in that gets a migrate reply drops the pending code. The code is not sent to the other DC; the login must start
+  again with `send_login_code`.
+- A successful bot login ends a pending phone login.
+- A login can start from `RecoverableError`. `auth_can_login()` already accepted that state, but the transition table
+  rejected `LoginStarted` from it, so the next login step failed with `logic_error`.
+
+### Fixed
+- `login_bot` followed no migration. A `USER_MIGRATE_N`, `PHONE_MIGRATE_N` or `NETWORK_MIGRATE_N` reply reached the
+  caller as `RPC error 303`. The client now moves to DC N, makes a new auth key there, and repeats the login. The number
+  of hops is bounded at two.
+- A saved session was dialled on the DC in the options, not on the DC that owns its key. The saved DC is now dialled.
+  The session is loaded before the TCP connect.
+- `migrate_dc_from_error` accepted only DCs 1 to 5. It now accepts 1 to 99. An unknown DC fails with a clear error.
+- Phone login (`send_login_code`, `sign_in_code`, `resend_login_code`) followed no migration. A `PHONE_MIGRATE_N` reply
+  to the code request is now repeated on DC N, bounded to two hops. The auth state is kept across the move.
+- `sign_in_code` sends the phone code's hash to the DC that issued it (`login_dc_`), not to the DC the connection is on.
+- A non-RPC failure during a login step (for example an unknown migrate DC) no longer leaves the state at
+  `Authenticating`. It becomes `RecoverableError` while connected.
+
+### Added
+- `ClientOptions::dc_addresses`: fixed DC addresses, checked before the `help.getConfig` list and the built-in table.
+- `tests/mtproto/dc_migration_fake_dc_test.cpp`: five tests on loopback fake DCs (bot login and saved session).
+- `tests/mtproto/phone_migration_fake_dc_test.cpp`: nine tests on loopback fake DCs (phone login migration, hash DC,
+  2FA after migration, bounded retries, connection failure, saved session).
+
+### Not changed
+- Sign-up is not handled. A migration caused by another request (`login_bot` or any RPC other than the login steps)
+  resets a pending phone code, so `sign_in_code` then refuses and a new code is needed. See `KNOWN_LIMITATIONS.md`
+  items 62 and 63.
+
 ## 0.1.0 - first pre-release candidate (2026-11-09)
 
 Basis for 0.1.0: no version has been tagged or published before, and the client has always announced `0.1.0` to Telegram

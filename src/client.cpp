@@ -1,6 +1,7 @@
 #include "cppgram/client.h"
 #include "cppgram/update_gate.h"
 #include "cppgram/errors.h"
+#include "cppgram/dc.h"
 #include "cppgram/log.h"
 
 #include <thread>
@@ -230,7 +231,13 @@ void Client::require_session() const {
 }
 
 void Client::connect() {
-    disconnect();
+    // An explicit connect() starts a fresh session. A login code or 2FA challenge from before is no longer tracked.
+    login_dc_ = 0;
+    establish_connection();
+}
+
+void Client::establish_connection() {
+    drop_connection();
     try {
         connect_impl();
     } catch (const std::exception& e) {
@@ -239,10 +246,10 @@ void Client::connect() {
         instruments_.transport_errors.labels({std::string(errors::to_string(errors::categorize(e)))}).inc();
         // A failed connect must not leave a half-open session behind: is_connected() would report true
         // for a session that cannot be used.
-        disconnect();
+        drop_connection();
         throw;
     } catch (...) {
-        disconnect();
+        drop_connection();
         throw;
     }
 }
@@ -263,6 +270,34 @@ void Client::connect_impl() {
             throw std::invalid_argument("fake-TLS (ee) proxy secrets are not supported");
         }
     }
+    const std::string& path = options_.session_path;
+    const bool sqlite_path = path.ends_with(".sqlite") || path.ends_with(".sqlite3") || path.ends_with(".db");
+    storage_.reset();
+    if (sqlite_path) storage_ = std::make_unique<SqliteStorage>(path);
+
+    mtproto::SessionData data;
+    bool have_key = !force_new_auth_key_ &&
+                    (sqlite_path ? storage_->load_session(data)
+                                 : (mtproto::load_session_file(path, data) && data.auth_key.size() == 256));
+    if (!have_key && !force_new_auth_key_ && !options_.session_string.empty()) {
+        have_key = decode_session_string(options_.session_string, data);
+        if (have_key) {
+            if (sqlite_path) {
+                storage_->save_session(data);
+            } else {
+                mtproto::save_session_file(path, data);
+            }
+            debug_log(debug, "session: restored from session_string");
+        }
+    }
+    // A saved key belongs to the DC it was made on. Dial that DC, not the one in the options.
+    if (have_key && data.dc_id != 0 && data.dc_id != options_.dc_id) {
+        const DcEndpoint target = endpoint_for_dc(data.dc_id);
+        debug_log(debug, "session: saved auth key belongs to DC " + std::to_string(data.dc_id) + ", dialling it");
+        options_.dc_id = data.dc_id;
+        options_.dc_ip = target.ip;
+        options_.dc_port = static_cast<std::uint16_t>(target.port);
+    }
     connection_ = std::make_unique<mtproto::Connection>(mtproto::TransportKind::Intermediate);
     connection_->set_connect_timeout(options_.connect_timeout_ms);
     if (options_.mtproto_proxy) {
@@ -280,9 +315,24 @@ void Client::connect_impl() {
             if (options_.mtproto_proxy) {
                 const auto& proxy = *options_.mtproto_proxy;
                 connection_->set_connect_timeout(proxy.connect_timeout_ms);
+                mtproto::ObfuscatedFraming framing = proxy_secret->kind == mtproto::ProxySecretKind::PaddedIntermediate
+                                                         ? mtproto::ObfuscatedFraming::PaddedIntermediate
+                                                         : mtproto::ObfuscatedFraming::Intermediate;
+                switch (proxy.framing) {
+                    case MtprotoProxyOptions::Framing::Auto: break;
+                    case MtprotoProxyOptions::Framing::Intermediate:
+                        framing = mtproto::ObfuscatedFraming::Intermediate;
+                        break;
+                    case MtprotoProxyOptions::Framing::PaddedIntermediate:
+                        framing = mtproto::ObfuscatedFraming::PaddedIntermediate;
+                        break;
+                    case MtprotoProxyOptions::Framing::Abridged:
+                        framing = mtproto::ObfuscatedFraming::Abridged;
+                        break;
+                }
                 connection_->connect_obfuscated(proxy.host, proxy.port, *proxy_secret,
                                                 static_cast<std::int16_t>(options_.dc_id),
-                                                std::chrono::milliseconds(proxy.connect_timeout_ms));
+                                                std::chrono::milliseconds(proxy.connect_timeout_ms), framing);
             } else if (options_.socks5) {
                 connection_->connect_via_socks5(*options_.socks5, options_.dc_ip, options_.dc_port);
             } else {
@@ -307,25 +357,6 @@ void Client::connect_impl() {
     log::write(log::Level::Info, "client", "tcp connected", {{"dc_id", std::to_string(options_.dc_id)}});
     connection_->set_receive_timeout(options_.connect_timeout_ms);
 
-    const std::string& path = options_.session_path;
-    const bool sqlite_path = path.ends_with(".sqlite") || path.ends_with(".sqlite3") || path.ends_with(".db");
-    storage_.reset();
-    if (sqlite_path) storage_ = std::make_unique<SqliteStorage>(path);
-
-    mtproto::SessionData data;
-    bool have_key = sqlite_path ? storage_->load_session(data)
-                                      : (mtproto::load_session_file(path, data) && data.auth_key.size() == 256);
-    if (!have_key && !options_.session_string.empty()) {
-        have_key = decode_session_string(options_.session_string, data);
-        if (have_key) {
-            if (sqlite_path) {
-                storage_->save_session(data);
-            } else {
-                mtproto::save_session_file(path, data);
-            }
-            debug_log(debug, "session: restored from session_string");
-        }
-    }
     if (!have_key) {
         debug_log(debug, "handshake: no saved auth key, creating one");
         PlainConnection plain(*connection_, debug);
@@ -346,6 +377,7 @@ void Client::connect_impl() {
     } else {
         debug_log(debug, "session: reusing saved auth key from " + path);
     }
+    force_new_auth_key_ = false;
     session_ = std::make_unique<mtproto::MtSession>(*connection_, data);
     {
         const auto flood = instruments_.flood_waits;
@@ -394,6 +426,12 @@ void Client::connect_impl() {
 }
 
 void Client::disconnect() {
+    // An explicit disconnect ends the login in progress. Nothing from it may be reused after a later connect().
+    login_dc_ = 0;
+    drop_connection();
+}
+
+void Client::drop_connection() {
     const bool was_connected = session_ != nullptr;
     set_auth_state(AuthState::Disconnected);
     connected_.store(false, std::memory_order_release);
@@ -408,6 +446,54 @@ void Client::disconnect() {
     }
 }
 
+Client::DcEndpoint Client::endpoint_for_dc(std::int32_t dc_id) const {
+    for (const auto& a : options_.dc_addresses) {
+        if (a.id == dc_id) return DcEndpoint{dc_id, a.ip, static_cast<std::int32_t>(a.port), false};
+    }
+    for (const auto& e : dc_endpoints_) {
+        if (e.id == dc_id && !e.cdn) return e;
+    }
+    const std::string builtin = dc_address(dc_id);
+    if (!builtin.empty()) return DcEndpoint{dc_id, builtin, 443, false};
+    throw std::runtime_error("no address known for DC " + std::to_string(dc_id));
+}
+
+void Client::migrate_to_dc(std::int32_t dc_id) {
+    // An unknown DC throws here, before anything changes: the connection and the login state stay as they were.
+    const DcEndpoint target = endpoint_for_dc(dc_id);
+    log::write(log::Level::Info, "client", "migrating to home DC", {{"dc_id", std::to_string(dc_id)}});
+    // A login step in progress is kept across the move. Its phone code or 2FA challenge belongs to the DC the
+    // connection left (login_dc_), and the login steps return there when they need it. connect_impl() would
+    // otherwise reset the state to Unauthenticated. Any other state is reset as before.
+    const AuthState before = auth_state_;
+    const bool keep_login = before == AuthState::CodeRequired || before == AuthState::PasswordRequired ||
+                            before == AuthState::Authenticating;
+    const auto prev_dc = options_.dc_id;
+    const auto prev_ip = options_.dc_ip;
+    const auto prev_port = options_.dc_port;
+    options_.dc_id = dc_id;
+    options_.dc_ip = target.ip;
+    options_.dc_port = static_cast<std::uint16_t>(target.port);
+    force_new_auth_key_ = true;
+    try {
+        // Drops the old session, then performs a new handshake on the new DC and saves the new key.
+        establish_connection();
+    } catch (...) {
+        // A failed hop must leave a consistent state. The new key was not saved, so the saved session still belongs to
+        // the previous DC. The previous DC settings come back, so a later connect() dials that DC again. The pending
+        // code is not known to be usable any more, so the login is cleared.
+        options_.dc_id = prev_dc;
+        options_.dc_ip = prev_ip;
+        options_.dc_port = prev_port;
+        force_new_auth_key_ = false;
+        login_dc_ = 0;
+        log::write(log::Level::Warn, "client", "migration failed; previous DC settings restored",
+                   {{"dc_id", std::to_string(dc_id)}});
+        throw;
+    }
+    if (keep_login) set_auth_state(before);
+}
+
 void Client::login_bot(const std::string& bot_token) {
     require_session();
     fn::auth_importBotAuthorization req;
@@ -416,8 +502,25 @@ void Client::login_bot(const std::string& bot_token) {
     req.api_hash = options_.api_hash;
     req.bot_auth_token = bot_token;
     log::write(log::Level::Info, "client", "bot login requested");
-    call_rpc(req);
+    // A bot account lives on one DC. Telegram answers USER_MIGRATE_N on the wrong DC and does not process the
+    // request, so repeating it on DC N is safe. The number of hops is bounded.
+    constexpr int kMaxMigrations = 2;
+    for (int migrations = 0;; ++migrations) {
+        try {
+            call_rpc(req);
+            break;
+        } catch (const mtproto::RpcError& e) {
+            const int dc = migrate_dc_from_error(e.rpc_message());
+            if (dc == 0 || migrations >= kMaxMigrations) throw;
+            migrate_to_dc(dc);
+        }
+    }
     log::write(log::Level::Info, "client", "bot login accepted");
+    // The session now belongs to the bot account, so a phone login that was pending ends here.
+    login_dc_ = 0;
+    if (auth_state_ == AuthState::CodeRequired || auth_state_ == AuthState::PasswordRequired) {
+        set_auth_state(AuthState::Unauthenticated);
+    }
     if (auth_state_ == AuthState::Unauthenticated) apply_auth_event(AuthEvent::SessionRestored);
     sync_updates_state();
 }

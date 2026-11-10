@@ -137,8 +137,26 @@ void Connection::connect_via_socks5(const Socks5Options& proxy, const std::strin
 void Connection::connect_obfuscated(const std::string& proxy_host, std::uint16_t proxy_port,
                                     const ProxySecret& secret, std::int16_t dc_id,
                                     std::chrono::milliseconds timeout) {
+    const ObfuscatedFraming framing = secret.kind == ProxySecretKind::PaddedIntermediate
+                                          ? ObfuscatedFraming::PaddedIntermediate
+                                          : ObfuscatedFraming::Intermediate;
+    connect_obfuscated(proxy_host, proxy_port, secret, dc_id, timeout, framing);
+}
+
+void Connection::connect_obfuscated(const std::string& proxy_host, std::uint16_t proxy_port,
+                                    const ProxySecret& secret, std::int16_t dc_id,
+                                    std::chrono::milliseconds timeout, ObfuscatedFraming framing) {
     if (secret.kind == ProxySecretKind::FakeTls) {
         throw std::invalid_argument("fake-TLS (ee) proxy secrets are not supported");
+    }
+    // A dd secret means padded intermediate, and padded intermediate needs a dd secret. Anything else is refused here.
+    const bool dd_secret = secret.kind == ProxySecretKind::PaddedIntermediate;
+    if (dd_secret != (framing == ObfuscatedFraming::PaddedIntermediate)) {
+        throw std::invalid_argument(dd_secret ? "a dd proxy secret needs padded-intermediate framing"
+                                              : "padded-intermediate framing needs a dd proxy secret");
+    }
+    if (framing == ObfuscatedFraming::Abridged && dd_secret) {
+        throw std::invalid_argument("abridged framing is not used with a dd proxy secret");
     }
     close();
     try {
@@ -149,18 +167,35 @@ void Connection::connect_obfuscated(const std::string& proxy_host, std::uint16_t
     int one = 1;
     ::setsockopt(fd_, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 
-    const ObfuscatedFraming framing = secret.kind == ProxySecretKind::PaddedIntermediate
-                                          ? ObfuscatedFraming::PaddedIntermediate
-                                          : ObfuscatedFraming::Intermediate;
     obfuscated_.emplace(ObfuscatedClient::create(framing, dc_id, secret.key));
     init_sent_ = true;  // the protocol tag is inside the obfuscated handshake, never sent as plain bytes
-    transport_ = Transport(TransportKind::Intermediate);
+    obfuscated_rx_bytes_ = 0;
+    transport_ = Transport(framing == ObfuscatedFraming::Abridged ? TransportKind::Abridged : TransportKind::Intermediate);
     try {
         send_all(obfuscated_->handshake());
     } catch (const ConnectionError& e) {
         close();
         throw ProxyError(e.what(), true);
     }
+}
+
+void Connection::throw_receive_timeout() {
+    if (obfuscated_ && obfuscated_rx_bytes_ == 0) {
+        throw ProxyError("MTProto proxy sent no data within " + std::to_string(io_timeout_ms_) +
+                             " ms after the handshake: check the proxy secret, the dd prefix (padded intermediate) "
+                             "and the DC id, and the proxy's own connection to Telegram",
+                         true);
+    }
+    throw ConnectionTimeout("receive timed out");
+}
+
+void Connection::throw_receive_closed() {
+    if (obfuscated_ && obfuscated_rx_bytes_ == 0) {
+        throw ProxyError("MTProto proxy closed the connection before sending any data: the secret, the framing "
+                         "(plain, dd or abridged) or the DC id is probably wrong, or the proxy cannot reach Telegram",
+                         true);
+    }
+    throw ConnectionError("connection closed by server");
 }
 
 void Connection::close() noexcept {
@@ -228,14 +263,15 @@ Bytes Connection::receive_packet() {
         const ssize_t n = ::recv(fd_, buf, sizeof(buf), 0);
         if (n < 0) {
             if (errno == EINTR) continue;
-            if (errno == EAGAIN || errno == EWOULDBLOCK) throw ConnectionTimeout("receive timed out");
+            if (errno == EAGAIN || errno == EWOULDBLOCK) throw_receive_timeout();
             log::write(log::Level::Warn, "transport", "recv failed", {{"errno", std::to_string(errno)}});
             throw ConnectionError(std::string("recv: ") + std::strerror(errno));
         }
         if (n == 0) {
             log::write(log::Level::Warn, "transport", "connection closed by server");
-            throw ConnectionError("connection closed by server");
+            throw_receive_closed();
         }
+        obfuscated_rx_bytes_ += static_cast<std::size_t>(n);
         Bytes chunk(buf, buf + n);
         if (obfuscated_) {
             chunk = obfuscated_->decrypt(chunk);
@@ -261,13 +297,13 @@ Bytes Connection::receive_packet_cancellable(const std::stop_token& stop,
             throw OperationCancelled();
         }
         if (clock::now() >= deadline) {
-            throw ConnectionTimeout("receive timed out");
+            throw_receive_timeout();
         }
         int wait_ms = kPollSliceMs;
         if (io_timeout_ms_ > 0) {
             const auto now = clock::now();
             if (now >= idle_deadline) {
-                throw ConnectionTimeout("receive timed out");
+                throw_receive_timeout();
             }
             const auto remaining =
                 std::chrono::duration_cast<std::chrono::milliseconds>(idle_deadline - now).count();
@@ -289,8 +325,9 @@ Bytes Connection::receive_packet_cancellable(const std::stop_token& stop,
         }
         if (n == 0) {
             log::write(log::Level::Warn, "transport", "connection closed by server");
-            throw ConnectionError("connection closed by server");
+            throw_receive_closed();
         }
+        obfuscated_rx_bytes_ += static_cast<std::size_t>(n);
         Bytes chunk(buf, buf + n);
         if (obfuscated_) {
             chunk = obfuscated_->decrypt(chunk);

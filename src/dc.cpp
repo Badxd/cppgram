@@ -20,7 +20,7 @@ int migrate_dc_from_error(const std::string& error_message) {
         const std::size_t pos = error_message.find(tag);
         if (pos == std::string::npos) continue;
         const int dc = std::atoi(error_message.c_str() + pos + std::char_traits<char>::length(tag));
-        if (dc >= 1 && dc <= 5) return dc;
+        if (dc >= 1 && dc <= 99) return dc;
     }
     return 0;
 }
