@@ -109,3 +109,134 @@ passed 417 of 417.
 - No commit, push, pull request or GitHub Actions run.
 - No live Telegram, proxy or credential use.
 - The sanitizer and clean-build steps were not run.
+# CppGram: MTProxy secret format compatibility
+
+## Result
+
+`parse_proxy_secret()` now accepts Base64URL and standard Base64 secrets, in addition to the existing hex forms. The
+decoded bytes are classified with the same rules as TDLib, Telegram's official library. Plain and `dd` secrets work in
+every accepted text form. Fake-TLS (`ee`) secrets now parse, and the transport still refuses them, as the task requires.
+
+**This does not by itself make your proxy work.** I did not receive your secret, so I could not tell which form it
+uses. What it decodes to decides the outcome:
+
+| What the live proxy check reports | Meaning |
+|---|---|
+| `SKIP: set TG_API_ID and TG_API_HASH` | The secret parsed as plain or `dd`. The next step is the connection itself (see `VPS_LIVE_TEST_GUIDE.md`). |
+| `NOT_SUPPORTED: fake-TLS (ee) proxy secrets are not supported` | The secret is fake-TLS. cppgram cannot connect with it. Supporting it needs a fake-TLS transport, which is a separate, large piece of work and is not in this change. |
+| `FAIL: TG_MTPROTO_PROXY_SECRET was not accepted: <reason>` | The text is not a form the parser knows. The reason names the rule that failed and never repeats the secret. |
+
+Telegram Android showing "Connected" makes fake-TLS a likely case, because Telegram's own clients use it heavily. That is
+an inference, not something I verified against your server.
+
+## Verified format facts and sources
+
+| Source | What it establishes | Status |
+|---|---|---|
+| Official MTProxy transport documentation, `core.telegram.org/mtproto/mtproto-transports` (fetched) | 16-byte secret, usually given in hex. A 17-byte variant whose first byte `0xdd` selects padded intermediate, and that byte is not part of the key. The page does not describe `ee` or Base64. | Verified |
+| Third-party MTProxy listener manual, `manual.nssurge.com/others/mtproto.md` (fetched) | The listener takes a 32-hex-character secret, with an optional `dd` prefix. It says the `ee` fake-TLS format is not supported by that listener. Base64 appears only in a DC configuration file, not in the secret. | Third-party, not official. Used as corroboration only |
+| TDLib source, `td/mtproto/ProxySecret.cpp` (local copy, read) | `from_link` tries hex, then Base64URL, then Base64. `from_binary` classifies the bytes: 16 is plain, 17 starting `0xdd` is padded, 18 or more starting `0xee` is fake-TLS. Fake-TLS secrets are written out as Base64URL. | Verified against the code |
+| TDLib base64 decoder (`td/utils`) | Not in the local source copy. | **Not verified** |
+
+No live server and no Telegram Android source were available. The base64 padding and trailing-bit rules are my choice
+(strict), not something checked against TDLib's decoder.
+
+## Accepted forms and decoding
+
+Tried in this order, which is TDLib's order:
+
+1. **Hex.** Any even-length string made only of hex digits. If it matches, nothing else is tried, so a wrong length is
+   rejected rather than reread as Base64.
+2. **Base64URL** (RFC 4648 section 5, `-` and `_`).
+3. **Standard Base64** (RFC 4648 section 4, `+` and `/`).
+
+Base64 rules: padding is optional. If present it must be at the end, at most two characters, and the total length must
+be a multiple of 4. A length of 4k+1 is never valid. Trailing bits after the last full byte must be zero. Whitespace and
+any other character are rejected. Nothing is trimmed, so a copied secret with a trailing space is refused, not fixed.
+
+The decoded bytes are then classified:
+
+| Decoded length and prefix | Kind | Key | Framing (if it reaches the transport) |
+|---|---|---|---|
+| 16 bytes, any prefix | Plain | bytes 0..15 | Intermediate |
+| 17 bytes, first byte `0xdd` | Padded intermediate | bytes 1..16 | Padded intermediate |
+| 18 or more bytes, first byte `0xee` | Fake-TLS | bytes 1..16, domain = the rest (1 to 253 printable ASCII bytes) | None: refused |
+| Under 16 bytes, 17 bytes without a prefix, `0xdd` with the wrong length, unknown prefix | Rejected | | |
+
+Hex fake-TLS text (`ee` + 32 hex + hex domain) decodes to the same bytes, so the hex and Base64 forms agree.
+
+## Security
+
+- Decoded bytes are held in a buffer that is overwritten when it goes out of scope. Each decoder reserves its full output
+  size first, so the buffer never reallocates and leaves an unwiped copy behind.
+- The caller's secret string is not modified or copied beyond what the parser needs.
+- Errors name the rule that failed and the decoded length. They never include the input or any decoded byte. Tests check
+  this for malformed input, and for the wrong secret at connect time.
+- Input is capped at 540 characters before any decoding, the largest valid fake-TLS form.
+- The live test prints the parser's message on failure. The message never contains the secret.
+- Test vectors are synthetic. The key is made up, and the expected strings come from Python's `base64` module. No real
+  secret is in the repository, the tests, or the logs. The proxy host you gave is not in the tree.
+- Not done: the parsed `ProxySecret` keeps the 16-byte key in memory until it is destroyed. Only the temporary decode
+  buffers are wiped. See `KNOWN_LIMITATIONS.md` (P5).
+
+## Behaviour that could change
+
+- A Base64 secret made only of hex digits, with even length, is read as hex. TDLib does the same. Such a secret is rejected
+  if its length is wrong, not read as Base64. The chance of this for a real base64 secret is very small, but it is possible.
+- Base64 with non-zero trailing bits is rejected. A non-canonical encoder would be refused, and TDLib's behaviour there is
+  unverified.
+- Any text that previously failed for one reason may now fail for another. The regression tests check outcome (accepted
+  or rejected), not the message.
+
+## Changes
+
+| File | Change |
+|---|---|
+| `include/cppgram/mtproto/proxy_secret.h` | Adds `ProxySecretEncoding` and a `encoding` field on `ProxySecret`. Rewrites the format comment |
+| `src/mtproto/proxy_secret.cpp` | Rewritten: hex, Base64URL and Base64 decoders, classification, and a wiping decode buffer |
+| `tests/mtproto/proxy_secret_test.cpp` | Existing tests unchanged. Adds 13 tests: Base64 and Base64URL forms, alphabet strictness, malformed input, decoded-length rules, fake-TLS domain limits, oversized input, hex-first rule, no-echo, regression |
+| `tests/mtproto/proxy_transport_audit_test.cpp` | Adds 3 end-to-end tests: padded Base64 selects padded framing on the wire, plain standard Base64 selects intermediate, fake-TLS Base64 is still refused |
+| `examples/live_tests/live_tests.cpp` | Failure message for a rejected secret now includes the parser's reason. Env var names unchanged: `TG_MTPROTO_PROXY_HOST`, `TG_MTPROTO_PROXY_PORT`, `TG_MTPROTO_PROXY_SECRET`, `TG_DC` |
+| `tools/format_allowlist.txt` | Adds the three rewritten files |
+| `PROXY_AUDIT.md`, `KNOWN_LIMITATIONS.md`, `VPS_LIVE_TEST_GUIDE.md` | Updated for the new formats |
+
+`src/client.cpp` and `src/mtproto/connection.cpp` were not changed. Both still refuse fake-TLS with the same message. The
+transport, framing selection and handshake are unchanged.
+
+`TG_DC` is read by the live test as before (default 2, must be 1 to 5). This change does not touch it.
+
+## Tests
+
+| Check | Result |
+|---|---|
+| Full offline CTest | 687 of 687 passed |
+| `cppgram_mtproto_test` | 433 PASSED (417 before, 16 new) |
+| `cppgram_bot_test`, `media`, `metrics`, `security`, `async` | 110, 22, 23, 53, 46 PASSED |
+| Proxy secret suites | 28 PASSED |
+| Mutation testing of the parser | 8 mutants, 7 killed, 1 survived by design (wipe, not observable from tests) |
+| Offline live proxy check | four synthetic secrets, results as in the table above |
+| GCC build, Clang syntax, format check | 0 warnings, clean, 57 files 0 failing |
+| Live VPS, real credentials, Telegram | NOT RUN |
+| Sanitizers, clean build | NOT RUN in this phase |
+
+Mutation results:
+
+| Mutant | Result | Restored byte-exact | Caught by (first run) |
+|---|---|---|---|
+| P1 url alphabet never tried | KILLED | True | ProxySecretBase64.FakeTlsSecretKeepsTheDomain, ProxySecretBase64.PaddedIntermediateSecretInBothAlphabets, ProxySecretBase64.PlainSecretInBase64URLPaddedAndUnpadded, ProxySecretBase64Transport.FakeTlsBase64SecretIsStillRefused, ProxySecretBase64Transport.PaddedBase64SecretSelectsPaddedFraming |
+| P2 trailing-bit check removed | KILLED | True | ProxySecretBase64.MalformedBase64IsRejected |
+| P3 length mod 4 == 1 not rejected | KILLED | True | ProxySecretBase64.DecodedLengthAndPrefixAreChecked |
+| P4 domain printable check removed | KILLED | True | ProxySecret.FakeTlsDomainRules, ProxySecretRegression.ExistingHexRejectionsStillHold |
+| P5 dd length check removed | KILLED | True | ProxySecret.RejectsWrongLengths, ProxySecretBase64.DecodedLengthAndPrefixAreChecked, ProxySecretRegression.ExistingHexRejectionsStillHold |
+| P6 hex-first rule removed | KILLED | True | ProxySecret.FakeTlsDomainRules, ProxySecret.FakeTlsSecretCarriesDomain, ProxySecret.PaddedIntermediateSecret, ProxySecret.PlainSecretParsesBothCases, ProxySecret.RejectsWrongLengths |
+| P7 base64 padding not checked | KILLED | True | ProxySecretBase64.MalformedBase64IsRejected |
+| P8 wipe removed (not observable by tests) | SURVIVED | True | none |
+
+## Remaining limitations
+
+- Fake-TLS (`ee`) cannot connect. This is the most likely reason your proxy does not work with cppgram, and this change
+  does not fix it.
+- Base64 strictness is not checked against TDLib's decoder source, because that source is not in the local copy.
+- Raw binary secrets (TDLib also accepts them) are not accepted. The configuration only carries text.
+- The parsed key stays in memory until the object is destroyed (P5).
+- The live proxy test was not run against a server. No claim of live compatibility is made.

@@ -39,8 +39,8 @@ stop and fix the VPS network or the API credentials before testing a proxy.
 Prepare the proxy configuration in your own program:
 
 - `mtproto_proxy.host`, `mtproto_proxy.port`: your proxy.
-- `mtproto_proxy.secret`: the secret in hex. Use a plain secret (32 hex digits) or a `dd` secret (`dd` + 32 hex). A
-  fake-TLS (`ee`) secret is refused, so do not use one.
+- `mtproto_proxy.secret`: the secret as given by your proxy, in hex, Base64URL or standard Base64. A plain or `dd` secret
+  is accepted in any of these. A fake-TLS (`ee`) secret parses but is refused by the transport, so it cannot connect.
 - `mtproto_proxy.framing`: leave `Auto` first. The secret chooses padded intermediate for `dd`, and intermediate otherwise.
 - `dc_id`: a DC the proxy can route. Use 2 for the production DC. Use 10002 only for a test environment.
 

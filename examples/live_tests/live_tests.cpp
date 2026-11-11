@@ -568,8 +568,9 @@ Result run_mtproto_proxy(bool require_padded, const char* session_name) {
     cppgram::mtproto::ProxySecret parsed;
     try {
         parsed = cppgram::mtproto::parse_proxy_secret(*secret);
-    } catch (const std::exception&) {
-        return fail("TG_MTPROTO_PROXY_SECRET has an invalid format (value not shown)");
+    } catch (const std::exception& e) {
+        // The parser's messages name the rule that failed and never repeat the secret.
+        return fail(std::string("TG_MTPROTO_PROXY_SECRET was not accepted: ") + e.what());
     }
     if (parsed.kind == cppgram::mtproto::ProxySecretKind::FakeTls) {
         return unsupported("fake-TLS (ee) proxy secrets are not supported by cppgram; use a plain or dd secret");

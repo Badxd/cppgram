@@ -996,3 +996,51 @@ TEST(Socks5Stub, RefusedConnectCarriesTheReplyCode) {
 }
 
 } // namespace
+
+// ---------- Base64 secrets through the transport ---------------------------------------------------------------------
+
+namespace {
+const std::array<std::uint8_t, 16> kSynthKey
+    = { 0xfb, 0xff, 0xbe, 0x3e, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb };
+
+// Runs one exchange through the stub with a parsed secret and returns what the stub saw.
+StubResult exchange_with_parsed_secret(const std::string& secret_text, Bytes& reply_out) {
+    StubProxy stub(kSynthKey, StubMode::Valid);
+    {
+        Connection conn;
+        conn.connect_obfuscated("127.0.0.1", stub.port(), parse_proxy_secret(secret_text), 2,
+                                std::chrono::milliseconds(2000));
+        conn.set_receive_timeout(5000);
+        conn.send_packet(text("ABCDEFGH"));
+        reply_out = conn.receive_packet();
+    }
+    stub.join();
+    return stub.result();
+}
+} // namespace
+
+// The padded Base64 secret must select padded intermediate on the wire, as its hex form does.
+TEST(ProxySecretBase64Transport, PaddedBase64SecretSelectsPaddedFraming) {
+    Bytes reply;
+    const StubResult r = exchange_with_parsed_secret("3fv_vj4AESIzRFVmd4iZqrs=", reply);
+    EXPECT_EQ(framing_of_tag(r.tag), StubFraming::Padded);
+    EXPECT_EQ(r.frames, 1u);
+    EXPECT_EQ(reply, text(kReplyText));
+}
+
+// A plain Base64 secret in standard alphabet must select plain intermediate.
+TEST(ProxySecretBase64Transport, PlainStandardBase64SecretSelectsIntermediate) {
+    Bytes reply;
+    const StubResult r = exchange_with_parsed_secret("+/++PgARIjNEVWZ3iJmquw==", reply);
+    EXPECT_EQ(framing_of_tag(r.tag), StubFraming::Intermediate);
+    EXPECT_EQ(reply, text(kReplyText));
+}
+
+// Fake-TLS parses from Base64, but the transport still refuses it before any socket is opened (port 9 is never used).
+TEST(ProxySecretBase64Transport, FakeTlsBase64SecretIsStillRefused) {
+    Connection conn;
+    const ProxySecret tls = parse_proxy_secret("7vv_vj4AESIzRFVmd4iZqrtleGFtcGxlLmNvbQ==");
+    ASSERT_EQ(tls.kind, ProxySecretKind::FakeTls);
+    EXPECT_THROW(conn.connect_obfuscated("127.0.0.1", 9, tls, 2, std::chrono::milliseconds(1000)),
+                 std::invalid_argument);
+}

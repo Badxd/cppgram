@@ -43,8 +43,10 @@ Both agree with cppgram. No wire-level defect was found.
 
 ## Secret handling
 
-- Accepted forms: 32 hex digits (plain), `dd` + 32 hex (padded intermediate), `ee` + key + domain (recognised, then
-  refused). Upper and lower case are accepted. Any other length or character is refused.
+- Accepted forms, tried in TDLib's order: hex, then Base64URL, then standard Base64. The decoded bytes decide the kind:
+  16 bytes is plain, 17 bytes starting `0xdd` is padded intermediate, 18 or more starting `0xee` is fake-TLS (recognised,
+  then refused by the transport). See the secret section of `FINAL_REPORT.md` for the verified rules.
+- Upper and lower case hex are accepted. Whitespace is never trimmed. Anything else is refused.
 - Errors never echo the input. A test checks this for malformed input and for a wrong secret at connect time.
 - The secret is not logged. `ProxyError` messages name the check to make, not the value.
 - Not implemented: wiping the key from memory after use. See `KNOWN_LIMITATIONS.md`.

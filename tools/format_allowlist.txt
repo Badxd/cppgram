@@ -54,3 +54,6 @@ tests/security/errors_test.cpp
 tests/security/log_test.cpp
 tests/security/webapp_test.cpp
 tests/mtproto/proxy_transport_audit_test.cpp
+include/cppgram/mtproto/proxy_secret.h
+src/mtproto/proxy_secret.cpp
+tests/mtproto/proxy_secret_test.cpp

@@ -264,9 +264,10 @@ from the earlier items.
   published layout rules. A misreading shared by all three would pass every offline test. Only a live proxy can rule that
   out.
 - **P3. Fake-TLS (`ee`) secrets are unsupported.** They are refused before the network with `std::invalid_argument`.
-- **P4. Secret formats.** Only hex is accepted (32 digits for plain, `dd` + 32 for padded intermediate). The TDLib source
-  also accepts base64url and base64 secrets, and raw binary. Those forms were not added here, because they were not
-  verified against a live server or a written spec in this phase.
+- **P4. Secret formats (updated).** Base64URL and standard Base64 are now accepted. The raw-binary form TDLib also takes
+  is not, because a text secret is the only form the configuration carries. Base64 padding and canonical trailing bits
+  are checked strictly. TDLib's base64 decoder is not in the local source copy, so those strictness rules are not
+  verified against it. A Base64 secret made only of hex digits (even length) is read as hex, as TDLib does.
 - **P5. Secret not wiped from memory.** The parsed key stays in the `ProxySecret` object until it is destroyed. It is not
   zeroed. The secret is never logged, and tests check that error text does not echo it.
 - **P6. DC id is always written.** The handshake writes the DC field every time. TDLib writes it only when it is

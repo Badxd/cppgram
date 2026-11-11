@@ -177,3 +177,59 @@ transport.
   whole test binary. The stub threads now catch and end the connection. A stub failure still shows up as a missing reply
   in the test.
 - `Connection::set_receive_timeout` throws before a socket is connected. The tests call it after `connect_obfuscated`.
+
+
+## Secret format phase
+
+Source tree: `cppgram-main` (working tree, not a git checkout). Build: `build-audit`, Release, GCC 13.3.0.
+
+| Check | Result |
+|---|---|
+| Full offline CTest (`ctest -j2`) | 687 of 687 passed, 58 s |
+| `cppgram_mtproto_test` | 433 PASSED (417 before, plus 16 new: 13 in `proxy_secret_test.cpp`, 3 in `proxy_transport_audit_test.cpp`) |
+| `cppgram_bot_test` / `media` / `metrics` / `security` / `async` | 110 / 22 / 23 / 53 / 46 PASSED |
+| Proxy secret suites (`ProxySecret*`) | 28 PASSED |
+| GCC build (`cmake --build build-audit -j2`) | rc 0, 0 warnings in the build log |
+| Clang `-fsyntax-only -Wall -Wextra -Wpedantic -Wshadow` on `proxy_secret.cpp` | clean |
+| `live_tests.cpp` compile and link (GCC `-Wall -Wextra`) | 0 warnings. Linked by hand, since `BUILD_LIVE_TESTS` is OFF in this build |
+| Live proxy check, offline, four synthetic secrets | see table below |
+| `format_check.sh` | 57 files, 0 failing (`proxy_secret.h`, `proxy_secret.cpp`, `proxy_secret_test.cpp` and the audit test added to the allowlist after formatting) |
+| Whitespace (`git diff --no-index --check` per changed file) | no whitespace errors. Not a repository, so the repo-level `git diff --check` was not run |
+| Live VPS, Telegram, real credentials | NOT RUN |
+
+### Offline live proxy check
+
+Run with `TG_MTPROTO_PROXY_HOST=127.0.0.1` and `TG_MTPROTO_PROXY_PORT=9`. The synthetic secrets are not real.
+
+| Secret kind (synthetic) | Result |
+|---|---|
+| Plain, Base64URL | SKIP: set TG_API_ID and TG_API_HASH (secret accepted, no network used) |
+| Fake-TLS (`ee`), Base64URL | NOT_SUPPORTED: fake-TLS (ee) proxy secrets are not supported by cppgram |
+| Malformed text | FAIL: TG_MTPROTO_PROXY_SECRET was not accepted: proxy secret is not valid hex, Base64URL or Base64 (...) |
+| Dd, standard Base64 | SKIP: set TG_API_ID and TG_API_HASH (secret accepted, no network used) |
+
+Before this change, every malformed secret printed `has an invalid format (value not shown)`. The message now gives the
+rule that failed. It never repeats the secret.
+
+### Mutation testing of the new parser
+
+Eight mutants of `src/mtproto/proxy_secret.cpp`. Each run uses the proxy secret suites and the stub suites. Every source
+was restored byte-exact.
+
+| Mutant | Result | Restored byte-exact | Caught by (first run) |
+|---|---|---|---|
+| P1 url alphabet never tried | KILLED | True | ProxySecretBase64.FakeTlsSecretKeepsTheDomain, ProxySecretBase64.PaddedIntermediateSecretInBothAlphabets, ProxySecretBase64.PlainSecretInBase64URLPaddedAndUnpadded, ProxySecretBase64Transport.FakeTlsBase64SecretIsStillRefused, ProxySecretBase64Transport.PaddedBase64SecretSelectsPaddedFraming |
+| P2 trailing-bit check removed | KILLED | True | ProxySecretBase64.MalformedBase64IsRejected |
+| P3 length mod 4 == 1 not rejected | KILLED | True | ProxySecretBase64.DecodedLengthAndPrefixAreChecked |
+| P4 domain printable check removed | KILLED | True | ProxySecret.FakeTlsDomainRules, ProxySecretRegression.ExistingHexRejectionsStillHold |
+| P5 dd length check removed | KILLED | True | ProxySecret.RejectsWrongLengths, ProxySecretBase64.DecodedLengthAndPrefixAreChecked, ProxySecretRegression.ExistingHexRejectionsStillHold |
+| P6 hex-first rule removed | KILLED | True | ProxySecret.FakeTlsDomainRules, ProxySecret.FakeTlsSecretCarriesDomain, ProxySecret.PaddedIntermediateSecret, ProxySecret.PlainSecretParsesBothCases, ProxySecret.RejectsWrongLengths |
+| P7 base64 padding not checked | KILLED | True | ProxySecretBase64.MalformedBase64IsRejected |
+| P8 wipe removed (not observable by tests) | SURVIVED | True | none |
+
+- P8 removes the wipe of the decode buffer. No test can observe memory contents, so it survives by design. It is
+  covered by code review, not by a test.
+- P3 (length mod 4 == 1 accepted) is killed by the 25-character vector in `DecodedLengthAndPrefixAreChecked`: 18
+  decoded bytes with zero trailing bits, which the mutant accepts as fake-TLS.
+
+Mutation coverage: 7 of 8 killed. The survivor is untestable from outside the module.
