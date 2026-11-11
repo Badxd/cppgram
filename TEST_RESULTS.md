@@ -233,3 +233,17 @@ was restored byte-exact.
   decoded bytes with zero trailing bits, which the mutant accepts as fake-TLS.
 
 Mutation coverage: 7 of 8 killed. The survivor is untestable from outside the module.
+
+## VPS run fix: padded plain replies
+
+Source: working tree, `build-audit`, GCC 13.3.0.
+
+| Step | Result |
+|---|---|
+| New tests before the fix (red) | `Handshake.PlainPacketIgnoresTransportPaddingUpToFifteenBytes` FAILED with `plain packet length mismatch`, the same error as the VPS run |
+| After the fix (green) | `Handshake.PlainPacket*` 4 of 4 PASSED. `Handshake*`, `DcMigration*`, `PhoneMigration*`, `AuthMigration*`, `AuthState*`: 44 PASSED |
+| `ProxyStub.PaddedReplyKeepsItsPaddingForTheMtprotoLayer` | PASSED. Confirms the transport passes padding up unchanged |
+| `cppgram_mtproto_test` | 437 PASSED (433 before, plus 4) |
+| Full offline CTest | 691 of 691 passed (687 before, plus 4). Build warnings: 0 |
+| clang-format on `src/mtproto/auth.cpp` | 61 violations, up from 57 in the baseline. The 4 are on lines added here. Not reformatted, to keep the fix small |
+| Live VPS run | NOT RUN by me. The log from the VPS is the only live evidence, and it predates this fix |

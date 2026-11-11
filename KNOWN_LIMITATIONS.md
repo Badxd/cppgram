@@ -274,8 +274,10 @@ from the earlier items.
   non-zero. The client always passes a DC, so the results match for normal use.
 - **P7. Client framing override not tested end to end.** `MtprotoProxyOptions::framing` is wired in `Client::connect_impl`.
   No test runs it through `Client`. The connection-level tests cover the framing and the guard.
-- **P8. Padded and abridged replies from a real server are untested.** The stub sends padded and abridged frames without
-  padding. The client's handling of padding bytes in a received frame is not tested against a real proxy.
+- **P8. Padding on replies (resolved for plain packets).** A padded-intermediate server reply carries 0..15 padding
+  bytes. The plain-packet decoder now ignores them (`unwrap_plain_message`). It was not tested against a real server
+  before this fix. A live VPS run is still needed. The encrypted path already ignores trailing bytes (`crypto.cpp`, length
+  check is `length > remaining` only). That is from code reading, not from a test.
 - **P9. SOCKS5 user and password path is untested.** The SOCKS5 stub tests cover the no-auth method only. Username and
   password negotiation has no stub test in this phase.
 - **P10. Abridged framing has no live check.** The framing follows the published tag and length rules. No live server

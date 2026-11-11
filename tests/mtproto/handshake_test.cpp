@@ -78,3 +78,30 @@ TEST(Handshake, TelegramKeysParse) {
     EXPECT_EQ(keys[0].modulus.size(), 256u);
     EXPECT_EQ(keys[0].exponent, (Bytes{0x01, 0x00, 0x01}));
 }
+
+// Padded intermediate transport appends 0..15 random bytes after every packet, including the server's replies. The
+// plain (unencrypted) packet carries its own length field, so trailing padding must be ignored, not treated as corruption.
+TEST(Handshake, PlainPacketIgnoresTransportPaddingUpToFifteenBytes) {
+    const Bytes body = Bytes{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+    const Bytes packet = wrap_plain_message(body, 0x1234500000000004ull);
+    for (std::size_t pad = 0; pad <= 15; ++pad) {
+        SCOPED_TRACE("padding " + std::to_string(pad));
+        Bytes padded = packet;
+        padded.insert(padded.end(), pad, 0xAB);
+        EXPECT_EQ(unwrap_plain_message(padded), body);
+    }
+}
+
+TEST(Handshake, PlainPacketRejectsMoreThanFifteenTrailingBytes) {
+    const Bytes body = Bytes{1, 2, 3, 4, 5, 6, 7, 8};
+    Bytes packet = wrap_plain_message(body, 0x1234500000000004ull);
+    packet.insert(packet.end(), 16, 0xAB);
+    EXPECT_THROW((void)unwrap_plain_message(packet), AuthError);
+}
+
+TEST(Handshake, PlainPacketRejectsTruncation) {
+    const Bytes body = Bytes{1, 2, 3, 4, 5, 6, 7, 8};
+    Bytes packet = wrap_plain_message(body, 0x1234500000000004ull);
+    packet.pop_back();  // the length field now claims one byte more than is present
+    EXPECT_THROW((void)unwrap_plain_message(packet), AuthError);
+}

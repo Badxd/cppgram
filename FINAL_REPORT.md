@@ -240,3 +240,20 @@ Mutation results:
 - Raw binary secrets (TDLib also accepts them) are not accepted. The configuration only carries text.
 - The parsed key stays in memory until the object is destroyed (P5).
 - The live proxy test was not run against a server. No claim of live compatibility is made.
+
+## VPS run: padded plain replies
+
+Root cause, from the VPS log: the external proxy accepted the handshake and relayed a reply, so the secret was correct.
+The client then failed with `plain packet length mismatch` in `unwrap_plain_message`. A padded-intermediate reply carries
+0..15 padding bytes after the packet. The transport passed them up, and the plain decoder required the length field to
+match the byte count exactly. The encrypted path already ignores trailing bytes.
+
+Fix: the length field is authoritative. Fewer bytes than it claims is still an error. Up to 15 trailing bytes are
+ignored. More than 15 is rejected. The error messages now include the byte counts.
+
+Verified offline: 4 new tests, one of them written red first, then green. The full suite passes (437 mtproto, 691 CTest).
+Not verified: a live run on the VPS. Rebuild there and rerun `mtproto_proxy`.
+
+Local proxy at 127.0.0.1:8000: the client connected and then got silence for 10 seconds. The official MTProxy relays
+replies from Telegram, so silence usually means it has no working path to a DC. Check its log, its config files, and
+whether the VPS can reach a Telegram DC on port 443. This change does not affect that case.

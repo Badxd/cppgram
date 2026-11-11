@@ -292,7 +292,8 @@ enum class StubMode {
     FragmentedReply, // as Valid, but the reply goes out one byte per send
     GarbageReply, // as Valid, but the reply's length word is -404 (a transport error code)
     Silent, // accepts the handshake, sends nothing, waits for the client to close
-    CloseAfterHandshake // reads the handshake and closes
+    CloseAfterHandshake, // reads the handshake and closes
+    PaddedReply // as Valid, but a padded-intermediate reply carries 5 trailing padding bytes inside its frame
 };
 
 enum class StubFraming { Intermediate, Padded, Abridged, Unknown };
@@ -475,9 +476,12 @@ private:
             frame.push_back(static_cast<std::uint8_t>(reply.size() / 4));
             frame.insert(frame.end(), reply.begin(), reply.end());
         } else {
+            Bytes body = reply;
+            if (mode_ == StubMode::PaddedReply)
+                body.insert(body.end(), 5, 0x5a);
             for (int i = 0; i < 4; ++i)
-                frame.push_back(static_cast<std::uint8_t>(reply.size() >> (8 * i)));
-            frame.insert(frame.end(), reply.begin(), reply.end());
+                frame.push_back(static_cast<std::uint8_t>(body.size() >> (8 * i)));
+            frame.insert(frame.end(), body.begin(), body.end());
         }
         const Bytes wire = s2c.apply(frame);
         if (mode_ == StubMode::FragmentedReply) {
@@ -1043,4 +1047,22 @@ TEST(ProxySecretBase64Transport, FakeTlsBase64SecretIsStillRefused) {
     ASSERT_EQ(tls.kind, ProxySecretKind::FakeTls);
     EXPECT_THROW(conn.connect_obfuscated("127.0.0.1", 9, tls, 2, std::chrono::milliseconds(1000)),
                  std::invalid_argument);
+}
+
+// The padded transport passes trailing padding up to the caller unchanged. The plain packet decoder ignores it (see
+// Handshake.PlainPacketIgnoresTransportPaddingUpToFifteenBytes in handshake_test.cpp).
+TEST(ProxyStub, PaddedReplyKeepsItsPaddingForTheMtprotoLayer) {
+    StubProxy stub(stub_key(), StubMode::PaddedReply);
+    Bytes reply;
+    {
+        Connection conn;
+        conn.connect_obfuscated("127.0.0.1", stub.port(), dd_secret(), 2, std::chrono::milliseconds(2000));
+        conn.set_receive_timeout(5000);
+        conn.send_packet(text("ABCDEFGH"));
+        reply = conn.receive_packet();
+    }
+    stub.join();
+    const Bytes expected = text(kReplyText);
+    ASSERT_EQ(reply.size(), expected.size() + 5);
+    EXPECT_TRUE(std::equal(expected.begin(), expected.end(), reply.begin()));
 }

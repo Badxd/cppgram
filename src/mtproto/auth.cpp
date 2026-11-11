@@ -4,6 +4,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstring>
+#include <string>
 
 #include "cppgram/mtproto/schema/api.h"
 
@@ -177,8 +178,17 @@ Bytes unwrap_plain_message(const Bytes& packet) {
     }
     r.read_uint64();
     const std::uint32_t length = r.read_uint32();
-    if (length != r.remaining()) {
-        throw AuthError("plain packet length mismatch");
+    // The length field is authoritative. Padded intermediate transport adds 0..15 random bytes after every packet,
+    // so the server's plain replies can carry trailing bytes. Fewer bytes than the length claims is corruption.
+    constexpr std::size_t kMaxTransportPadding = 15;
+    if (length > r.remaining()) {
+        throw AuthError("plain packet is truncated: length field " + std::to_string(length) + ", " +
+                        std::to_string(r.remaining()) + " bytes received");
+    }
+    const std::size_t trailing = r.remaining() - length;
+    if (trailing > kMaxTransportPadding) {
+        throw AuthError("plain packet has " + std::to_string(trailing) + " bytes after its length field (at most " +
+                        std::to_string(kMaxTransportPadding) + " padding bytes are allowed)");
     }
     return r.read_raw(length);
 }
