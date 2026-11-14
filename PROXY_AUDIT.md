@@ -121,3 +121,17 @@ length field and the packet is already bounded by the transport.
 Tests: `tests/mtproto/handshake_test.cpp` covers trailing counts 0 to 4096, the live counts 22, 96, 102, 108, 116 and 123,
 truncation, a length field of 0xFFFFFFFF, a nonzero auth_key_id and a short header. The reference harness
 (`tools/mtproxy_harness/frames_reference.py`) uses the same rule and regenerates its vectors.
+
+### 7.1 Encrypted MTProto replies with transport padding
+
+Symptom: with a dd (padded intermediate) secret the handshake completed, then `login_bot/get_me` timed out. Cause: `decrypt_packet`
+took the ciphertext as all whole 16-byte blocks, so transport padding of 16 or more bytes became an extra block and failed
+`msg_key`. Reproduced offline before the fix (padding 0 and 15 OK, 16 and above failed).
+
+Fix: the ciphertext is still all whole blocks present. The message is located with its inner length (offset 28), and the
+padded plaintext is the first 16-byte multiple at or after inner length + 12, plus 0 to 3 blocks (the range `pad_inner`
+produces). Only those candidates are checked against `msg_key`, so trailing bytes can never change an accepted message, and a
+forged inner length is rejected by the bound check.
+
+Tests: `Crypto.TrailingTransportPaddingIsIgnoredAndTamperingIsRejected`, `Crypto.ForgedInnerLengthIsRejected`,
+`ObfuscatedFrame.PaddingBeyondOneBlockIsIgnored` (replaces the old "must fail" expectation).

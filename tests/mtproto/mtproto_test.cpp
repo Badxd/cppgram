@@ -76,21 +76,36 @@ TEST(Crypto, PacketRoundTripBothDirections) {
     EXPECT_THROW(decrypt_packet(auth_key, in_packet, true), CryptoError);
 }
 
-TEST(Crypto, TrailingTransportPaddingIsIgnoredButExtraBlockIsRejected) {
+TEST(Crypto, TrailingTransportPaddingIsIgnoredAndTamperingIsRejected) {
     const Bytes auth_key = random_bytes(256);
     const InnerMessage msg{};
     const Bytes packet = encrypt_packet(auth_key, serialize_inner(msg), false);
-    for (std::size_t pad = 0; pad < 16; ++pad) {
+    const Bytes expected = decrypt_packet(auth_key, packet, false);
+    // Server padding is variable (observed 96 to 123 bytes). Any trailing length must be ignored.
+    for (std::size_t pad : {0u, 1u, 15u, 16u, 32u, 48u, 96u, 123u, 255u}) {
         Bytes padded = packet;
         const Bytes junk = random_bytes(pad);
         padded.insert(padded.end(), junk.begin(), junk.end());
-        EXPECT_EQ(decrypt_packet(auth_key, padded, false), decrypt_packet(auth_key, packet, false)) << "pad " << pad;
+        EXPECT_EQ(decrypt_packet(auth_key, padded, false), expected) << "pad " << pad;
     }
-    Bytes extra_block = packet;
-    const Bytes block = random_bytes(16);
-    extra_block.insert(extra_block.end(), block.begin(), block.end());
-    EXPECT_THROW(decrypt_packet(auth_key, extra_block, false), CryptoError);
     EXPECT_THROW(decrypt_packet(auth_key, Bytes(23, 0), false), CryptoError);
+    // Flipping a bit inside the authenticated part must still fail msg_key.
+    Bytes tampered = packet;
+    tampered[24 + 5] ^= 0x01;
+    EXPECT_THROW(decrypt_packet(auth_key, tampered, false), CryptoError);
+}
+
+TEST(Crypto, ForgedInnerLengthIsRejected) {
+    // A correctly authenticated packet whose inner length field claims more bytes than it holds must be rejected by the
+    // length bound, not read past the buffer.
+    const Bytes auth_key = random_bytes(256);
+    Bytes inner = serialize_inner(InnerMessage{});
+    inner[28] = 0xF0;
+    inner[29] = 0xFF;
+    inner[30] = 0xFF;
+    inner[31] = 0xFF;
+    const Bytes packet = encrypt_packet(auth_key, inner, false);
+    EXPECT_THROW(decrypt_packet(auth_key, packet, false), CryptoError);
 }
 
 TEST(Crypto, PacketTamperingDetected) {

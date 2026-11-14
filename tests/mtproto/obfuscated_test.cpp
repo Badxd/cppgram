@@ -242,7 +242,7 @@ TEST(ObfuscatedFrame, FragmentedFrameReassemblesToPayload) {
 
 // Server-to-client padded frames: the padded-intermediate writer adds 0..15 bytes to each frame and counts them in the
 // length prefix. The receiver reads the frame with the normal intermediate reader and decrypts the MTProto packet. The
-// packet decoder drops trailing bytes beyond the ciphertext's 16-byte blocks, so the padding does not reach the TL layer.
+// packet decoder locates the message by its inner length and authenticates it, so the padding does not reach the TL layer.
 TEST(ObfuscatedFrame, PaddedServerFramesDecryptToTheOriginalPacket) {
     const Bytes auth_key = random_bytes(256);
     const Bytes plain_packet = encrypt_packet(auth_key, serialize_inner(InnerMessage{}), false);
@@ -333,16 +333,18 @@ TEST(ObfuscatedFrame, ServerErrorWordInPlaceOfLengthIsRejected) {
     EXPECT_THROW(reader.next(), TransportError);
 }
 
-TEST(ObfuscatedFrame, PaddingBeyondOneBlockFailsDecryption) {
-    // Extra bytes that add a whole AES block are not transport padding and must fail msg_key checking.
+TEST(ObfuscatedFrame, PaddingBeyondOneBlockIsIgnored) {
+    // Trailing bytes that add a whole AES block are transport padding, not part of the message: they are ignored, and the
+    // authenticated message decodes to the same plaintext as without them.
     const Bytes auth_key = random_bytes(256);
-    Bytes packet = encrypt_packet(auth_key, serialize_inner(InnerMessage{}), false);
+    const Bytes packet = encrypt_packet(auth_key, serialize_inner(InnerMessage{}), false);
+    Bytes padded = packet;
     const Bytes block = random_bytes(16);
-    packet.insert(packet.end(), block.begin(), block.end());
-    const Bytes framed = padded_server_frame(packet);
+    padded.insert(padded.end(), block.begin(), block.end());
+    const Bytes framed = padded_server_frame(padded);
     Transport reader(TransportKind::Intermediate);
     reader.feed(framed);
     const auto frame = reader.next();
     ASSERT_TRUE(frame.has_value());
-    EXPECT_THROW(decrypt_packet(auth_key, *frame, false), CryptoError);
+    EXPECT_EQ(decrypt_packet(auth_key, *frame, false), decrypt_packet(auth_key, packet, false));
 }

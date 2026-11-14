@@ -313,21 +313,41 @@ Bytes decrypt_packet(const Bytes& auth_key, const Bytes& packet, bool outgoing) 
     if (packet.size() < 24) {
         throw CryptoError("encrypted packet has invalid size");
     }
-    // The ciphertext is always a whole number of 16-byte blocks. Obfuscated padded-intermediate transport may add
-    // 0..15 bytes after it, which the length prefix counts. Those trailing bytes are not part of the ciphertext and
-    // are not authenticated, so dropping them cannot change the decrypted message. Anything 16 or more bytes long
-    // becomes a whole extra block and fails the msg_key check.
-    const std::size_t cipher_len = (packet.size() - 24) / 16 * 16;
     if (slice(packet, 0, 8) != auth_key_id(auth_key)) {
         throw CryptoError("auth_key_id mismatch");
     }
+    // Obfuscated padded-intermediate transport may add 0..N bytes after the ciphertext (the server pads with up to
+    // 123 bytes in observed replies). Those bytes are not part of the message, so the ciphertext is taken as the whole
+    // number of 16-byte blocks that is present. The message itself is then located with its own inner length and
+    // authenticated by msg_key, so trailing bytes can never change an accepted message.
+    const std::size_t cipher_len = (packet.size() - 24) / 16 * 16;
     const Bytes msg_key = slice(packet, 8, 16);
     const AesParams params = derive_aes_params(auth_key, msg_key, outgoing);
-    const Bytes plain = aes_ige_decrypt(slice(packet, 24, cipher_len), params.key, params.iv);
-    if (!constant_time_equal(compute_msg_key(auth_key, plain, outgoing), msg_key)) {
-        throw CryptoError("msg_key mismatch");
+    // IGE decryption of a block depends only on earlier blocks, so the prefix of the plaintext is final after decryption.
+    const Bytes all = aes_ige_decrypt(slice(packet, 24, cipher_len), params.key, params.iv);
+    // Inner header: salt(8) session(8) msg_id(8) seq_no(4) length(4), body follows.
+    if (all.size() < 32) {
+        throw CryptoError("encrypted message too short");
     }
-    return plain;
+    const std::uint64_t inner_len = static_cast<std::uint64_t>(all[28]) | (static_cast<std::uint64_t>(all[29]) << 8) |
+                                    (static_cast<std::uint64_t>(all[30]) << 16) |
+                                    (static_cast<std::uint64_t>(all[31]) << 24);
+    const std::uint64_t inner_end = 32 + inner_len;
+    if (inner_end > all.size()) {
+        throw CryptoError("inner message length exceeds packet");
+    }
+    // The sender pads the inner message with 12 + (0..15) + 16 * (0..3) bytes (pad_inner), so the padded plaintext is
+    // the first 16-byte multiple at or after inner_end + 12, plus 0..3 extra blocks. Only those candidates are tried.
+    const std::uint64_t first = (inner_end + 12 + 15) / 16 * 16;
+    for (std::uint64_t extra = 0; extra <= 3; ++extra) {
+        const std::uint64_t candidate = first + 16 * extra;
+        if (candidate > all.size()) break;
+        const Bytes plain = slice(all, 0, static_cast<std::size_t>(candidate));
+        if (constant_time_equal(compute_msg_key(auth_key, plain, outgoing), msg_key)) {
+            return plain;
+        }
+    }
+    throw CryptoError("msg_key mismatch");
 }
 
 Bytes rsa_encrypt_handshake(const Bytes& data, const Bytes& modulus_be, const Bytes& exponent_be) {
