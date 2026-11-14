@@ -102,3 +102,22 @@ by the connection-level tests. That is a stated limitation.
 
 See the "Proxy and transport" section of `REFERENCE_COMPARISON.md`. The TDLib facts there come from reading the source in
 `td-master`, not from running TDLib.
+
+## 7. Resolution of F1/F2: plain-packet trailing bytes
+
+Decision (approved): the plain-packet parser now follows TDLib. The 4-byte length field is authoritative, and any bytes
+after the declared payload are ignored. Only a length field that claims more bytes than the packet holds is rejected
+(`plain packet is truncated`). The 15-byte limit is removed.
+
+Evidence: a live MTProxy in dd mode answered `req_pq_multi` and `req_DH_params` with 96, 108, 116 and 123 trailing bytes
+after the length field, and one run passed the same stage with a padding count of 15 or less. The count varies per reply,
+which fits random transport padding from the server rather than a client framing fault. Official clients accept these
+replies because they ignore trailing bytes.
+
+Unchanged: the transport's frame-length and maximum-frame-size checks (16 MiB), the truncation check, the auth_key_id = 0
+check, and the minimum header size. The trailing part cannot grow an allocation, because the body copy is bounded by the
+length field and the packet is already bounded by the transport.
+
+Tests: `tests/mtproto/handshake_test.cpp` covers trailing counts 0 to 4096, the live counts 22, 96, 102, 108, 116 and 123,
+truncation, a length field of 0xFFFFFFFF, a nonzero auth_key_id and a short header. The reference harness
+(`tools/mtproxy_harness/frames_reference.py`) uses the same rule and regenerates its vectors.

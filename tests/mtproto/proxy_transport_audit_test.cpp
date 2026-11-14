@@ -1050,7 +1050,7 @@ TEST(ProxySecretBase64Transport, FakeTlsBase64SecretIsStillRefused) {
 }
 
 // The padded transport passes trailing padding up to the caller unchanged. The plain packet decoder ignores it (see
-// Handshake.PlainPacketIgnoresTransportPaddingUpToFifteenBytes in handshake_test.cpp).
+// Handshake.PlainPacketIgnoresTrailingPaddingOfAnySize in handshake_test.cpp).
 TEST(ProxyStub, PaddedReplyKeepsItsPaddingForTheMtprotoLayer) {
     StubProxy stub(stub_key(), StubMode::PaddedReply);
     Bytes reply;

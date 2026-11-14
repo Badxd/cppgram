@@ -79,24 +79,58 @@ TEST(Handshake, TelegramKeysParse) {
     EXPECT_EQ(keys[0].exponent, (Bytes{0x01, 0x00, 0x01}));
 }
 
-// Padded intermediate transport appends 0..15 random bytes after every packet, including the server's replies. The
-// plain (unencrypted) packet carries its own length field, so trailing padding must be ignored, not treated as corruption.
-TEST(Handshake, PlainPacketIgnoresTransportPaddingUpToFifteenBytes) {
+// Servers behind MTProxy append transport padding of variable size after the plain packet. The length field is
+// authoritative (TDLib behaves the same way), so any number of trailing bytes must be ignored.
+TEST(Handshake, PlainPacketIgnoresTrailingPaddingOfAnySize) {
     const Bytes body = Bytes{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
     const Bytes packet = wrap_plain_message(body, 0x1234500000000004ull);
-    for (std::size_t pad = 0; pad <= 15; ++pad) {
-        SCOPED_TRACE("padding " + std::to_string(pad));
+    for (std::size_t pad : {0u, 1u, 15u, 16u, 22u, 96u, 102u, 116u, 123u, 255u, 4096u}) {
+        SCOPED_TRACE("trailing " + std::to_string(pad));
         Bytes padded = packet;
         padded.insert(padded.end(), pad, 0xAB);
         EXPECT_EQ(unwrap_plain_message(padded), body);
     }
 }
 
-TEST(Handshake, PlainPacketRejectsMoreThanFifteenTrailingBytes) {
+// Trailing counts seen in live replies through a padded (dd) MTProxy: 96, 116 and 123 bytes in the req_pq_multi and
+// req_DH_params answers, plus the 22 and 102 bytes of the earlier VPS runs.
+TEST(Handshake, PlainPacketRegressionLiveTrailingCounts) {
+    const Bytes body(40, 0x5A);  // 40-byte plain body, the size of a req_pq_multi packet
+    const Bytes packet = wrap_plain_message(body, 0x5F5E100000000001ull);
+    for (std::size_t pad : {22u, 96u, 102u, 108u, 116u, 123u}) {
+        SCOPED_TRACE("live trailing " + std::to_string(pad));
+        Bytes reply = packet;
+        reply.insert(reply.end(), pad, 0x00);
+        EXPECT_EQ(unwrap_plain_message(reply), body);
+    }
+}
+
+TEST(Handshake, PlainPacketRejectsLengthFieldLargerThanPacket) {
     const Bytes body = Bytes{1, 2, 3, 4, 5, 6, 7, 8};
     Bytes packet = wrap_plain_message(body, 0x1234500000000004ull);
-    packet.insert(packet.end(), 16, 0xAB);
+    // Length field claims one more byte than is present.
+    packet[16] = static_cast<std::uint8_t>(body.size() + 1);
     EXPECT_THROW((void)unwrap_plain_message(packet), AuthError);
+}
+
+TEST(Handshake, PlainPacketRejectsMaximumLengthFieldWithoutOverflow) {
+    // A 0xFFFFFFFF length must be rejected as truncation on every platform, never wrap around or allocate.
+    Bytes packet = wrap_plain_message(Bytes{1, 2}, 0x1234500000000004ull);
+    packet[16] = 0xFF;
+    packet[17] = 0xFF;
+    packet[18] = 0xFF;
+    packet[19] = 0xFF;
+    EXPECT_THROW((void)unwrap_plain_message(packet), AuthError);
+}
+
+TEST(Handshake, PlainPacketRejectsNonzeroAuthKeyId) {
+    Bytes packet = wrap_plain_message(Bytes{1, 2, 3, 4}, 0x1234500000000004ull);
+    packet[0] = 0x01;
+    EXPECT_THROW((void)unwrap_plain_message(packet), AuthError);
+}
+
+TEST(Handshake, PlainPacketRejectsShortHeader) {
+    EXPECT_THROW((void)unwrap_plain_message(Bytes(19, 0x00)), AuthError);
 }
 
 TEST(Handshake, PlainPacketRejectsTruncation) {
