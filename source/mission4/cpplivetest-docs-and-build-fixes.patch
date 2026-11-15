@@ -1,0 +1,157 @@
+diff --git a/.gitignore b/.gitignore
+index 8154146..2514ac9 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -12,3 +12,4 @@ __pycache__/
+ *.pyc
+ bot_workspace/
+ *.bak
++bin/
+diff --git a/LIBRARY_NOTES.md b/LIBRARY_NOTES.md
+index 3b57c7e..8a935b5 100644
+--- a/LIBRARY_NOTES.md
++++ b/LIBRARY_NOTES.md
+@@ -1,7 +1,7 @@
+ # CppGram behaviour observed while building the bot
+ 
+-The library was not modified. Each item below is a fact about the library or a limit of this bot, with the
+-evidence used. None of these are fixed here.
++The library was not modified by this bot project. Each item below is a fact about the library or a limit of this bot,
++with the evidence used.
+ 
+ 1. **Synchronous calls from another thread while `run()` is active are not safe.** The header says only
+    `stop()` and `is_connected()` may be called from another thread during `run()`. The bot therefore uses the
+@@ -12,13 +12,15 @@ evidence used. None of these are fixed here.
+ 4. **FloodWait.** The library sleeps and retries for FLOOD_WAIT up to `retry.max_flood_wait`, and reports each one
+    through the RPC error hook. The bot records passive observations. It does not provoke a FloodWait, so a live
+    FloodWait may not appear in any run. Live status is reported as NOT OBSERVED until one is seen.
+-5. **Open issue: `plain packet has N bytes after its length field` (N = 22, 102).** The library rejects plain
+-   replies with more than 15 bytes after the length field. The same rule is in the library's own audit documents
+-   (MTProxy_AUDIT.md, section 6). The bot records the error text and the stage. It does not relax the rule. Root
+-   cause is not determined.
+-6. **Padding rule.** The published MTProto transport rule defines padding for client-to-server padded
+-   intermediate frames only. The library tolerates up to 15 trailing bytes on plain replies. That is a
+-   compatibility choice, not part of the rule.
++5. **Plain trailing bytes (N = 22, 102) - resolved in the CppGram source this bot builds against.** Earlier
++   builds rejected a plain reply with more than 15 bytes after its length field. The current library accepts any
++   number of trailing bytes after the declared length and rejects only a declared length larger than the bytes
++   received. Evidence: `Handshake.PlainPacketRegressionLiveTrailingCounts` (22, 96, 102, 108, 116, 123) in the
++   CppGram tests, and `PROXY_AUDIT.md` section 7.2 of CppGram. Live confirmation against a real MTProxy has not been
++   run from this bot. If `/test proxy-dd` reports that error again, record the library commit and the N value.
++6. **Padding rule.** The published MTProto transport rule allows 0 to 15 bytes of padding on client-to-server padded
++   intermediate frames. The library accepts any trailing bytes on plain replies. That is a compatibility decision
++   documented in CppGram `PROXY_AUDIT.md` section 7.2, not part of the transport rule.
+ 7. **`auto_reconnect` in `run()`** is not exercised by the bot's tests. The bot restarts the update loop itself
+    (up to 5 times) when `run()` throws.
+ 8. **MTProxy.** Only plain (16-byte) and dd (17-byte) secrets are accepted. Fake-TLS (`ee`) secrets are rejected
+diff --git a/README.md b/README.md
+index 4eb1e92..c22dfae 100644
+--- a/README.md
++++ b/README.md
+@@ -7,9 +7,29 @@ profiles (plain 16-byte secret, and padded-intermediate "dd" secret).
+ The CppGram library is the dependency under test. This project does not modify it, and it has no copy of
+ its source. Point the build at your own unmodified CppGram tree.
+ 
++## Relationship with CppGram
++
++This bot is a separate project. It is a live test harness for the CppGram library (https://github.com/Badxd/cppgram).
++Developers can use it to run additional live checks of CppGram against Telegram. It does not contain CppGram source
++code and does not modify the library. The library-side tests (offline and fake-DC) run in the CppGram repository
++itself; see `TESTS.md` here for the bot's tests and which of them need real credentials.
++
++## Build with build.sh
++
++`build.sh` (added in this revision) configures, builds and runs the offline unit tests. It is documented below and in
++the README build section. Example:
++
++```sh
++CPPGRAM_PREBUILT_DIR=/path/to/cppgram/build CPPGRAM_PREBUILT_INCLUDE_DIR=/path/to/cppgram/include ./build.sh
++```
++
++The compiled binary is not stored in this repository. An older revision committed `bin/cppgram_live_test_bot`; that
++file has been removed.
++
+ ## Status
+ 
+-Read `FINAL_REPORT.md` and `TEST_RESULTS.md` for what has been run and what is BLOCKED. A compiled bot is not
++Read `TEST_RESULTS.md` for what has been run and what is BLOCKED. `FINAL_REPORT.md` is a historical report and
++may contain older numbers. A compiled bot is not
+ a deployed bot, and a direct connection is not proof of MTProxy compatibility.
+ 
+ ## Layout
+@@ -109,6 +129,6 @@ token-like run in log lines and chat replies.
+ 
+ ## Limits
+ 
+-See `LIBRARY_NOTES.md` for CppGram behaviour that the bot observed but did not change. The most important one
+-is the unresolved `plain packet has N bytes after its length field` error (N = 22, 102). The bot records
+-its message text and the stage in which it occurred, and it does not change the parser.
++See `LIBRARY_NOTES.md`. The earlier `plain packet has N bytes after its length field` error (N = 22, 102) is no longer
++produced by the current CppGram source. Live confirmation through a real MTProxy has not been recorded yet. Live
++tests need your own Telegram credentials and a reachable MTProxy; none are included here.
+diff --git a/TESTS.md b/TESTS.md
+index d01e962..c68d6d9 100644
+--- a/TESTS.md
++++ b/TESTS.md
+@@ -30,10 +30,8 @@ flood mock PASS with the live status stated).
+ Not covered by these tests: network-drop recovery under `run()` with `auto_reconnect` (the library's own live test
+ covers it), a one-hour soak, and systemd restart and reboot behaviour. Those need the VPS.
+ 
+-## Diagnostics for the open MTProxy issue
++## Diagnostics for MTProxy failures
+ 
+ When a proxy test fails, the result detail contains the stage name (`tcp+handshake`, `login_bot/get_me`,
+-`reconnect`) and the library's own error text. For `plain packet has N bytes after its length field` that text
+-includes N, which is the diagnostic number the library investigation needs. The bot does not add or change any
+-byte counts itself. `TG_DEBUG=1` adds the library's stage lines to stderr. Those lines carry stage names and sizes,
+-not secrets.
++`reconnect`) and the library's own error text. `TG_DEBUG=1` adds the library's stage lines to stderr. Those lines carry
++stage names and sizes, not secrets. Report the stage, the library commit and the error text when you open an issue.
+diff --git a/TEST_RESULTS.md b/TEST_RESULTS.md
+index 93477f3..2e34adb 100644
+--- a/TEST_RESULTS.md
++++ b/TEST_RESULTS.md
+@@ -1,5 +1,20 @@
+ # Test results
+ 
++**Current verification, 2026-11-14/15, CppGram source at 1cd09d0 plus the release changes (see CppGram FINAL_REPORT.md).**
++
++| Check | Toolchain | Result |
++|---|---|---|
++| Bot build with `build.sh`, library linked prebuilt from CppGram build-gcc | GCC 13.3.0, Release, C++20 | PASS, 0 warnings |
++| Offline unit tests (`livebot_unit_tests`, 136 checks) | GCC 13.3.0, Release | PASS, 0 failures |
++| Offline unit tests, bot code instrumented with ASan + UBSan | GCC 13.3.0, Debug | PASS, 136 checks, 0 failures, 0 sanitizer reports. Library linked uninstrumented |
++| Offline unit tests, bot code instrumented with TSan | GCC 13.3.0, Debug | PASS, 136 checks, 0 failures, 0 sanitizer reports. Library linked uninstrumented |
++
++Live Telegram tests: NOT RUN. No credentials, admin id or MTProxy endpoint were used for this verification. Every live row
++below is therefore NOT RUN, not PASS. Live FLOOD_WAIT: NOT OBSERVED.
++
++The sections below are the earlier report. Their statements about the library rejecting plain replies with more than
++15 trailing bytes are superseded by LIBRARY_NOTES.md item 5.
++
+ Labels: PASS = executed and passed. FAIL = executed and failed. BLOCKED = cannot run here (missing credential,
+ endpoint or environment). SKIP = not run in this context. NOT RUN = not executed.
+ 
+diff --git a/build.sh b/build.sh
+new file mode 100755
+index 0000000..59ef4bf
+--- /dev/null
++++ b/build.sh
+@@ -0,0 +1,17 @@
++#!/usr/bin/env bash
++# Builds the live-test bot and runs its offline unit tests.
++#   CPPGRAM_SOURCE_DIR=/path/to/cppgram ./build.sh        build the unmodified library from source
++#   CPPGRAM_PREBUILT_DIR=/path/to/lib \
++#   CPPGRAM_PREBUILT_INCLUDE_DIR=/path/to/cppgram/include ./build.sh   link an already built libcppgram.a
++# Optional: BUILD_DIR (default ./build). Compiler: set CC and CXX in the environment as usual.
++set -euo pipefail
++here="$(cd "$(dirname "$0")" && pwd)"
++build="${BUILD_DIR:-$here/build}"
++args=(-DCMAKE_BUILD_TYPE=Release)
++[ -n "${CPPGRAM_SOURCE_DIR:-}" ] && args+=(-DCPPGRAM_SOURCE_DIR="$CPPGRAM_SOURCE_DIR")
++[ -n "${CPPGRAM_PREBUILT_DIR:-}" ] && args+=(-DCPPGRAM_PREBUILT_DIR="$CPPGRAM_PREBUILT_DIR")
++[ -n "${CPPGRAM_PREBUILT_INCLUDE_DIR:-}" ] && args+=(-DCPPGRAM_PREBUILT_INCLUDE_DIR="$CPPGRAM_PREBUILT_INCLUDE_DIR")
++cmake -S "$here" -B "$build" "${args[@]}"
++cmake --build "$build" -j"$(nproc)"
++ctest --test-dir "$build" --output-on-failure
++echo "built: $build/cppgram_live_test_bot"

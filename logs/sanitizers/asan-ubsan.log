@@ -1,0 +1,354 @@
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = CryptoAudit.*:Crypto.*:Session.FloodWait*:Retry.FloodWait*:ClientFakeDc.*:TransportFraming.*:DcMigration*:Socks*:ProxyStub*:ProxySecret*
+[==========] Running 118 tests from 19 test suites.
+[----------] Global test environment set-up.
+[----------] 14 tests from Crypto
+[ RUN      ] Crypto.Crc32KnownVector
+[       OK ] Crypto.Crc32KnownVector (0 ms)
+[ RUN      ] Crypto.Sha1AndSha256KnownVectors
+[       OK ] Crypto.Sha1AndSha256KnownVectors (3 ms)
+[ RUN      ] Crypto.AesIgeRoundTrip
+[       OK ] Crypto.AesIgeRoundTrip (2 ms)
+[ RUN      ] Crypto.AesIgeRejectsBadSizes
+[       OK ] Crypto.AesIgeRejectsBadSizes (0 ms)
+[ RUN      ] Crypto.InnerMessageRoundTrip
+[       OK ] Crypto.InnerMessageRoundTrip (0 ms)
+[ RUN      ] Crypto.PacketRoundTripBothDirections
+[       OK ] Crypto.PacketRoundTripBothDirections (0 ms)
+[ RUN      ] Crypto.TrailingTransportPaddingIsIgnoredAndTamperingIsRejected
+[       OK ] Crypto.TrailingTransportPaddingIsIgnoredAndTamperingIsRejected (0 ms)
+[ RUN      ] Crypto.ForgedInnerLengthIsRejected
+[       OK ] Crypto.ForgedInnerLengthIsRejected (0 ms)
+[ RUN      ] Crypto.EveryTruncationOfAnEncryptedPacketIsRejected
+[       OK ] Crypto.EveryTruncationOfAnEncryptedPacketIsRejected (4 ms)
+[ RUN      ] Crypto.RandomEncryptedPacketsAreRejectedWithoutCrashing
+[       OK ] Crypto.RandomEncryptedPacketsAreRejectedWithoutCrashing (116 ms)
+[ RUN      ] Crypto.PacketTamperingDetected
+[       OK ] Crypto.PacketTamperingDetected (0 ms)
+[ RUN      ] Crypto.FactorizePqFromTelegramDocs
+[       OK ] Crypto.FactorizePqFromTelegramDocs (10 ms)
+[ RUN      ] Crypto.DhPowerSmallExample
+[       OK ] Crypto.DhPowerSmallExample (0 ms)
+[ RUN      ] Crypto.RsaHandshakeOutputSize
+[       OK ] Crypto.RsaHandshakeOutputSize (0 ms)
+[----------] 14 tests from Crypto (140 ms total)
+
+[----------] 6 tests from CryptoAudit
+[ RUN      ] CryptoAudit.ExactLiveTrailingCounts22And102EncryptedAreIgnored
+[       OK ] CryptoAudit.ExactLiveTrailingCounts22And102EncryptedAreIgnored (2 ms)
+[ RUN      ] CryptoAudit.ValidBoundaryBodySizesRoundTrip
+[       OK ] CryptoAudit.ValidBoundaryBodySizesRoundTrip (0 ms)
+[ RUN      ] CryptoAudit.InvalidMsgKeyEveryByteIsRejected
+[       OK ] CryptoAudit.InvalidMsgKeyEveryByteIsRejected (0 ms)
+[ RUN      ] CryptoAudit.PacketUnderAnotherAuthKeyIsRejected
+[       OK ] CryptoAudit.PacketUnderAnotherAuthKeyIsRejected (0 ms)
+[ RUN      ] CryptoAudit.ForeignAuthKeyIdIsRejected
+[       OK ] CryptoAudit.ForeignAuthKeyIdIsRejected (0 ms)
+[ RUN      ] CryptoAudit.OversizedInnerLengthIsRejectedWithoutReading
+[       OK ] CryptoAudit.OversizedInnerLengthIsRejectedWithoutReading (0 ms)
+[----------] 6 tests from CryptoAudit (4 ms total)
+
+[----------] 6 tests from Session
+[ RUN      ] Session.FloodWaitWithinLimitSleepsAndResends
+2026-11-15T04:40:44.481Z WARN  [rpc] flood wait, sleeping seconds=1 attempt=1
+[       OK ] Session.FloodWaitWithinLimitSleepsAndResends (1001 ms)
+[ RUN      ] Session.FloodWaitBeyondLimitIsReturnedWithoutSleeping
+[       OK ] Session.FloodWaitBeyondLimitIsReturnedWithoutSleeping (0 ms)
+[ RUN      ] Session.FloodWaitSleepCanBeCancelledWithoutResending
+2026-11-15T04:40:45.483Z WARN  [rpc] flood wait, sleeping seconds=30 attempt=1
+[       OK ] Session.FloodWaitSleepCanBeCancelledWithoutResending (100 ms)
+[ RUN      ] Session.FloodWaitSleepHonoursPerRequestCancel
+2026-11-15T04:40:45.585Z WARN  [rpc] flood wait, sleeping seconds=30 attempt=1
+[       OK ] Session.FloodWaitSleepHonoursPerRequestCancel (101 ms)
+[ RUN      ] Session.FloodWaitSleepIsNotTakenPastRequestDeadline
+[       OK ] Session.FloodWaitSleepIsNotTakenPastRequestDeadline (0 ms)
+[ RUN      ] Session.FloodWaitRetryLoopIsBoundedByAttemptBudget
+2026-11-15T04:40:45.686Z WARN  [rpc] flood wait, sleeping seconds=0 attempt=1
+2026-11-15T04:40:45.686Z WARN  [rpc] flood wait, sleeping seconds=0 attempt=2
+[       OK ] Session.FloodWaitRetryLoopIsBoundedByAttemptBudget (1 ms)
+[----------] 6 tests from Session (1206 ms total)
+
+[----------] 14 tests from TransportFraming
+[ RUN      ] TransportFraming.InitBytesPerKind
+[       OK ] TransportFraming.InitBytesPerKind (0 ms)
+[ RUN      ] TransportFraming.RoundTripAllKinds
+[       OK ] TransportFraming.RoundTripAllKinds (0 ms)
+[ RUN      ] TransportFraming.AbridgedLongHeaderForLargePayload
+[       OK ] TransportFraming.AbridgedLongHeaderForLargePayload (0 ms)
+[ RUN      ] TransportFraming.AbridgedRejectsUnalignedPayload
+[       OK ] TransportFraming.AbridgedRejectsUnalignedPayload (0 ms)
+[ RUN      ] TransportFraming.IntermediateLargeFrame
+[       OK ] TransportFraming.IntermediateLargeFrame (4 ms)
+[ RUN      ] TransportFraming.TruncatedFrameWaitsForMoreBytes
+[       OK ] TransportFraming.TruncatedFrameWaitsForMoreBytes (0 ms)
+[ RUN      ] TransportFraming.FullDetectsCorruptedCrc
+[       OK ] TransportFraming.FullDetectsCorruptedCrc (0 ms)
+[ RUN      ] TransportFraming.FullRejectsImpossibleLength
+[       OK ] TransportFraming.FullRejectsImpossibleLength (0 ms)
+[ RUN      ] TransportFraming.IntermediateRejectsNegativeServerErrorCode
+[       OK ] TransportFraming.IntermediateRejectsNegativeServerErrorCode (0 ms)
+[ RUN      ] TransportFraming.AbridgedRejectsOversizedFrame
+[       OK ] TransportFraming.AbridgedRejectsOversizedFrame (0 ms)
+[ RUN      ] TransportFraming.IntermediateRejectsFrameOneByteOverMaxFrame
+[       OK ] TransportFraming.IntermediateRejectsFrameOneByteOverMaxFrame (0 ms)
+[ RUN      ] TransportFraming.IntermediateAcceptsFrameExactlyAtMaxFrameBoundary
+[       OK ] TransportFraming.IntermediateAcceptsFrameExactlyAtMaxFrameBoundary (0 ms)
+[ RUN      ] TransportFraming.EmptyBufferYieldsNothing
+[       OK ] TransportFraming.EmptyBufferYieldsNothing (0 ms)
+[ RUN      ] TransportFraming.MalformedIntermediateFrameKeepsThrowing
+[       OK ] TransportFraming.MalformedIntermediateFrameKeepsThrowing (0 ms)
+[----------] 14 tests from TransportFraming (5 ms total)
+
+[----------] 2 tests from Retry
+[ RUN      ] Retry.FloodWaitIsParsedAndWithinLimit
+[       OK ] Retry.FloodWaitIsParsedAndWithinLimit (0 ms)
+[ RUN      ] Retry.FloodWaitDigitBoundaryAndStrictFormat
+[       OK ] Retry.FloodWaitDigitBoundaryAndStrictFormat (0 ms)
+[----------] 2 tests from Retry (0 ms total)
+
+[----------] 13 tests from Socks5
+[ RUN      ] Socks5.Ipv4TargetIsSentAsBinaryAddress
+[       OK ] Socks5.Ipv4TargetIsSentAsBinaryAddress (0 ms)
+[ RUN      ] Socks5.DomainTargetIsResolvedByProxy
+[       OK ] Socks5.DomainTargetIsResolvedByProxy (0 ms)
+[ RUN      ] Socks5.Ipv6TargetIsSentAsBinaryAddress
+[       OK ] Socks5.Ipv6TargetIsSentAsBinaryAddress (0 ms)
+[ RUN      ] Socks5.DomainBoundAddressInReplyIsAccepted
+[       OK ] Socks5.DomainBoundAddressInReplyIsAccepted (0 ms)
+[ RUN      ] Socks5.UsernamePasswordAuthIsSent
+[       OK ] Socks5.UsernamePasswordAuthIsSent (0 ms)
+[ RUN      ] Socks5.RejectedCredentialsFailAsNonTransient
+[       OK ] Socks5.RejectedCredentialsFailAsNonTransient (0 ms)
+[ RUN      ] Socks5.ProxyRequiringAuthWithoutCredentialsFails
+[       OK ] Socks5.ProxyRequiringAuthWithoutCredentialsFails (0 ms)
+[ RUN      ] Socks5.NoAcceptableMethodFails
+[       OK ] Socks5.NoAcceptableMethodFails (0 ms)
+[ RUN      ] Socks5.RefusedTargetReportsReplyCodeAndIsNotRetried
+[       OK ] Socks5.RefusedTargetReportsReplyCodeAndIsNotRetried (0 ms)
+[ RUN      ] Socks5.SilentProxyTimesOutAsTransient
+[       OK ] Socks5.SilentProxyTimesOutAsTransient (1500 ms)
+[ RUN      ] Socks5.InvalidInputsAreRejectedBeforeAnyNetworkUse
+[       OK ] Socks5.InvalidInputsAreRejectedBeforeAnyNetworkUse (0 ms)
+[ RUN      ] Socks5.RetryIsBoundedAndGivesUpOnTransientFailure
+[       OK ] Socks5.RetryIsBoundedAndGivesUpOnTransientFailure (20 ms)
+[ RUN      ] Socks5.RetryRejectsZeroAttempts
+[       OK ] Socks5.RetryRejectsZeroAttempts (0 ms)
+[----------] 13 tests from Socks5 (1524 ms total)
+
+[----------] 1 test from Socks5Connection
+[ RUN      ] Socks5Connection.ConnectionTunnelsThroughProxyAndReportsRejectionAsFinal
+[       OK ] Socks5Connection.ConnectionTunnelsThroughProxyAndReportsRejectionAsFinal (1 ms)
+[----------] 1 test from Socks5Connection (1 ms total)
+
+[----------] 9 tests from ProxySecret
+[ RUN      ] ProxySecret.PlainSecretParsesBothCases
+[       OK ] ProxySecret.PlainSecretParsesBothCases (0 ms)
+[ RUN      ] ProxySecret.PaddedIntermediateSecret
+[       OK ] ProxySecret.PaddedIntermediateSecret (0 ms)
+[ RUN      ] ProxySecret.FakeTlsSecretCarriesDomain
+[       OK ] ProxySecret.FakeTlsSecretCarriesDomain (0 ms)
+[ RUN      ] ProxySecret.RejectsWrongLengths
+[       OK ] ProxySecret.RejectsWrongLengths (0 ms)
+[ RUN      ] ProxySecret.RejectsNonHex
+[       OK ] ProxySecret.RejectsNonHex (0 ms)
+[ RUN      ] ProxySecret.RejectsUnknownPrefix
+[       OK ] ProxySecret.RejectsUnknownPrefix (0 ms)
+[ RUN      ] ProxySecret.FakeTlsNeedsDomain
+[       OK ] ProxySecret.FakeTlsNeedsDomain (0 ms)
+[ RUN      ] ProxySecret.FakeTlsDomainRules
+[       OK ] ProxySecret.FakeTlsDomainRules (0 ms)
+[ RUN      ] ProxySecret.ErrorMessageNeverEchoesSecret
+[       OK ] ProxySecret.ErrorMessageNeverEchoesSecret (0 ms)
+[----------] 9 tests from ProxySecret (1 ms total)
+
+[----------] 11 tests from ProxySecretBase64
+[ RUN      ] ProxySecretBase64.PlainSecretInBase64URLPaddedAndUnpadded
+[       OK ] ProxySecretBase64.PlainSecretInBase64URLPaddedAndUnpadded (0 ms)
+[ RUN      ] ProxySecretBase64.PlainSecretInStandardBase64PaddedAndUnpadded
+[       OK ] ProxySecretBase64.PlainSecretInStandardBase64PaddedAndUnpadded (0 ms)
+[ RUN      ] ProxySecretBase64.PaddedIntermediateSecretInBothAlphabets
+[       OK ] ProxySecretBase64.PaddedIntermediateSecretInBothAlphabets (0 ms)
+[ RUN      ] ProxySecretBase64.FakeTlsSecretKeepsTheDomain
+[       OK ] ProxySecretBase64.FakeTlsSecretKeepsTheDomain (0 ms)
+[ RUN      ] ProxySecretBase64.AlphabetIsStrict
+[       OK ] ProxySecretBase64.AlphabetIsStrict (0 ms)
+[ RUN      ] ProxySecretBase64.MalformedBase64IsRejected
+[       OK ] ProxySecretBase64.MalformedBase64IsRejected (0 ms)
+[ RUN      ] ProxySecretBase64.DecodedLengthAndPrefixAreChecked
+[       OK ] ProxySecretBase64.DecodedLengthAndPrefixAreChecked (0 ms)
+[ RUN      ] ProxySecretBase64.FakeTlsDomainLimitsApplyToBase64
+[       OK ] ProxySecretBase64.FakeTlsDomainLimitsApplyToBase64 (0 ms)
+[ RUN      ] ProxySecretBase64.OversizedTextIsRejectedBeforeDecoding
+[       OK ] ProxySecretBase64.OversizedTextIsRejectedBeforeDecoding (0 ms)
+[ RUN      ] ProxySecretBase64.EvenLengthAllHexTextIsReadAsHex
+[       OK ] ProxySecretBase64.EvenLengthAllHexTextIsReadAsHex (0 ms)
+[ RUN      ] ProxySecretBase64.WhitespaceIsNeverTrimmed
+[       OK ] ProxySecretBase64.WhitespaceIsNeverTrimmed (0 ms)
+[----------] 11 tests from ProxySecretBase64 (1 ms total)
+
+[----------] 1 test from ProxySecretEncoding
+[ RUN      ] ProxySecretEncoding.HexFormsReportHex
+[       OK ] ProxySecretEncoding.HexFormsReportHex (0 ms)
+[----------] 1 test from ProxySecretEncoding (0 ms total)
+
+[----------] 1 test from ProxySecretRegression
+[ RUN      ] ProxySecretRegression.ExistingHexRejectionsStillHold
+[       OK ] ProxySecretRegression.ExistingHexRejectionsStillHold (0 ms)
+[----------] 1 test from ProxySecretRegression (0 ms total)
+
+[----------] 1 test from ProxySecretForConnection
+[ RUN      ] ProxySecretForConnection.FakeTlsIsRejectedBeforeAnyNetworkUse
+[       OK ] ProxySecretForConnection.FakeTlsIsRejectedBeforeAnyNetworkUse (0 ms)
+[----------] 1 test from ProxySecretForConnection (0 ms total)
+
+[----------] 12 tests from ClientFakeDc
+[ RUN      ] ClientFakeDc.ConnectRunAndStopIsClean
+[       OK ] ClientFakeDc.ConnectRunAndStopIsClean (744 ms)
+[ RUN      ] ClientFakeDc.UnexpectedDropIsDetectedAndReconnected
+2026-11-15T04:40:48.601Z WARN  [transport] connection closed by server
+2026-11-15T04:40:48.601Z WARN  [client] connection dropped, reconnecting was_authorized=false
+[       OK ] ClientFakeDc.UnexpectedDropIsDetectedAndReconnected (800 ms)
+[ RUN      ] ClientFakeDc.RepeatedDropsEachRecover
+2026-11-15T04:40:49.305Z WARN  [transport] connection closed by server
+2026-11-15T04:40:49.305Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T04:40:49.315Z WARN  [transport] connection closed by server
+2026-11-15T04:40:49.315Z WARN  [client] connection dropped, reconnecting was_authorized=false
+[       OK ] ClientFakeDc.RepeatedDropsEachRecover (736 ms)
+[ RUN      ] ClientFakeDc.ReconnectFailureExhaustsBudgetAndRunThrows
+2026-11-15T04:40:50.208Z WARN  [transport] connection closed by server
+2026-11-15T04:40:50.208Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T04:40:50.217Z WARN  [transport] connection closed by server
+2026-11-15T04:40:50.218Z ERROR [client] connect failed category=network reason=connection closed by server
+2026-11-15T04:40:50.237Z WARN  [transport] connection closed by server
+2026-11-15T04:40:50.237Z ERROR [client] connect failed category=network reason=connection closed by server
+2026-11-15T04:40:50.272Z WARN  [transport] connection closed by server
+2026-11-15T04:40:50.272Z ERROR [client] connect failed category=network reason=connection closed by server
+2026-11-15T04:40:50.272Z ERROR [client] reconnect budget exhausted max_reconnects=3
+[       OK ] ClientFakeDc.ReconnectFailureExhaustsBudgetAndRunThrows (771 ms)
+[ RUN      ] ClientFakeDc.StopDuringReconnectBackoffReturnsCleanly
+2026-11-15T04:40:50.752Z WARN  [transport] connection closed by server
+2026-11-15T04:40:50.753Z WARN  [client] connection dropped, reconnecting was_authorized=false
+[       OK ] ClientFakeDc.StopDuringReconnectBackoffReturnsCleanly (630 ms)
+[ RUN      ] ClientFakeDc.StoppedClientDoesNotReconnectAfterwards
+[       OK ] ClientFakeDc.StoppedClientDoesNotReconnectAfterwards (1105 ms)
+[ RUN      ] ClientFakeDc.FloodWaitIsRetriedAfterServerDelay
+2026-11-15T04:40:52.695Z WARN  [rpc] flood wait, sleeping seconds=1 attempt=1
+2026-11-15T04:40:53.696Z WARN  [rpc] flood wait, sleeping seconds=1 attempt=2
+[       OK ] ClientFakeDc.FloodWaitIsRetriedAfterServerDelay (2687 ms)
+[ RUN      ] ClientFakeDc.FloodWaitBeyondPolicyLimitIsReturnedNotSlept
+[       OK ] ClientFakeDc.FloodWaitBeyondPolicyLimitIsReturnedNotSlept (504 ms)
+[ RUN      ] ClientFakeDc.ConsecutiveFloodWaitsAreBoundedByAttempts
+2026-11-15T04:40:55.741Z WARN  [rpc] flood wait, sleeping seconds=1 attempt=1
+[       OK ] ClientFakeDc.ConsecutiveFloodWaitsAreBoundedByAttempts (1542 ms)
+[ RUN      ] ClientFakeDc.StopCancelsAFloodWaitInProgress
+2026-11-15T04:40:57.287Z WARN  [rpc] flood wait, sleeping seconds=10 attempt=1
+[       OK ] ClientFakeDc.StopCancelsAFloodWaitInProgress (693 ms)
+[ RUN      ] ClientFakeDc.ConcurrentStopAndDropStress
+2026-11-15T04:40:58.133Z WARN  [transport] connection closed by server
+2026-11-15T04:40:58.133Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T04:40:58.730Z WARN  [transport] connection closed by server
+2026-11-15T04:40:58.730Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T04:40:59.276Z WARN  [transport] connection closed by server
+2026-11-15T04:40:59.277Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T04:40:59.762Z WARN  [transport] connection closed by server
+2026-11-15T04:40:59.762Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T04:41:00.901Z WARN  [transport] connection closed by server
+2026-11-15T04:41:00.902Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T04:41:01.361Z WARN  [transport] connection closed by server
+2026-11-15T04:41:01.362Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T04:41:01.885Z WARN  [transport] connection closed by server
+2026-11-15T04:41:01.886Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T04:41:02.740Z WARN  [transport] connection closed by server
+2026-11-15T04:41:02.740Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T04:41:03.180Z WARN  [transport] connection closed by server
+2026-11-15T04:41:03.180Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T04:41:03.872Z WARN  [transport] connection closed by server
+2026-11-15T04:41:03.873Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T04:41:04.372Z WARN  [transport] connection closed by server
+2026-11-15T04:41:04.373Z WARN  [client] connection dropped, reconnecting was_authorized=false
+[       OK ] ClientFakeDc.ConcurrentStopAndDropStress (6947 ms)
+[ RUN      ] ClientFakeDc.DropRecoveryReusesAuthKeyWithoutNewHandshake
+2026-11-15T04:41:04.965Z WARN  [transport] connection closed by server
+2026-11-15T04:41:04.966Z WARN  [client] connection dropped, reconnecting was_authorized=false
+[       OK ] ClientFakeDc.DropRecoveryReusesAuthKeyWithoutNewHandshake (744 ms)
+[----------] 12 tests from ClientFakeDc (17908 ms total)
+
+[----------] 1 test from DcMigrationParse
+[ RUN      ] DcMigrationParse.ReadsDcNumberFromMigrateErrorsOnly
+[       OK ] DcMigrationParse.ReadsDcNumberFromMigrateErrorsOnly (0 ms)
+[----------] 1 test from DcMigrationParse (0 ms total)
+
+[----------] 4 tests from DcMigrationFakeDc
+[ RUN      ] DcMigrationFakeDc.BotLoginFollowsUserMigrateToHomeDc
+[       OK ] DcMigrationFakeDc.BotLoginFollowsUserMigrateToHomeDc (897 ms)
+[ RUN      ] DcMigrationFakeDc.RestartDialsTheDcOfTheSavedSession
+[       OK ] DcMigrationFakeDc.RestartDialsTheDcOfTheSavedSession (1305 ms)
+[ RUN      ] DcMigrationFakeDc.MigrationLoopIsBounded
+[       OK ] DcMigrationFakeDc.MigrationLoopIsBounded (1681 ms)
+[ RUN      ] DcMigrationFakeDc.UnknownHomeDcFailsWithoutRetry
+[       OK ] DcMigrationFakeDc.UnknownHomeDcFailsWithoutRetry (641 ms)
+[----------] 4 tests from DcMigrationFakeDc (4525 ms total)
+
+[----------] 2 tests from ProxySecretParse
+[ RUN      ] ProxySecretParse.PrefixesAndCaseAreRecognised
+[       OK ] ProxySecretParse.PrefixesAndCaseAreRecognised (0 ms)
+[ RUN      ] ProxySecretParse.MalformedInputIsRejectedWithoutEchoingIt
+[       OK ] ProxySecretParse.MalformedInputIsRejectedWithoutEchoingIt (0 ms)
+[----------] 2 tests from ProxySecretParse (0 ms total)
+
+[----------] 12 tests from ProxyStub
+[ RUN      ] ProxyStub.IntermediateRoundTrip
+[       OK ] ProxyStub.IntermediateRoundTrip (0 ms)
+[ RUN      ] ProxyStub.PaddedIntermediateFollowsDdSecret
+[       OK ] ProxyStub.PaddedIntermediateFollowsDdSecret (0 ms)
+[ RUN      ] ProxyStub.AbridgedRoundTripWithExplicitFraming
+[       OK ] ProxyStub.AbridgedRoundTripWithExplicitFraming (0 ms)
+[ RUN      ] ProxyStub.DcIdIsCarriedInTheHandshake
+[       OK ] ProxyStub.DcIdIsCarriedInTheHandshake (0 ms)
+[ RUN      ] ProxyStub.FragmentedReplyIsReassembled
+[       OK ] ProxyStub.FragmentedReplyIsReassembled (42 ms)
+[ RUN      ] ProxyStub.OneMebibytePacketIsSentCompletely
+[       OK ] ProxyStub.OneMebibytePacketIsSentCompletely (15 ms)
+[ RUN      ] ProxyStub.NegativeTransportErrorIsNotAFrame
+[       OK ] ProxyStub.NegativeTransportErrorIsNotAFrame (0 ms)
+[ RUN      ] ProxyStub.SilentProxyIsAProxyErrorWithoutTheSecret
+[       OK ] ProxyStub.SilentProxyIsAProxyErrorWithoutTheSecret (324 ms)
+[ RUN      ] ProxyStub.ProxyClosingAfterHandshakeIsAProxyError
+2026-11-15T04:41:10.041Z WARN  [transport] connection closed by server
+[       OK ] ProxyStub.ProxyClosingAfterHandshakeIsAProxyError (0 ms)
+[ RUN      ] ProxyStub.WrongSecretIsAProxyErrorWithoutTheSecret
+2026-11-15T04:41:10.041Z WARN  [transport] connection closed by server
+[       OK ] ProxyStub.WrongSecretIsAProxyErrorWithoutTheSecret (0 ms)
+[ RUN      ] ProxyStub.ReconnectAfterFailureSucceeds
+2026-11-15T04:41:10.042Z WARN  [transport] connection closed by server
+[       OK ] ProxyStub.ReconnectAfterFailureSucceeds (0 ms)
+[ RUN      ] ProxyStub.PaddedReplyKeepsItsPaddingForTheMtprotoLayer
+[       OK ] ProxyStub.PaddedReplyKeepsItsPaddingForTheMtprotoLayer (0 ms)
+[----------] 12 tests from ProxyStub (388 ms total)
+
+[----------] 5 tests from Socks5Stub
+[ RUN      ] Socks5Stub.FragmentedMethodAndConnectRepliesAreAccepted
+[       OK ] Socks5Stub.FragmentedMethodAndConnectRepliesAreAccepted (45 ms)
+[ RUN      ] Socks5Stub.WrongVersionInGreetingIsRejected
+[       OK ] Socks5Stub.WrongVersionInGreetingIsRejected (0 ms)
+[ RUN      ] Socks5Stub.WrongVersionInConnectReplyIsRejected
+[       OK ] Socks5Stub.WrongVersionInConnectReplyIsRejected (0 ms)
+[ RUN      ] Socks5Stub.UnknownAddressTypeInReplyIsRejected
+[       OK ] Socks5Stub.UnknownAddressTypeInReplyIsRejected (0 ms)
+[ RUN      ] Socks5Stub.RefusedConnectCarriesTheReplyCode
+[       OK ] Socks5Stub.RefusedConnectCarriesTheReplyCode (0 ms)
+[----------] 5 tests from Socks5Stub (47 ms total)
+
+[----------] 3 tests from ProxySecretBase64Transport
+[ RUN      ] ProxySecretBase64Transport.PaddedBase64SecretSelectsPaddedFraming
+[       OK ] ProxySecretBase64Transport.PaddedBase64SecretSelectsPaddedFraming (0 ms)
+[ RUN      ] ProxySecretBase64Transport.PlainStandardBase64SecretSelectsIntermediate
+[       OK ] ProxySecretBase64Transport.PlainStandardBase64SecretSelectsIntermediate (0 ms)
+[ RUN      ] ProxySecretBase64Transport.FakeTlsBase64SecretIsStillRefused
+[       OK ] ProxySecretBase64Transport.FakeTlsBase64SecretIsStillRefused (0 ms)
+[----------] 3 tests from ProxySecretBase64Transport (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 118 tests from 19 test suites ran. (25755 ms total)
+[  PASSED  ] 118 tests.
+RUN=0

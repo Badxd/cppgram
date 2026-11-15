@@ -1,0 +1,10 @@
+bash tools/verify_release.sh /tmp/claude-0/-home-claude/8b1f2cf3-d8a0-52e2-92a4-978325134559/scratchpad/pad-fix/release-4/source/cppgram-0.1.0-source.zip
+zip sha256: 490ccde4d2206bfced99ab857a967957fd4596ae7511462458314a5991bb0a13
+OK   zip integrity (unzip -t)
+OK   extracted one top-level folder: cppgram-0.1.0
+OK   SHA256SUMS.txt: every listed file matches
+OK   every file in the archive is listed (400 files)
+OK   required files present
+OK   no build outputs, sessions, databases, logs or credential-like files
+VERIFY PASSED
+VERIFY=0

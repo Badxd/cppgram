@@ -1,0 +1,4 @@
+OK   VERSION is a semantic version: 0.1.0
+OK   client.h app_version matches VERSION
+OK   CHANGELOG.md has a heading for 0.1.0
+VERSION=0

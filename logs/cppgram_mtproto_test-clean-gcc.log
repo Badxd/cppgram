@@ -1,0 +1,1289 @@
+Running main() from ./googletest/src/gtest_main.cc
+[==========] Running 457 tests from 96 test suites.
+[----------] Global test environment set-up.
+[----------] 14 tests from Crypto
+[ RUN      ] Crypto.Crc32KnownVector
+[       OK ] Crypto.Crc32KnownVector (0 ms)
+[ RUN      ] Crypto.Sha1AndSha256KnownVectors
+[       OK ] Crypto.Sha1AndSha256KnownVectors (1 ms)
+[ RUN      ] Crypto.AesIgeRoundTrip
+[       OK ] Crypto.AesIgeRoundTrip (0 ms)
+[ RUN      ] Crypto.AesIgeRejectsBadSizes
+[       OK ] Crypto.AesIgeRejectsBadSizes (0 ms)
+[ RUN      ] Crypto.InnerMessageRoundTrip
+[       OK ] Crypto.InnerMessageRoundTrip (0 ms)
+[ RUN      ] Crypto.PacketRoundTripBothDirections
+[       OK ] Crypto.PacketRoundTripBothDirections (0 ms)
+[ RUN      ] Crypto.TrailingTransportPaddingIsIgnoredAndTamperingIsRejected
+[       OK ] Crypto.TrailingTransportPaddingIsIgnoredAndTamperingIsRejected (0 ms)
+[ RUN      ] Crypto.ForgedInnerLengthIsRejected
+[       OK ] Crypto.ForgedInnerLengthIsRejected (0 ms)
+[ RUN      ] Crypto.EveryTruncationOfAnEncryptedPacketIsRejected
+[       OK ] Crypto.EveryTruncationOfAnEncryptedPacketIsRejected (0 ms)
+[ RUN      ] Crypto.RandomEncryptedPacketsAreRejectedWithoutCrashing
+[       OK ] Crypto.RandomEncryptedPacketsAreRejectedWithoutCrashing (13 ms)
+[ RUN      ] Crypto.PacketTamperingDetected
+[       OK ] Crypto.PacketTamperingDetected (0 ms)
+[ RUN      ] Crypto.FactorizePqFromTelegramDocs
+[       OK ] Crypto.FactorizePqFromTelegramDocs (10 ms)
+[ RUN      ] Crypto.DhPowerSmallExample
+[       OK ] Crypto.DhPowerSmallExample (0 ms)
+[ RUN      ] Crypto.RsaHandshakeOutputSize
+[       OK ] Crypto.RsaHandshakeOutputSize (0 ms)
+[----------] 14 tests from Crypto (27 ms total)
+
+[----------] 3 tests from Tl
+[ RUN      ] Tl.BytesEncodingShortAndLong
+[       OK ] Tl.BytesEncodingShortAndLong (0 ms)
+[ RUN      ] Tl.RoundTripAllPrimitives
+[       OK ] Tl.RoundTripAllPrimitives (0 ms)
+[ RUN      ] Tl.ReaderRejectsTruncatedData
+[       OK ] Tl.ReaderRejectsTruncatedData (0 ms)
+[----------] 3 tests from Tl (0 ms total)
+
+[----------] 4 tests from Transport
+[ RUN      ] Transport.AbridgedShortAndLongFrames
+[       OK ] Transport.AbridgedShortAndLongFrames (0 ms)
+[ RUN      ] Transport.AbridgedRejectsUnalignedPayload
+[       OK ] Transport.AbridgedRejectsUnalignedPayload (0 ms)
+[ RUN      ] Transport.IntermediateRoundTrip
+[       OK ] Transport.IntermediateRoundTrip (0 ms)
+[ RUN      ] Transport.FullRoundTripAndCrcCheck
+[       OK ] Transport.FullRoundTripAndCrcCheck (0 ms)
+[----------] 4 tests from Transport (0 ms total)
+
+[----------] 2 tests from Schema
+[ RUN      ] Schema.ReqPqMultiSerializesWithTelegramId
+[       OK ] Schema.ReqPqMultiSerializesWithTelegramId (0 ms)
+[ RUN      ] Schema.ResPqReadsFromWire
+[       OK ] Schema.ResPqReadsFromWire (0 ms)
+[----------] 2 tests from Schema (0 ms total)
+
+[----------] 1 test from CdnCrypto
+[ RUN      ] CdnCrypto.CtrRoundTripAndCounterIv
+[       OK ] CdnCrypto.CtrRoundTripAndCounterIv (0 ms)
+[----------] 1 test from CdnCrypto (0 ms total)
+
+[----------] 6 tests from CryptoAudit
+[ RUN      ] CryptoAudit.ExactLiveTrailingCounts22And102EncryptedAreIgnored
+[       OK ] CryptoAudit.ExactLiveTrailingCounts22And102EncryptedAreIgnored (0 ms)
+[ RUN      ] CryptoAudit.ValidBoundaryBodySizesRoundTrip
+[       OK ] CryptoAudit.ValidBoundaryBodySizesRoundTrip (0 ms)
+[ RUN      ] CryptoAudit.InvalidMsgKeyEveryByteIsRejected
+[       OK ] CryptoAudit.InvalidMsgKeyEveryByteIsRejected (0 ms)
+[ RUN      ] CryptoAudit.PacketUnderAnotherAuthKeyIsRejected
+[       OK ] CryptoAudit.PacketUnderAnotherAuthKeyIsRejected (0 ms)
+[ RUN      ] CryptoAudit.ForeignAuthKeyIdIsRejected
+[       OK ] CryptoAudit.ForeignAuthKeyIdIsRejected (0 ms)
+[ RUN      ] CryptoAudit.OversizedInnerLengthIsRejectedWithoutReading
+[       OK ] CryptoAudit.OversizedInnerLengthIsRejectedWithoutReading (0 ms)
+[----------] 6 tests from CryptoAudit (0 ms total)
+
+[----------] 3 tests from SchemaLayer233
+[ RUN      ] SchemaLayer233.NewConstructorIdsMatchReferenceSchema
+[       OK ] SchemaLayer233.NewConstructorIdsMatchReferenceSchema (0 ms)
+[ RUN      ] SchemaLayer233.InputMediaWidgetSerializesIdFlagsAndFields
+[       OK ] SchemaLayer233.InputMediaWidgetSerializesIdFlagsAndFields (0 ms)
+[ RUN      ] SchemaLayer233.InputMediaWidgetIdSerializesConstructorId
+[       OK ] SchemaLayer233.InputMediaWidgetIdSerializesConstructorId (0 ms)
+[----------] 3 tests from SchemaLayer233 (0 ms total)
+
+[----------] 10 tests from QrLogin
+[ RUN      ] QrLogin.Base64UrlMatchesRfcVectors
+[       OK ] QrLogin.Base64UrlMatchesRfcVectors (0 ms)
+[ RUN      ] QrLogin.Base64UrlUsesUrlSafeAlphabet
+[       OK ] QrLogin.Base64UrlUsesUrlSafeAlphabet (0 ms)
+[ RUN      ] QrLogin.LoginUrlHasTgLoginPrefixAndEncodedToken
+[       OK ] QrLogin.LoginUrlHasTgLoginPrefixAndEncodedToken (0 ms)
+[ RUN      ] QrLogin.LoginTokenVariantIsParsed
+[       OK ] QrLogin.LoginTokenVariantIsParsed (0 ms)
+[ RUN      ] QrLogin.MigrateToVariantKeepsDataCenter
+[       OK ] QrLogin.MigrateToVariantKeepsDataCenter (0 ms)
+[ RUN      ] QrLogin.SuccessVariantReturnsAuthorizedUserId
+[       OK ] QrLogin.SuccessVariantReturnsAuthorizedUserId (0 ms)
+[ RUN      ] QrLogin.SuccessWithSignUpRequiredThrows
+[       OK ] QrLogin.SuccessWithSignUpRequiredThrows (0 ms)
+[ RUN      ] QrLogin.SuccessWithoutAuthorizationThrows
+[       OK ] QrLogin.SuccessWithoutAuthorizationThrows (0 ms)
+[ RUN      ] QrLogin.RequestConstructorIdsMatchLayer233
+[       OK ] QrLogin.RequestConstructorIdsMatchLayer233 (0 ms)
+[ RUN      ] QrLogin.ExportLoginTokenSerializesIdFirst
+[       OK ] QrLogin.ExportLoginTokenSerializesIdFirst (0 ms)
+[----------] 10 tests from QrLogin (0 ms total)
+
+[----------] 6 tests from QrLoginFakeDc
+[ RUN      ] QrLoginFakeDc.ExportLoginTokenSendsApiIdAndReturnsToken
+[       OK ] QrLoginFakeDc.ExportLoginTokenSendsApiIdAndReturnsToken (650 ms)
+[ RUN      ] QrLoginFakeDc.ExportLoginTokenReturnsMigrationTarget
+[       OK ] QrLoginFakeDc.ExportLoginTokenReturnsMigrationTarget (559 ms)
+[ RUN      ] QrLoginFakeDc.ExportLoginTokenRejectsMissingApiCredentials
+[       OK ] QrLoginFakeDc.ExportLoginTokenRejectsMissingApiCredentials (154 ms)
+[ RUN      ] QrLoginFakeDc.ImportAuthorizationSendsIdAndBytesAndReturnsUserId
+[       OK ] QrLoginFakeDc.ImportAuthorizationSendsIdAndBytesAndReturnsUserId (446 ms)
+[ RUN      ] QrLoginFakeDc.ImportLoginTokenSendsTokenAndReturnsState
+[       OK ] QrLoginFakeDc.ImportLoginTokenSendsTokenAndReturnsState (652 ms)
+[ RUN      ] QrLoginFakeDc.ExportAuthorizationReturnsIdAndBytes
+[       OK ] QrLoginFakeDc.ExportAuthorizationReturnsIdAndBytes (772 ms)
+[----------] 6 tests from QrLoginFakeDc (3236 ms total)
+
+[----------] 6 tests from StoriesFakeDc
+[ RUN      ] StoriesFakeDc.CanSendStoryCountReturnsRemainingCount
+[       OK ] StoriesFakeDc.CanSendStoryCountReturnsRemainingCount (610 ms)
+[ RUN      ] StoriesFakeDc.IncrementStoryViewsReturnsServerBool
+[       OK ] StoriesFakeDc.IncrementStoryViewsReturnsServerBool (486 ms)
+[ RUN      ] StoriesFakeDc.IncrementStoryViewsRejectsEmptyList
+[       OK ] StoriesFakeDc.IncrementStoryViewsRejectsEmptyList (448 ms)
+[ RUN      ] StoriesFakeDc.GetPeerStoriesSkipsDeletedEntries
+[       OK ] StoriesFakeDc.GetPeerStoriesSkipsDeletedEntries (698 ms)
+[ RUN      ] StoriesFakeDc.GetStoryViewsReturnsViewersAndNextOffset
+[       OK ] StoriesFakeDc.GetStoryViewsReturnsViewersAndNextOffset (796 ms)
+[ RUN      ] StoriesFakeDc.GetStoryViewsRejectsNonPositiveLimit
+[       OK ] StoriesFakeDc.GetStoryViewsRejectsNonPositiveLimit (787 ms)
+[----------] 6 tests from StoriesFakeDc (3828 ms total)
+
+[----------] 5 tests from Batch4AuthStories
+[ RUN      ] Batch4AuthStories.ResendLoginCodeParsesSentCode
+[       OK ] Batch4AuthStories.ResendLoginCodeParsesSentCode (455 ms)
+[ RUN      ] Batch4AuthStories.ResendLoginCodeRejectsEmptyHash
+[       OK ] Batch4AuthStories.ResendLoginCodeRejectsEmptyHash (512 ms)
+[ RUN      ] Batch4AuthStories.RequestPasswordRecoveryReturnsEmailPattern
+[       OK ] Batch4AuthStories.RequestPasswordRecoveryReturnsEmailPattern (547 ms)
+[ RUN      ] Batch4AuthStories.GetAllStoriesNotModifiedKeepsState
+[       OK ] Batch4AuthStories.GetAllStoriesNotModifiedKeepsState (378 ms)
+[ RUN      ] Batch4AuthStories.EditStoryCaptionReturnsTrueOnUpdates
+[       OK ] Batch4AuthStories.EditStoryCaptionReturnsTrueOnUpdates (457 ms)
+[----------] 5 tests from Batch4AuthStories (2352 ms total)
+
+[----------] 3 tests from PasswordRecoveryFakeDc
+[ RUN      ] PasswordRecoveryFakeDc.RecoverWithoutNewPasswordSendsNoSettings
+[       OK ] PasswordRecoveryFakeDc.RecoverWithoutNewPasswordSendsNoSettings (431 ms)
+[ RUN      ] PasswordRecoveryFakeDc.RecoverWithNewPasswordSendsVerifierAndHint
+[       OK ] PasswordRecoveryFakeDc.RecoverWithNewPasswordSendsVerifierAndHint (829 ms)
+[ RUN      ] PasswordRecoveryFakeDc.RecoverRejectsEmptyCodeBeforeAnyRpc
+[       OK ] PasswordRecoveryFakeDc.RecoverRejectsEmptyCodeBeforeAnyRpc (421 ms)
+[----------] 3 tests from PasswordRecoveryFakeDc (1682 ms total)
+
+[----------] 4 tests from StoriesEditFakeDc
+[ RUN      ] StoriesEditFakeDc.CaptionMediaAreaAndPrivacySetTheirFlags
+[       OK ] StoriesEditFakeDc.CaptionMediaAreaAndPrivacySetTheirFlags (886 ms)
+[ RUN      ] StoriesEditFakeDc.EmptyOptionsAreRejectedBeforeRpc
+[       OK ] StoriesEditFakeDc.EmptyOptionsAreRejectedBeforeRpc (907 ms)
+[ RUN      ] StoriesEditFakeDc.OutOfRangeMediaAreaIsRejectedBeforeRpc
+[       OK ] StoriesEditFakeDc.OutOfRangeMediaAreaIsRejectedBeforeRpc (566 ms)
+[ RUN      ] StoriesEditFakeDc.AllowUsersWithoutAccessHashIsRejected
+[       OK ] StoriesEditFakeDc.AllowUsersWithoutAccessHashIsRejected (412 ms)
+[----------] 4 tests from StoriesEditFakeDc (2773 ms total)
+
+[----------] 2 tests from AccountReadsFakeDc
+[ RUN      ] AccountReadsFakeDc.AppConfigIsSerializedAsJsonText
+[       OK ] AccountReadsFakeDc.AppConfigIsSerializedAsJsonText (445 ms)
+[ RUN      ] AccountReadsFakeDc.SavedMusicNotModifiedIsReported
+[       OK ] AccountReadsFakeDc.SavedMusicNotModifiedIsReported (401 ms)
+[----------] 2 tests from AccountReadsFakeDc (847 ms total)
+
+[----------] 5 tests from PaymentsStarsFakeDc
+[ RUN      ] PaymentsStarsFakeDc.CancelStarsSubscriptionReadsBoolTrue
+[       OK ] PaymentsStarsFakeDc.CancelStarsSubscriptionReadsBoolTrue (608 ms)
+[ RUN      ] PaymentsStarsFakeDc.CraftStarGiftReturnsTrueOnUpdates
+[       OK ] PaymentsStarsFakeDc.CraftStarGiftReturnsTrueOnUpdates (682 ms)
+[ RUN      ] PaymentsStarsFakeDc.SendStarGiftOfferRejectsEmptySlugBeforeRpc
+[       OK ] PaymentsStarsFakeDc.SendStarGiftOfferRejectsEmptySlugBeforeRpc (942 ms)
+[ RUN      ] PaymentsStarsFakeDc.CheckGiftCodeMapsDaysAndUnusedState
+[       OK ] PaymentsStarsFakeDc.CheckGiftCodeMapsDaysAndUnusedState (447 ms)
+[ RUN      ] PaymentsStarsFakeDc.ExportInvoiceReturnsUrl
+[       OK ] PaymentsStarsFakeDc.ExportInvoiceReturnsUrl (443 ms)
+[----------] 5 tests from PaymentsStarsFakeDc (3125 ms total)
+
+[----------] 2 tests from WalletFakeDc
+[ RUN      ] WalletFakeDc.ProofChallengeIsParsed
+[       OK ] WalletFakeDc.ProofChallengeIsParsed (520 ms)
+[ RUN      ] WalletFakeDc.ReplaceWithNewWalletReadsEmptyState
+[       OK ] WalletFakeDc.ReplaceWithNewWalletReadsEmptyState (556 ms)
+[----------] 2 tests from WalletFakeDc (1076 ms total)
+
+[----------] 1 test from RemainingMethodsFakeDc
+[ RUN      ] RemainingMethodsFakeDc.EachMethodSendsItsConstructorId
+[       OK ] RemainingMethodsFakeDc.EachMethodSendsItsConstructorId (828 ms)
+[----------] 1 test from RemainingMethodsFakeDc (828 ms total)
+
+[----------] 6 tests from FoldersAuditFakeDc
+[ RUN      ] FoldersAuditFakeDc.EditSharedFolderRejectedBeforeRpc
+[       OK ] FoldersAuditFakeDc.EditSharedFolderRejectedBeforeRpc (544 ms)
+[ RUN      ] FoldersAuditFakeDc.CreateSharedFolderRejectedBeforeRpc
+[       OK ] FoldersAuditFakeDc.CreateSharedFolderRejectedBeforeRpc (779 ms)
+[ RUN      ] FoldersAuditFakeDc.EditFolderRejectsReservedIdBeforeRpc
+[       OK ] FoldersAuditFakeDc.EditFolderRejectsReservedIdBeforeRpc (420 ms)
+[ RUN      ] FoldersAuditFakeDc.CheckInviteStripsQueryAndFragment
+[       OK ] FoldersAuditFakeDc.CheckInviteStripsQueryAndFragment (656 ms)
+[ RUN      ] FoldersAuditFakeDc.CheckInviteAcceptsBareSlug
+[       OK ] FoldersAuditFakeDc.CheckInviteAcceptsBareSlug (451 ms)
+[ RUN      ] FoldersAuditFakeDc.ChatlistUpdateCallsAreEmitted
+[       OK ] FoldersAuditFakeDc.ChatlistUpdateCallsAreEmitted (607 ms)
+[----------] 6 tests from FoldersAuditFakeDc (3460 ms total)
+
+[----------] 8 tests from PartialMethodsFakeDc
+[ RUN      ] PartialMethodsFakeDc.CdnReuploadRecoversAndVerifiesHashes
+[       OK ] PartialMethodsFakeDc.CdnReuploadRecoversAndVerifiesHashes (1032 ms)
+[ RUN      ] PartialMethodsFakeDc.CdnReuploadGivesUpAfterLimit
+[       OK ] PartialMethodsFakeDc.CdnReuploadGivesUpAfterLimit (1357 ms)
+[ RUN      ] PartialMethodsFakeDc.StoryEditUploadsPhotoAndSendsUploadedMedia
+[       OK ] PartialMethodsFakeDc.StoryEditUploadsPhotoAndSendsUploadedMedia (726 ms)
+[ RUN      ] PartialMethodsFakeDc.StoryEditUploadsVideoAsDocumentWithFilename
+[       OK ] PartialMethodsFakeDc.StoryEditUploadsVideoAsDocumentWithFilename (588 ms)
+[ RUN      ] PartialMethodsFakeDc.PeerSettingsDecodesFlags
+[       OK ] PartialMethodsFakeDc.PeerSettingsDecodesFlags (651 ms)
+[ RUN      ] PartialMethodsFakeDc.FolderInviteAlreadyJoinedDecodesPeers
+[       OK ] PartialMethodsFakeDc.FolderInviteAlreadyJoinedDecodesPeers (520 ms)
+[ RUN      ] PartialMethodsFakeDc.TopPeersDecodesCategoryAndRating
+[       OK ] PartialMethodsFakeDc.TopPeersDecodesCategoryAndRating (399 ms)
+[ RUN      ] PartialMethodsFakeDc.RecentStickersDecodesDocumentsPacksAndDates
+[       OK ] PartialMethodsFakeDc.RecentStickersDecodesDocumentsPacksAndDates (743 ms)
+[----------] 8 tests from PartialMethodsFakeDc (6019 ms total)
+
+[----------] 5 tests from EphemeralInlineFakeDc
+[ RUN      ] EphemeralInlineFakeDc.EphemeralSendAnnouncesEveryFieldItCarries
+[       OK ] EphemeralInlineFakeDc.EphemeralSendAnnouncesEveryFieldItCarries (629 ms)
+[ RUN      ] EphemeralInlineFakeDc.EphemeralSendRichBodyCarriesHtmlAndPhotoFile
+[       OK ] EphemeralInlineFakeDc.EphemeralSendRichBodyCarriesHtmlAndPhotoFile (859 ms)
+[ RUN      ] EphemeralInlineFakeDc.EphemeralEditSendsMediaAndMarkupWithoutMessageFlag
+[       OK ] EphemeralInlineFakeDc.EphemeralEditSendsMediaAndMarkupWithoutMessageFlag (520 ms)
+[ RUN      ] EphemeralInlineFakeDc.EphemeralRejectsInvalidOptionsBeforeRpc
+[       OK ] EphemeralInlineFakeDc.EphemeralRejectsInvalidOptionsBeforeRpc (736 ms)
+[ RUN      ] EphemeralInlineFakeDc.InlineBotResultsDecodesEveryMessageKind
+[       OK ] EphemeralInlineFakeDc.InlineBotResultsDecodesEveryMessageKind (536 ms)
+[----------] 5 tests from EphemeralInlineFakeDc (3282 ms total)
+
+[----------] 10 tests from KeyboardRoundTrip
+[ RUN      ] KeyboardRoundTrip.EveryInlineButtonKindRoundTrips
+[       OK ] KeyboardRoundTrip.EveryInlineButtonKindRoundTrips (0 ms)
+[ RUN      ] KeyboardRoundTrip.ReceivedLoginButtonKeepsItsId
+[       OK ] KeyboardRoundTrip.ReceivedLoginButtonKeepsItsId (0 ms)
+[ RUN      ] KeyboardRoundTrip.EmptyInlineKeyboardRoundTrips
+[       OK ] KeyboardRoundTrip.EmptyInlineKeyboardRoundTrips (0 ms)
+[ RUN      ] KeyboardRoundTrip.EveryReplyButtonKindRoundTrips
+[       OK ] KeyboardRoundTrip.EveryReplyButtonKindRoundTrips (0 ms)
+[ RUN      ] KeyboardRoundTrip.StringRowsDecodeAsTextButtons
+[       OK ] KeyboardRoundTrip.StringRowsDecodeAsTextButtons (0 ms)
+[ RUN      ] KeyboardRoundTrip.ForceReplyAndHideRoundTrip
+[       OK ] KeyboardRoundTrip.ForceReplyAndHideRoundTrip (0 ms)
+[ RUN      ] KeyboardRoundTrip.MarkupFamiliesAreSeparated
+[       OK ] KeyboardRoundTrip.MarkupFamiliesAreSeparated (0 ms)
+[ RUN      ] KeyboardRoundTrip.UnrepresentableRequestPeerThrowsTypedError
+[       OK ] KeyboardRoundTrip.UnrepresentableRequestPeerThrowsTypedError (0 ms)
+[ RUN      ] KeyboardRoundTrip.AmbiguousReplyKeyboardThrows
+[       OK ] KeyboardRoundTrip.AmbiguousReplyKeyboardThrows (0 ms)
+[ RUN      ] KeyboardRoundTrip.UnusedFieldsDoNotLeakIntoOtherKinds
+[       OK ] KeyboardRoundTrip.UnusedFieldsDoNotLeakIntoOtherKinds (0 ms)
+[----------] 10 tests from KeyboardRoundTrip (0 ms total)
+
+[----------] 5 tests from EphemeralUploadFakeDc
+[ RUN      ] EphemeralUploadFakeDc.DocumentPathIsUploadedThenSentWithFilename
+[       OK ] EphemeralUploadFakeDc.DocumentPathIsUploadedThenSentWithFilename (637 ms)
+[ RUN      ] EphemeralUploadFakeDc.PhotoPathIsSentAsUploadedPhoto
+[       OK ] EphemeralUploadFakeDc.PhotoPathIsSentAsUploadedPhoto (725 ms)
+[ RUN      ] EphemeralUploadFakeDc.EditWithPathUploadsAndSendsMedia
+[       OK ] EphemeralUploadFakeDc.EditWithPathUploadsAndSendsMedia (520 ms)
+[ RUN      ] EphemeralUploadFakeDc.InvalidMediaSourcesFailBeforeAnyRpc
+[       OK ] EphemeralUploadFakeDc.InvalidMediaSourcesFailBeforeAnyRpc (792 ms)
+[ RUN      ] EphemeralUploadFakeDc.CancelDuringUploadStopsBeforeSend
+[       OK ] EphemeralUploadFakeDc.CancelDuringUploadStopsBeforeSend (679 ms)
+[----------] 5 tests from EphemeralUploadFakeDc (3356 ms total)
+
+[----------] 5 tests from InlineSendFakeDc
+[ RUN      ] InlineSendFakeDc.InvoiceResultCarriesInvoiceFieldsAndPayload
+[       OK ] InlineSendFakeDc.InvoiceResultCarriesInvoiceFieldsAndPayload (642 ms)
+[ RUN      ] InlineSendFakeDc.InvalidInvoiceFailsBeforeRpc
+[       OK ] InlineSendFakeDc.InvalidInvoiceFailsBeforeRpc (554 ms)
+[ RUN      ] InlineSendFakeDc.WidgetHtmlAndIdVariantsAreSentCorrectly
+[       OK ] InlineSendFakeDc.WidgetHtmlAndIdVariantsAreSentCorrectly (1118 ms)
+[ RUN      ] InlineSendFakeDc.InvalidWidgetFailsBeforeRpc
+[       OK ] InlineSendFakeDc.InvalidWidgetFailsBeforeRpc (485 ms)
+[ RUN      ] InlineSendFakeDc.ReplyKeyboardOnResultIsSentAndAmbiguityRefused
+[       OK ] InlineSendFakeDc.ReplyKeyboardOnResultIsSentAndAmbiguityRefused (538 ms)
+[----------] 5 tests from InlineSendFakeDc (3340 ms total)
+
+[----------] 6 tests from InlineDecodeFakeDc
+[ RUN      ] InlineDecodeFakeDc.ThumbAndContentWebDocumentsDecodeWithAttributes
+[       OK ] InlineDecodeFakeDc.ThumbAndContentWebDocumentsDecodeWithAttributes (575 ms)
+[ RUN      ] InlineDecodeFakeDc.UnknownWebDocumentAttributeIsRecordedAndResultKept
+[       OK ] InlineDecodeFakeDc.UnknownWebDocumentAttributeIsRecordedAndResultKept (705 ms)
+[ RUN      ] InlineDecodeFakeDc.RichResultReportsBlockCountAndKeepsRawObject
+[       OK ] InlineDecodeFakeDc.RichResultReportsBlockCountAndKeepsRawObject (587 ms)
+[ RUN      ] InlineDecodeFakeDc.InvoiceResultDecodesPhotoAndAmounts
+[       OK ] InlineDecodeFakeDc.InvoiceResultDecodesPhotoAndAmounts (604 ms)
+[ RUN      ] InlineDecodeFakeDc.RegisteredWidgetDecodesIdHashAndPayload
+[       OK ] InlineDecodeFakeDc.RegisteredWidgetDecodesIdHashAndPayload (537 ms)
+[ RUN      ] InlineDecodeFakeDc.ReplyKeyboardOnResultDecodesTypedButtons
+[       OK ] InlineDecodeFakeDc.ReplyKeyboardOnResultDecodesTypedButtons (714 ms)
+[----------] 6 tests from InlineDecodeFakeDc (3724 ms total)
+
+[----------] 6 tests from RichBlocksFakeDc
+[ RUN      ] RichBlocksFakeDc.TypedBlocksDecodeWithTextChildrenAndIds
+[       OK ] RichBlocksFakeDc.TypedBlocksDecodeWithTextChildrenAndIds (861 ms)
+[ RUN      ] RichBlocksFakeDc.DeeplyNestedBlocksThrowSerializationError
+[       OK ] RichBlocksFakeDc.DeeplyNestedBlocksThrowSerializationError (562 ms)
+[ RUN      ] RichBlocksFakeDc.RichBodyLocalPhotoIsUploadedBeforeSend
+[       OK ] RichBlocksFakeDc.RichBodyLocalPhotoIsUploadedBeforeSend (739 ms)
+[ RUN      ] RichBlocksFakeDc.RichFileWithPathAndMediaIsRefusedBeforeRpc
+[       OK ] RichBlocksFakeDc.RichFileWithPathAndMediaIsRefusedBeforeRpc (846 ms)
+[ RUN      ] RichBlocksFakeDc.TableRelatedMapAndChannelDecodeIntoPublicFields
+[       OK ] RichBlocksFakeDc.TableRelatedMapAndChannelDecodeIntoPublicFields (985 ms)
+[ RUN      ] RichBlocksFakeDc.TableCellSpansBelowOneAreRejected
+[       OK ] RichBlocksFakeDc.TableCellSpansBelowOneAreRejected (1249 ms)
+[----------] 6 tests from RichBlocksFakeDc (5245 ms total)
+
+[----------] 14 tests from Handshake
+[ RUN      ] Handshake.CreatesMatchingAuthKeyAgainstFakeServer
+[       OK ] Handshake.CreatesMatchingAuthKeyAgainstFakeServer (444 ms)
+[ RUN      ] Handshake.FailsWhenNoKeyMatchesFingerprint
+[       OK ] Handshake.FailsWhenNoKeyMatchesFingerprint (112 ms)
+[ RUN      ] Handshake.PlainPacketRoundTrip
+[       OK ] Handshake.PlainPacketRoundTrip (0 ms)
+[ RUN      ] Handshake.AcceptsValidDhParams
+[       OK ] Handshake.AcceptsValidDhParams (313 ms)
+[ RUN      ] Handshake.RejectsNonSafePrime
+[       OK ] Handshake.RejectsNonSafePrime (0 ms)
+[ RUN      ] Handshake.RejectsOutOfRangeGA
+[       OK ] Handshake.RejectsOutOfRangeGA (911 ms)
+[ RUN      ] Handshake.TelegramKeysParse
+[       OK ] Handshake.TelegramKeysParse (0 ms)
+[ RUN      ] Handshake.PlainPacketIgnoresTrailingPaddingOfAnySize
+[       OK ] Handshake.PlainPacketIgnoresTrailingPaddingOfAnySize (0 ms)
+[ RUN      ] Handshake.PlainPacketRegressionLiveTrailingCounts
+[       OK ] Handshake.PlainPacketRegressionLiveTrailingCounts (0 ms)
+[ RUN      ] Handshake.PlainPacketRejectsLengthFieldLargerThanPacket
+[       OK ] Handshake.PlainPacketRejectsLengthFieldLargerThanPacket (0 ms)
+[ RUN      ] Handshake.PlainPacketRejectsMaximumLengthFieldWithoutOverflow
+[       OK ] Handshake.PlainPacketRejectsMaximumLengthFieldWithoutOverflow (0 ms)
+[ RUN      ] Handshake.PlainPacketRejectsNonzeroAuthKeyId
+[       OK ] Handshake.PlainPacketRejectsNonzeroAuthKeyId (0 ms)
+[ RUN      ] Handshake.PlainPacketRejectsShortHeader
+[       OK ] Handshake.PlainPacketRejectsShortHeader (0 ms)
+[ RUN      ] Handshake.PlainPacketRejectsTruncation
+[       OK ] Handshake.PlainPacketRejectsTruncation (0 ms)
+[----------] 14 tests from Handshake (1783 ms total)
+
+[----------] 13 tests from Session
+[ RUN      ] Session.InvokeRoundTripsThroughEncryptedChannel
+[       OK ] Session.InvokeRoundTripsThroughEncryptedChannel (0 ms)
+[ RUN      ] Session.RetriesAfterBadServerSalt
+[       OK ] Session.RetriesAfterBadServerSalt (0 ms)
+[ RUN      ] Session.RpcErrorIsRaised
+[       OK ] Session.RpcErrorIsRaised (0 ms)
+[ RUN      ] Session.GunzipUnpacksGzipData
+[       OK ] Session.GunzipUnpacksGzipData (0 ms)
+[ RUN      ] Session.SessionFileRoundTrip
+[       OK ] Session.SessionFileRoundTrip (1 ms)
+[ RUN      ] Session.InvokeHonoursRequestTimeoutWhenServerKeepsTalking
+2026-11-15T04:59:39.280Z WARN  [rpc] request timed out waiting for rpc_result attempt=1
+[       OK ] Session.InvokeHonoursRequestTimeoutWhenServerKeepsTalking (150 ms)
+[ RUN      ] Session.BadMsgCode16CorrectsTimeOffsetAndResends
+[       OK ] Session.BadMsgCode16CorrectsTimeOffsetAndResends (0 ms)
+[ RUN      ] Session.FloodWaitWithinLimitSleepsAndResends
+2026-11-15T04:59:39.280Z WARN  [rpc] flood wait, sleeping seconds=1 attempt=1
+[       OK ] Session.FloodWaitWithinLimitSleepsAndResends (1000 ms)
+[ RUN      ] Session.FloodWaitBeyondLimitIsReturnedWithoutSleeping
+[       OK ] Session.FloodWaitBeyondLimitIsReturnedWithoutSleeping (0 ms)
+[ RUN      ] Session.FloodWaitSleepCanBeCancelledWithoutResending
+2026-11-15T04:59:40.281Z WARN  [rpc] flood wait, sleeping seconds=30 attempt=1
+[       OK ] Session.FloodWaitSleepCanBeCancelledWithoutResending (100 ms)
+[ RUN      ] Session.FloodWaitSleepHonoursPerRequestCancel
+2026-11-15T04:59:40.381Z WARN  [rpc] flood wait, sleeping seconds=30 attempt=1
+[       OK ] Session.FloodWaitSleepHonoursPerRequestCancel (100 ms)
+[ RUN      ] Session.FloodWaitSleepIsNotTakenPastRequestDeadline
+[       OK ] Session.FloodWaitSleepIsNotTakenPastRequestDeadline (0 ms)
+[ RUN      ] Session.FloodWaitRetryLoopIsBoundedByAttemptBudget
+2026-11-15T04:59:40.482Z WARN  [rpc] flood wait, sleeping seconds=0 attempt=1
+2026-11-15T04:59:40.482Z WARN  [rpc] flood wait, sleeping seconds=0 attempt=2
+[       OK ] Session.FloodWaitRetryLoopIsBoundedByAttemptBudget (0 ms)
+[----------] 13 tests from Session (1353 ms total)
+
+[----------] 1 test from Connection
+[ RUN      ] Connection.FramesOverLoopbackTcp
+[       OK ] Connection.FramesOverLoopbackTcp (0 ms)
+[----------] 1 test from Connection (0 ms total)
+
+[----------] 2 tests from Client
+[ RUN      ] Client.PeerWithoutAccessHashIsRejected
+[       OK ] Client.PeerWithoutAccessHashIsRejected (0 ms)
+[ RUN      ] Client.RequiresConnectBeforeCalls
+[       OK ] Client.RequiresConnectBeforeCalls (0 ms)
+[----------] 2 tests from Client (0 ms total)
+
+[----------] 3 tests from SecurityHardening
+[ RUN      ] SecurityHardening.SecureRandomIdsAreDistinct
+[       OK ] SecurityHardening.SecureRandomIdsAreDistinct (0 ms)
+[ RUN      ] SecurityHardening.PrivateFileIsOwnerOnly
+[       OK ] SecurityHardening.PrivateFileIsOwnerOnly (0 ms)
+[ RUN      ] SecurityHardening.ConstantTimeEqualMatchesNormalCompare
+[       OK ] SecurityHardening.ConstantTimeEqualMatchesNormalCompare (0 ms)
+[----------] 3 tests from SecurityHardening (0 ms total)
+
+[----------] 1 test from SessionStorage
+[ RUN      ] SessionStorage.AtomicSaveLeavesNoTempFileAndRoundTrips
+[       OK ] SessionStorage.AtomicSaveLeavesNoTempFileAndRoundTrips (1 ms)
+[----------] 1 test from SessionStorage (1 ms total)
+
+[----------] 1 test from ClientRetry
+[ RUN      ] ClientRetry.ConnectRetriesBoundedThenFailsFast
+2026-11-15T04:59:40.484Z WARN  [client] tcp connect failed, retrying attempt=1 reason=connect 127.0.0.1:1: Connection refused
+2026-11-15T04:59:40.494Z WARN  [client] tcp connect failed, retrying attempt=2 reason=connect 127.0.0.1:1: Connection refused
+2026-11-15T04:59:40.506Z ERROR [client] connect failed category=network reason=connect 127.0.0.1:1: Connection refused
+[       OK ] ClientRetry.ConnectRetriesBoundedThenFailsFast (21 ms)
+[----------] 1 test from ClientRetry (21 ms total)
+
+[----------] 1 test from UpdateQueue
+[ RUN      ] UpdateQueue.BackpressureSignalsFullAndNothingIsDropped
+[       OK ] UpdateQueue.BackpressureSignalsFullAndNothingIsDropped (0 ms)
+[----------] 1 test from UpdateQueue (0 ms total)
+
+[----------] 5 tests from SessionFormat
+[ RUN      ] SessionFormat.ChecksumDetectsDamage
+[       OK ] SessionFormat.ChecksumDetectsDamage (0 ms)
+[ RUN      ] SessionFormat.TruncatedAndUnknownFilesAreCorrupt
+[       OK ] SessionFormat.TruncatedAndUnknownFilesAreCorrupt (0 ms)
+[ RUN      ] SessionFormat.MissingFileIsNotAnError
+[       OK ] SessionFormat.MissingFileIsNotAnError (0 ms)
+[ RUN      ] SessionFormat.LegacyV1FileStillLoads
+[       OK ] SessionFormat.LegacyV1FileStillLoads (0 ms)
+[ RUN      ] SessionFormat.InvalidDataCenterIsRejectedEvenWithValidChecksum
+[       OK ] SessionFormat.InvalidDataCenterIsRejectedEvenWithValidChecksum (0 ms)
+[----------] 5 tests from SessionFormat (0 ms total)
+
+[----------] 2 tests from SessionStore
+[ RUN      ] SessionStore.FreshStoreIsStampedAndCheckedOnOpen
+[       OK ] SessionStore.FreshStoreIsStampedAndCheckedOnOpen (5 ms)
+[ RUN      ] SessionStore.NewerSchemaIsRefusedNotOverwritten
+[       OK ] SessionStore.NewerSchemaIsRefusedNotOverwritten (3 ms)
+[----------] 2 tests from SessionStore (8 ms total)
+
+[----------] 1 test from Replay
+[ RUN      ] Replay.DuplicateServerMessageIsNotProcessedTwice
+[       OK ] Replay.DuplicateServerMessageIsNotProcessedTwice (0 ms)
+[----------] 1 test from Replay (0 ms total)
+
+[----------] 2 tests from Filters
+[ RUN      ] Filters.CommandMatchesNameAndBotSuffix
+[       OK ] Filters.CommandMatchesNameAndBotSuffix (0 ms)
+[ RUN      ] Filters.CombinatorsAndRegex
+[       OK ] Filters.CombinatorsAndRegex (0 ms)
+[----------] 2 tests from Filters (0 ms total)
+
+[----------] 4 tests from Dispatch
+[ RUN      ] Dispatch.ShortMessageReachesHandlerWithFields
+[       OK ] Dispatch.ShortMessageReachesHandlerWithFields (0 ms)
+[ RUN      ] Dispatch.ShortChatMessageUsesChatPeer
+[       OK ] Dispatch.ShortChatMessageUsesChatPeer (0 ms)
+[ RUN      ] Dispatch.UpdatesContainerCachesPeersAndDeliversMessage
+[       OK ] Dispatch.UpdatesContainerCachesPeersAndDeliversMessage (0 ms)
+[ RUN      ] Dispatch.HandlerExceptionDoesNotStopOthers
+2026-11-15T04:59:40.516Z ERROR [client] handler failed stage=message handler reason=boom
+cppgram: message handler failed: boom
+[       OK ] Dispatch.HandlerExceptionDoesNotStopOthers (0 ms)
+[----------] 4 tests from Dispatch (0 ms total)
+
+[----------] 1 test from Convert
+[ RUN      ] Convert.DocumentMediaCarriesFileNameAndLocation
+[       OK ] Convert.DocumentMediaCarriesFileNameAndLocation (0 ms)
+[----------] 1 test from Convert (0 ms total)
+
+[----------] 2 tests from RpcErrors
+[ RUN      ] RpcErrors.FloodWaitIsTyped
+[       OK ] RpcErrors.FloodWaitIsTyped (0 ms)
+[ RUN      ] RpcErrors.OtherErrorsStayGeneric
+[       OK ] RpcErrors.OtherErrorsStayGeneric (0 ms)
+[----------] 2 tests from RpcErrors (0 ms total)
+
+[----------] 2 tests from Members
+[ RUN      ] Members.AdminParticipantConverts
+[       OK ] Members.AdminParticipantConverts (0 ms)
+[ RUN      ] Members.LeftParticipantConverts
+[       OK ] Members.LeftParticipantConverts (0 ms)
+[----------] 2 tests from Members (0 ms total)
+
+[----------] 1 test from FiltersTyped
+[ RUN      ] FiltersTyped.CallbackPrefixAndInlineRegex
+[       OK ] FiltersTyped.CallbackPrefixAndInlineRegex (0 ms)
+[----------] 1 test from FiltersTyped (0 ms total)
+
+[----------] 1 test from Polls
+[ RUN      ] Polls.PollMediaParsesQuestionOptionsAndVotes
+[       OK ] Polls.PollMediaParsesQuestionOptionsAndVotes (0 ms)
+[----------] 1 test from Polls (0 ms total)
+
+[----------] 1 test from Stickers
+[ RUN      ] Stickers.StickerAttributeParsesEmojiAndSetId
+[       OK ] Stickers.StickerAttributeParsesEmojiAndSetId (0 ms)
+[----------] 1 test from Stickers (0 ms total)
+
+[----------] 6 tests from ParserHtml
+[ RUN      ] ParserHtml.BoldAndItalicWithEmojiUsesUtf16Offsets
+[       OK ] ParserHtml.BoldAndItalicWithEmojiUsesUtf16Offsets (0 ms)
+[ RUN      ] ParserHtml.LinkMentionAndEntities
+[       OK ] ParserHtml.LinkMentionAndEntities (0 ms)
+[ RUN      ] ParserHtml.PreWithLanguageAbsorbsCode
+[       OK ] ParserHtml.PreWithLanguageAbsorbsCode (0 ms)
+[ RUN      ] ParserHtml.UnknownTagsKeepTextAndUnclosedTagsClose
+[       OK ] ParserHtml.UnknownTagsKeepTextAndUnclosedTagsClose (0 ms)
+[ RUN      ] ParserHtml.NestedBoldItalicCoversInnerRange
+[       OK ] ParserHtml.NestedBoldItalicCoversInnerRange (0 ms)
+[ RUN      ] ParserHtml.NestedLinkInsideBoldKeepsUrl
+[       OK ] ParserHtml.NestedLinkInsideBoldKeepsUrl (0 ms)
+[----------] 6 tests from ParserHtml (0 ms total)
+
+[----------] 3 tests from ParserMarkdown
+[ RUN      ] ParserMarkdown.BoldItalicCodeAndUnderline
+[       OK ] ParserMarkdown.BoldItalicCodeAndUnderline (0 ms)
+[ RUN      ] ParserMarkdown.LinkFencedBlockAndEscapes
+[       OK ] ParserMarkdown.LinkFencedBlockAndEscapes (0 ms)
+[ RUN      ] ParserMarkdown.SnakeCaseStillPlainWhenUnclosed
+[       OK ] ParserMarkdown.SnakeCaseStillPlainWhenUnclosed (0 ms)
+[----------] 3 tests from ParserMarkdown (0 ms total)
+
+[----------] 2 tests from Storage
+[ RUN      ] Storage.SessionRoundTrip
+[       OK ] Storage.SessionRoundTrip (3 ms)
+[ RUN      ] Storage.UpdateStateRoundTrip
+[       OK ] Storage.UpdateStateRoundTrip (3 ms)
+[----------] 2 tests from Storage (7 ms total)
+
+[----------] 2 tests from SessionString
+[ RUN      ] SessionString.RoundTripKeepsEveryField
+[       OK ] SessionString.RoundTripKeepsEveryField (0 ms)
+[ RUN      ] SessionString.RejectsMalformedInput
+[       OK ] SessionString.RejectsMalformedInput (0 ms)
+[----------] 2 tests from SessionString (0 ms total)
+
+[----------] 3 tests from Srp
+[ RUN      ] Srp.ClientAndServerAgreeOnSharedSecret
+[       OK ] Srp.ClientAndServerAgreeOnSharedSecret (160 ms)
+[ RUN      ] Srp.DifferentPasswordsGiveDifferentX
+[       OK ] Srp.DifferentPasswordsGiveDifferentX (153 ms)
+[ RUN      ] Srp.VerifierIsGToTheX
+[       OK ] Srp.VerifierIsGToTheX (155 ms)
+[----------] 3 tests from Srp (469 ms total)
+
+[----------] 14 tests from TransportFraming
+[ RUN      ] TransportFraming.InitBytesPerKind
+[       OK ] TransportFraming.InitBytesPerKind (0 ms)
+[ RUN      ] TransportFraming.RoundTripAllKinds
+[       OK ] TransportFraming.RoundTripAllKinds (0 ms)
+[ RUN      ] TransportFraming.AbridgedLongHeaderForLargePayload
+[       OK ] TransportFraming.AbridgedLongHeaderForLargePayload (0 ms)
+[ RUN      ] TransportFraming.AbridgedRejectsUnalignedPayload
+[       OK ] TransportFraming.AbridgedRejectsUnalignedPayload (0 ms)
+[ RUN      ] TransportFraming.IntermediateLargeFrame
+[       OK ] TransportFraming.IntermediateLargeFrame (2 ms)
+[ RUN      ] TransportFraming.TruncatedFrameWaitsForMoreBytes
+[       OK ] TransportFraming.TruncatedFrameWaitsForMoreBytes (0 ms)
+[ RUN      ] TransportFraming.FullDetectsCorruptedCrc
+[       OK ] TransportFraming.FullDetectsCorruptedCrc (0 ms)
+[ RUN      ] TransportFraming.FullRejectsImpossibleLength
+[       OK ] TransportFraming.FullRejectsImpossibleLength (0 ms)
+[ RUN      ] TransportFraming.IntermediateRejectsNegativeServerErrorCode
+[       OK ] TransportFraming.IntermediateRejectsNegativeServerErrorCode (0 ms)
+[ RUN      ] TransportFraming.AbridgedRejectsOversizedFrame
+[       OK ] TransportFraming.AbridgedRejectsOversizedFrame (0 ms)
+[ RUN      ] TransportFraming.IntermediateRejectsFrameOneByteOverMaxFrame
+[       OK ] TransportFraming.IntermediateRejectsFrameOneByteOverMaxFrame (0 ms)
+[ RUN      ] TransportFraming.IntermediateAcceptsFrameExactlyAtMaxFrameBoundary
+[       OK ] TransportFraming.IntermediateAcceptsFrameExactlyAtMaxFrameBoundary (0 ms)
+[ RUN      ] TransportFraming.EmptyBufferYieldsNothing
+[       OK ] TransportFraming.EmptyBufferYieldsNothing (0 ms)
+[ RUN      ] TransportFraming.MalformedIntermediateFrameKeepsThrowing
+[       OK ] TransportFraming.MalformedIntermediateFrameKeepsThrowing (0 ms)
+[----------] 14 tests from TransportFraming (2 ms total)
+
+[----------] 10 tests from Retry
+[ RUN      ] Retry.BackoffGrowsExponentiallyThenCaps
+[       OK ] Retry.BackoffGrowsExponentiallyThenCaps (0 ms)
+[ RUN      ] Retry.JitterStaysInEqualJitterRange
+[       OK ] Retry.JitterStaysInEqualJitterRange (0 ms)
+[ RUN      ] Retry.HugeRetryCountDoesNotOverflow
+[       OK ] Retry.HugeRetryCountDoesNotOverflow (0 ms)
+[ RUN      ] Retry.MayRetryIsBoundedByMaxAttempts
+[       OK ] Retry.MayRetryIsBoundedByMaxAttempts (0 ms)
+[ RUN      ] Retry.InvalidPoliciesAreRejected
+[       OK ] Retry.InvalidPoliciesAreRejected (0 ms)
+[ RUN      ] Retry.FloodWaitIsParsedAndWithinLimit
+[       OK ] Retry.FloodWaitIsParsedAndWithinLimit (0 ms)
+[ RUN      ] Retry.SlowmodeWaitIsFloodWaitClass
+[       OK ] Retry.SlowmodeWaitIsFloodWaitClass (0 ms)
+[ RUN      ] Retry.MalformedFloodWaitIsPermanent
+[       OK ] Retry.MalformedFloodWaitIsPermanent (0 ms)
+[ RUN      ] Retry.ServerErrorsAreTransientAndAuthErrorsPermanent
+[       OK ] Retry.ServerErrorsAreTransientAndAuthErrorsPermanent (0 ms)
+[ RUN      ] Retry.FloodWaitDigitBoundaryAndStrictFormat
+[       OK ] Retry.FloodWaitDigitBoundaryAndStrictFormat (0 ms)
+[----------] 10 tests from Retry (0 ms total)
+
+[----------] 2 tests from ReconnectBudget
+[ RUN      ] ReconnectBudget.SpendsAfterMaxFailuresAndResets
+[       OK ] ReconnectBudget.SpendsAfterMaxFailuresAndResets (0 ms)
+[ RUN      ] ReconnectBudget.ZeroBudgetGivesUpImmediately
+[       OK ] ReconnectBudget.ZeroBudgetGivesUpImmediately (0 ms)
+[----------] 2 tests from ReconnectBudget (0 ms total)
+
+[----------] 4 tests from UpdateGate
+[ RUN      ] UpdateGate.NextInSequenceIsApplied
+[       OK ] UpdateGate.NextInSequenceIsApplied (0 ms)
+[ RUN      ] UpdateGate.AlreadyAppliedIsDuplicate
+[       OK ] UpdateGate.AlreadyAppliedIsDuplicate (0 ms)
+[ RUN      ] UpdateGate.SkippedUpdatesAreGap
+[       OK ] UpdateGate.SkippedUpdatesAreGap (0 ms)
+[ RUN      ] UpdateGate.LargePtsCountCannotOverflow
+[       OK ] UpdateGate.LargePtsCountCannotOverflow (0 ms)
+[----------] 4 tests from UpdateGate (0 ms total)
+
+[----------] 11 tests from AuthState
+[ RUN      ] AuthState.LoginPathReachesAuthorized
+[       OK ] AuthState.LoginPathReachesAuthorized (0 ms)
+[ RUN      ] AuthState.WrongCodeKeepsCodeRequiredAndAllowsRetry
+[       OK ] AuthState.WrongCodeKeepsCodeRequiredAndAllowsRetry (0 ms)
+[ RUN      ] AuthState.ExpiredCodeReturnsToUnauthenticated
+[       OK ] AuthState.ExpiredCodeReturnsToUnauthenticated (0 ms)
+[ RUN      ] AuthState.WrongPasswordStaysPasswordRequired
+[       OK ] AuthState.WrongPasswordStaysPasswordRequired (0 ms)
+[ RUN      ] AuthState.RecoveryCompletesLoginFromPasswordRequired
+[       OK ] AuthState.RecoveryCompletesLoginFromPasswordRequired (0 ms)
+[ RUN      ] AuthState.DisconnectIsLegalFromEveryState
+[       OK ] AuthState.DisconnectIsLegalFromEveryState (0 ms)
+[ RUN      ] AuthState.RevokedAndExpiredSessionsNeedALoginAfterLogout
+[       OK ] AuthState.RevokedAndExpiredSessionsNeedALoginAfterLogout (0 ms)
+[ RUN      ] AuthState.PermanentErrorIsTerminalExceptForDisconnect
+[       OK ] AuthState.PermanentErrorIsTerminalExceptForDisconnect (0 ms)
+[ RUN      ] AuthState.IllegalTransitionsAreRejected
+[       OK ] AuthState.IllegalTransitionsAreRejected (0 ms)
+[ RUN      ] AuthState.EveryStateHasAName
+[       OK ] AuthState.EveryStateHasAName (0 ms)
+[ RUN      ] AuthState.LoginCanStartFromRecoverableError
+[       OK ] AuthState.LoginCanStartFromRecoverableError (0 ms)
+[----------] 11 tests from AuthState (0 ms total)
+
+[----------] 4 tests from AuthErrorMapping
+[ RUN      ] AuthErrorMapping.KnownLoginErrors
+[       OK ] AuthErrorMapping.KnownLoginErrors (0 ms)
+[ RUN      ] AuthErrorMapping.FloodWaitAndServerErrorsAreTransient
+[       OK ] AuthErrorMapping.FloodWaitAndServerErrorsAreTransient (0 ms)
+[ RUN      ] AuthErrorMapping.UnknownClientErrorsAreNotRetried
+[       OK ] AuthErrorMapping.UnknownClientErrorsAreNotRetried (0 ms)
+[ RUN      ] AuthErrorMapping.MappedEventsAreAcceptedInAuthenticating
+[       OK ] AuthErrorMapping.MappedEventsAreAcceptedInAuthenticating (0 ms)
+[----------] 4 tests from AuthErrorMapping (0 ms total)
+
+[----------] 8 tests from TransferPlan
+[ RUN      ] TransferPlan.SmallFileIsOnePartWithExactLastSize
+[       OK ] TransferPlan.SmallFileIsOnePartWithExactLastSize (0 ms)
+[ RUN      ] TransferPlan.PartBoundariesAreExact
+[       OK ] TransferPlan.PartBoundariesAreExact (0 ms)
+[ RUN      ] TransferPlan.BigFileThreshold
+[       OK ] TransferPlan.BigFileThreshold (0 ms)
+[ RUN      ] TransferPlan.RejectsEmptyFile
+[       OK ] TransferPlan.RejectsEmptyFile (0 ms)
+[ RUN      ] TransferPlan.RejectsBadPartSizes
+[       OK ] TransferPlan.RejectsBadPartSizes (0 ms)
+[ RUN      ] TransferPlan.RejectsTooManyParts
+[       OK ] TransferPlan.RejectsTooManyParts (0 ms)
+[ RUN      ] TransferPlan.OffsetsCoverTheWholeFile
+[       OK ] TransferPlan.OffsetsCoverTheWholeFile (0 ms)
+[ RUN      ] TransferPlan.DownloadChunkCount
+[       OK ] TransferPlan.DownloadChunkCount (0 ms)
+[----------] 8 tests from TransferPlan (0 ms total)
+
+[----------] 5 tests from FileNameSafety
+[ RUN      ] FileNameSafety.KeepsPlainNames
+[       OK ] FileNameSafety.KeepsPlainNames (0 ms)
+[ RUN      ] FileNameSafety.RemovesPathComponents
+[       OK ] FileNameSafety.RemovesPathComponents (0 ms)
+[ RUN      ] FileNameSafety.RejectsDotNamesAndHiddenFiles
+[       OK ] FileNameSafety.RejectsDotNamesAndHiddenFiles (0 ms)
+[ RUN      ] FileNameSafety.DropsControlCharacters
+[       OK ] FileNameSafety.DropsControlCharacters (0 ms)
+[ RUN      ] FileNameSafety.CapsLengthAndKeepsExtension
+[       OK ] FileNameSafety.CapsLengthAndKeepsExtension (0 ms)
+[----------] 5 tests from FileNameSafety (0 ms total)
+
+[----------] 1 test from TransferResume
+[ RUN      ] TransferResume.OffsetIsAlignedAndBounded
+[       OK ] TransferResume.OffsetIsAlignedAndBounded (0 ms)
+[----------] 1 test from TransferResume (0 ms total)
+
+[----------] 3 tests from Cancel
+[ RUN      ] Cancel.SleepCompletesWhenNotStopped
+[       OK ] Cancel.SleepCompletesWhenNotStopped (30 ms)
+[ RUN      ] Cancel.AlreadyStoppedThrowsWithoutSleeping
+[       OK ] Cancel.AlreadyStoppedThrowsWithoutSleeping (0 ms)
+[ RUN      ] Cancel.StopFromAnotherThreadEndsALongSleepEarly
+[       OK ] Cancel.StopFromAnotherThreadEndsALongSleepEarly (50 ms)
+[----------] 3 tests from Cancel (80 ms total)
+
+[----------] 2 tests from CancelStress
+[ RUN      ] CancelStress.ConcurrentWaitersAllUnblockOnStop
+[       OK ] CancelStress.ConcurrentWaitersAllUnblockOnStop (143 ms)
+[ RUN      ] CancelStress.ShortWaitsCompleteWithoutStop
+[       OK ] CancelStress.ShortWaitsCompleteWithoutStop (5 ms)
+[----------] 2 tests from CancelStress (149 ms total)
+
+[----------] 5 tests from ChannelPts
+[ RUN      ] ChannelPts.UnknownChannelNeedsDifference
+[       OK ] ChannelPts.UnknownChannelNeedsDifference (0 ms)
+[ RUN      ] ChannelPts.ChannelsKeepSeparateSequences
+[       OK ] ChannelPts.ChannelsKeepSeparateSequences (0 ms)
+[ RUN      ] ChannelPts.DuplicateAndGapAreDetectedPerChannel
+[       OK ] ChannelPts.DuplicateAndGapAreDetectedPerChannel (0 ms)
+[ RUN      ] ChannelPts.MarkAppliedAdvancesOnlyThatChannel
+[       OK ] ChannelPts.MarkAppliedAdvancesOnlyThatChannel (0 ms)
+[ RUN      ] ChannelPts.ForgetReturnsChannelToGap
+[       OK ] ChannelPts.ForgetReturnsChannelToGap (0 ms)
+[----------] 5 tests from ChannelPts (0 ms total)
+
+[----------] 16 tests from SessionCrypto
+[ RUN      ] SessionCrypto.RoundTripRestoresPlaintext
+[       OK ] SessionCrypto.RoundTripRestoresPlaintext (220 ms)
+[ RUN      ] SessionCrypto.EmptyPlaintextRoundTrips
+[       OK ] SessionCrypto.EmptyPlaintextRoundTrips (191 ms)
+[ RUN      ] SessionCrypto.CiphertextDoesNotContainPlaintext
+[       OK ] SessionCrypto.CiphertextDoesNotContainPlaintext (92 ms)
+[ RUN      ] SessionCrypto.EveryEncryptionUsesFreshSaltAndNonce
+[       OK ] SessionCrypto.EveryEncryptionUsesFreshSaltAndNonce (183 ms)
+[ RUN      ] SessionCrypto.WrongPassphraseIsRejected
+[       OK ] SessionCrypto.WrongPassphraseIsRejected (177 ms)
+[ RUN      ] SessionCrypto.EveryByteFlipIsDetected
+[       OK ] SessionCrypto.EveryByteFlipIsDetected (5696 ms)
+[ RUN      ] SessionCrypto.TruncationIsDetected
+[       OK ] SessionCrypto.TruncationIsDetected (180 ms)
+[ RUN      ] SessionCrypto.PlainSessionIsNotMistakenForEncrypted
+[       OK ] SessionCrypto.PlainSessionIsNotMistakenForEncrypted (0 ms)
+[ RUN      ] SessionCrypto.OutOfRangeCostParametersAreRejected
+[       OK ] SessionCrypto.OutOfRangeCostParametersAreRejected (90 ms)
+[ RUN      ] SessionCrypto.EmptyPassphraseIsRefused
+[       OK ] SessionCrypto.EmptyPassphraseIsRefused (88 ms)
+[ RUN      ] SessionCrypto.ErrorMessageDoesNotEchoSecrets
+[       OK ] SessionCrypto.ErrorMessageDoesNotEchoSecrets (175 ms)
+[ RUN      ] SessionCrypto.ScryptCostAboveTheMemoryBoundIsRejectedBeforeDerivation
+[       OK ] SessionCrypto.ScryptCostAboveTheMemoryBoundIsRejectedBeforeDerivation (87 ms)
+[ RUN      ] SessionCrypto.OversizedBlobIsRejectedBeforeAnyWork
+[       OK ] SessionCrypto.OversizedBlobIsRejectedBeforeAnyWork (0 ms)
+[ RUN      ] SessionCrypto.OpenWithKeyNeedsTheRightKeyAndAuthenticatesEveryByte
+[       OK ] SessionCrypto.OpenWithKeyNeedsTheRightKeyAndAuthenticatesEveryByte (181 ms)
+[ RUN      ] SessionCrypto.EveryTruncationLengthIsRejected
+[       OK ] SessionCrypto.EveryTruncationLengthIsRejected (179 ms)
+[ RUN      ] SessionCrypto.HeaderValidatorAcceptsWhatTheWriterProduces
+[       OK ] SessionCrypto.HeaderValidatorAcceptsWhatTheWriterProduces (143 ms)
+[----------] 16 tests from SessionCrypto (7691 ms total)
+
+[----------] 13 tests from Socks5
+[ RUN      ] Socks5.Ipv4TargetIsSentAsBinaryAddress
+[       OK ] Socks5.Ipv4TargetIsSentAsBinaryAddress (0 ms)
+[ RUN      ] Socks5.DomainTargetIsResolvedByProxy
+[       OK ] Socks5.DomainTargetIsResolvedByProxy (0 ms)
+[ RUN      ] Socks5.Ipv6TargetIsSentAsBinaryAddress
+[       OK ] Socks5.Ipv6TargetIsSentAsBinaryAddress (0 ms)
+[ RUN      ] Socks5.DomainBoundAddressInReplyIsAccepted
+[       OK ] Socks5.DomainBoundAddressInReplyIsAccepted (0 ms)
+[ RUN      ] Socks5.UsernamePasswordAuthIsSent
+[       OK ] Socks5.UsernamePasswordAuthIsSent (0 ms)
+[ RUN      ] Socks5.RejectedCredentialsFailAsNonTransient
+[       OK ] Socks5.RejectedCredentialsFailAsNonTransient (0 ms)
+[ RUN      ] Socks5.ProxyRequiringAuthWithoutCredentialsFails
+[       OK ] Socks5.ProxyRequiringAuthWithoutCredentialsFails (0 ms)
+[ RUN      ] Socks5.NoAcceptableMethodFails
+[       OK ] Socks5.NoAcceptableMethodFails (0 ms)
+[ RUN      ] Socks5.RefusedTargetReportsReplyCodeAndIsNotRetried
+[       OK ] Socks5.RefusedTargetReportsReplyCodeAndIsNotRetried (0 ms)
+[ RUN      ] Socks5.SilentProxyTimesOutAsTransient
+[       OK ] Socks5.SilentProxyTimesOutAsTransient (1500 ms)
+[ RUN      ] Socks5.InvalidInputsAreRejectedBeforeAnyNetworkUse
+[       OK ] Socks5.InvalidInputsAreRejectedBeforeAnyNetworkUse (0 ms)
+[ RUN      ] Socks5.RetryIsBoundedAndGivesUpOnTransientFailure
+[       OK ] Socks5.RetryIsBoundedAndGivesUpOnTransientFailure (20 ms)
+[ RUN      ] Socks5.RetryRejectsZeroAttempts
+[       OK ] Socks5.RetryRejectsZeroAttempts (0 ms)
+[----------] 13 tests from Socks5 (1522 ms total)
+
+[----------] 1 test from Socks5Connection
+[ RUN      ] Socks5Connection.ConnectionTunnelsThroughProxyAndReportsRejectionAsFinal
+[       OK ] Socks5Connection.ConnectionTunnelsThroughProxyAndReportsRejectionAsFinal (0 ms)
+[----------] 1 test from Socks5Connection (0 ms total)
+
+[----------] 9 tests from ProxySecret
+[ RUN      ] ProxySecret.PlainSecretParsesBothCases
+[       OK ] ProxySecret.PlainSecretParsesBothCases (0 ms)
+[ RUN      ] ProxySecret.PaddedIntermediateSecret
+[       OK ] ProxySecret.PaddedIntermediateSecret (0 ms)
+[ RUN      ] ProxySecret.FakeTlsSecretCarriesDomain
+[       OK ] ProxySecret.FakeTlsSecretCarriesDomain (0 ms)
+[ RUN      ] ProxySecret.RejectsWrongLengths
+[       OK ] ProxySecret.RejectsWrongLengths (0 ms)
+[ RUN      ] ProxySecret.RejectsNonHex
+[       OK ] ProxySecret.RejectsNonHex (0 ms)
+[ RUN      ] ProxySecret.RejectsUnknownPrefix
+[       OK ] ProxySecret.RejectsUnknownPrefix (0 ms)
+[ RUN      ] ProxySecret.FakeTlsNeedsDomain
+[       OK ] ProxySecret.FakeTlsNeedsDomain (0 ms)
+[ RUN      ] ProxySecret.FakeTlsDomainRules
+[       OK ] ProxySecret.FakeTlsDomainRules (0 ms)
+[ RUN      ] ProxySecret.ErrorMessageNeverEchoesSecret
+[       OK ] ProxySecret.ErrorMessageNeverEchoesSecret (0 ms)
+[----------] 9 tests from ProxySecret (0 ms total)
+
+[----------] 11 tests from ProxySecretBase64
+[ RUN      ] ProxySecretBase64.PlainSecretInBase64URLPaddedAndUnpadded
+[       OK ] ProxySecretBase64.PlainSecretInBase64URLPaddedAndUnpadded (0 ms)
+[ RUN      ] ProxySecretBase64.PlainSecretInStandardBase64PaddedAndUnpadded
+[       OK ] ProxySecretBase64.PlainSecretInStandardBase64PaddedAndUnpadded (0 ms)
+[ RUN      ] ProxySecretBase64.PaddedIntermediateSecretInBothAlphabets
+[       OK ] ProxySecretBase64.PaddedIntermediateSecretInBothAlphabets (0 ms)
+[ RUN      ] ProxySecretBase64.FakeTlsSecretKeepsTheDomain
+[       OK ] ProxySecretBase64.FakeTlsSecretKeepsTheDomain (0 ms)
+[ RUN      ] ProxySecretBase64.AlphabetIsStrict
+[       OK ] ProxySecretBase64.AlphabetIsStrict (0 ms)
+[ RUN      ] ProxySecretBase64.MalformedBase64IsRejected
+[       OK ] ProxySecretBase64.MalformedBase64IsRejected (0 ms)
+[ RUN      ] ProxySecretBase64.DecodedLengthAndPrefixAreChecked
+[       OK ] ProxySecretBase64.DecodedLengthAndPrefixAreChecked (0 ms)
+[ RUN      ] ProxySecretBase64.FakeTlsDomainLimitsApplyToBase64
+[       OK ] ProxySecretBase64.FakeTlsDomainLimitsApplyToBase64 (0 ms)
+[ RUN      ] ProxySecretBase64.OversizedTextIsRejectedBeforeDecoding
+[       OK ] ProxySecretBase64.OversizedTextIsRejectedBeforeDecoding (0 ms)
+[ RUN      ] ProxySecretBase64.EvenLengthAllHexTextIsReadAsHex
+[       OK ] ProxySecretBase64.EvenLengthAllHexTextIsReadAsHex (0 ms)
+[ RUN      ] ProxySecretBase64.WhitespaceIsNeverTrimmed
+[       OK ] ProxySecretBase64.WhitespaceIsNeverTrimmed (0 ms)
+[----------] 11 tests from ProxySecretBase64 (0 ms total)
+
+[----------] 1 test from ProxySecretEncoding
+[ RUN      ] ProxySecretEncoding.HexFormsReportHex
+[       OK ] ProxySecretEncoding.HexFormsReportHex (0 ms)
+[----------] 1 test from ProxySecretEncoding (0 ms total)
+
+[----------] 1 test from ProxySecretRegression
+[ RUN      ] ProxySecretRegression.ExistingHexRejectionsStillHold
+[       OK ] ProxySecretRegression.ExistingHexRejectionsStillHold (0 ms)
+[----------] 1 test from ProxySecretRegression (0 ms total)
+
+[----------] 2 tests from ObfuscatedInit
+[ RUN      ] ObfuscatedInit.RejectsReservedPrefixesAndZeroBytes
+[       OK ] ObfuscatedInit.RejectsReservedPrefixesAndZeroBytes (0 ms)
+[ RUN      ] ObfuscatedInit.OverrideMustBeValid
+[       OK ] ObfuscatedInit.OverrideMustBeValid (0 ms)
+[----------] 2 tests from ObfuscatedInit (0 ms total)
+
+[----------] 5 tests from ObfuscatedHandshake
+[ RUN      ] ObfuscatedHandshake.ServerDecodesFramingAndDcForBothModes
+[       OK ] ObfuscatedHandshake.ServerDecodesFramingAndDcForBothModes (0 ms)
+[ RUN      ] ObfuscatedHandshake.TagIsEncryptedOnTheWire
+[       OK ] ObfuscatedHandshake.TagIsEncryptedOnTheWire (0 ms)
+[ RUN      ] ObfuscatedHandshake.WrongSecretDoesNotDecode
+[       OK ] ObfuscatedHandshake.WrongSecretDoesNotDecode (0 ms)
+[ RUN      ] ObfuscatedHandshake.TamperedTailIsRejected
+[       OK ] ObfuscatedHandshake.TamperedTailIsRejected (0 ms)
+[ RUN      ] ObfuscatedHandshake.WrongSizeIsRejected
+[       OK ] ObfuscatedHandshake.WrongSizeIsRejected (0 ms)
+[----------] 5 tests from ObfuscatedHandshake (0 ms total)
+
+[----------] 5 tests from ObfuscatedStream
+[ RUN      ] ObfuscatedStream.ClientToServerRoundTripAcrossSeveralWrites
+[       OK ] ObfuscatedStream.ClientToServerRoundTripAcrossSeveralWrites (0 ms)
+[ RUN      ] ObfuscatedStream.ServerToClientRoundTrip
+[       OK ] ObfuscatedStream.ServerToClientRoundTrip (0 ms)
+[ RUN      ] ObfuscatedStream.DirectionsUseDifferentKeystreams
+[       OK ] ObfuscatedStream.DirectionsUseDifferentKeystreams (0 ms)
+[ RUN      ] ObfuscatedStream.DataAfterHandshakeRoundTripsOnTheSharedStream
+[       OK ] ObfuscatedStream.DataAfterHandshakeRoundTripsOnTheSharedStream (0 ms)
+[ RUN      ] ObfuscatedStream.FragmentedReadsDecryptLikeOneRead
+[       OK ] ObfuscatedStream.FragmentedReadsDecryptLikeOneRead (0 ms)
+[----------] 5 tests from ObfuscatedStream (0 ms total)
+
+[----------] 9 tests from ObfuscatedFrame
+[ RUN      ] ObfuscatedFrame.IntermediateFramingIsLengthPrefixed
+[       OK ] ObfuscatedFrame.IntermediateFramingIsLengthPrefixed (0 ms)
+[ RUN      ] ObfuscatedFrame.PaddedFramingAddsZeroToFifteenBytes
+[       OK ] ObfuscatedFrame.PaddedFramingAddsZeroToFifteenBytes (0 ms)
+[ RUN      ] ObfuscatedFrame.FragmentedFrameReassemblesToPayload
+[       OK ] ObfuscatedFrame.FragmentedFrameReassemblesToPayload (0 ms)
+[ RUN      ] ObfuscatedFrame.PaddedServerFramesDecryptToTheOriginalPacket
+[       OK ] ObfuscatedFrame.PaddedServerFramesDecryptToTheOriginalPacket (2 ms)
+[ RUN      ] ObfuscatedFrame.ManyPaddedServerFramesInOneReadAllDecrypt
+[       OK ] ObfuscatedFrame.ManyPaddedServerFramesInOneReadAllDecrypt (0 ms)
+[ RUN      ] ObfuscatedFrame.PaddedServerFrameSplitAtEveryOffsetReassembles
+[       OK ] ObfuscatedFrame.PaddedServerFrameSplitAtEveryOffsetReassembles (0 ms)
+[ RUN      ] ObfuscatedFrame.TruncatedPaddedFrameIsNotReturnedAsPartialData
+[       OK ] ObfuscatedFrame.TruncatedPaddedFrameIsNotReturnedAsPartialData (0 ms)
+[ RUN      ] ObfuscatedFrame.ServerErrorWordInPlaceOfLengthIsRejected
+[       OK ] ObfuscatedFrame.ServerErrorWordInPlaceOfLengthIsRejected (0 ms)
+[ RUN      ] ObfuscatedFrame.PaddingBeyondOneBlockIsIgnored
+[       OK ] ObfuscatedFrame.PaddingBeyondOneBlockIsIgnored (0 ms)
+[----------] 9 tests from ObfuscatedFrame (3 ms total)
+
+[----------] 2 tests from ObfuscatedCtr
+[ RUN      ] ObfuscatedCtr.RejectsBadKeyOrIvSizes
+[       OK ] ObfuscatedCtr.RejectsBadKeyOrIvSizes (0 ms)
+[ RUN      ] ObfuscatedCtr.EmptyInputGivesEmptyOutputAndIsSymmetric
+[       OK ] ObfuscatedCtr.EmptyInputGivesEmptyOutputAndIsSymmetric (0 ms)
+[----------] 2 tests from ObfuscatedCtr (0 ms total)
+
+[----------] 1 test from ProxySecretForConnection
+[ RUN      ] ProxySecretForConnection.FakeTlsIsRejectedBeforeAnyNetworkUse
+[       OK ] ProxySecretForConnection.FakeTlsIsRejectedBeforeAnyNetworkUse (0 ms)
+[----------] 1 test from ProxySecretForConnection (0 ms total)
+
+[----------] 5 tests from ConnectionNet
+[ RUN      ] ConnectionNet.DirectConnectToClosedPortIsRefusedNotTimedOut
+[       OK ] ConnectionNet.DirectConnectToClosedPortIsRefusedNotTimedOut (0 ms)
+[ RUN      ] ConnectionNet.DirectConnectSucceedsAndCanReconnectAfterDrop
+2026-11-15T04:59:50.446Z WARN  [transport] connection closed by server
+[       OK ] ConnectionNet.DirectConnectSucceedsAndCanReconnectAfterDrop (0 ms)
+[ RUN      ] ConnectionNet.SilentPeerTriggersReceiveTimeout
+[       OK ] ConnectionNet.SilentPeerTriggersReceiveTimeout (1500 ms)
+[ RUN      ] ConnectionNet.ConnectTimeoutIsEnforcedWhenAcceptQueueIsFull
+[       OK ] ConnectionNet.ConnectTimeoutIsEnforcedWhenAcceptQueueIsFull (350 ms)
+[ RUN      ] ConnectionNet.InvalidIpv4LiteralIsRejectedWithoutConnecting
+[       OK ] ConnectionNet.InvalidIpv4LiteralIsRejectedWithoutConnecting (0 ms)
+[----------] 5 tests from ConnectionNet (1852 ms total)
+
+[----------] 5 tests from ObfuscatedNet
+[ RUN      ] ObfuscatedNet.ConnectionToClosedProxyIsTransientProxyError
+[       OK ] ObfuscatedNet.ConnectionToClosedProxyIsTransientProxyError (0 ms)
+[ RUN      ] ObfuscatedNet.PlainSecretRoundTripThroughScriptedProxy
+[       OK ] ObfuscatedNet.PlainSecretRoundTripThroughScriptedProxy (0 ms)
+[ RUN      ] ObfuscatedNet.PaddedSecretFramingIsAcceptedByScriptedProxy
+[       OK ] ObfuscatedNet.PaddedSecretFramingIsAcceptedByScriptedProxy (0 ms)
+[ RUN      ] ObfuscatedNet.ProxyThatDropsAfterHandshakeIsDetected
+2026-11-15T04:59:52.299Z WARN  [transport] connection closed by server
+[       OK ] ObfuscatedNet.ProxyThatDropsAfterHandshakeIsDetected (0 ms)
+[ RUN      ] ObfuscatedNet.FakeTlsSecretIsRejectedBeforeConnecting
+[       OK ] ObfuscatedNet.FakeTlsSecretIsRejectedBeforeConnecting (0 ms)
+[----------] 5 tests from ObfuscatedNet (0 ms total)
+
+[----------] 12 tests from ClientFakeDc
+[ RUN      ] ClientFakeDc.ConnectRunAndStopIsClean
+[       OK ] ClientFakeDc.ConnectRunAndStopIsClean (709 ms)
+[ RUN      ] ClientFakeDc.UnexpectedDropIsDetectedAndReconnected
+2026-11-15T04:59:53.573Z WARN  [transport] connection closed by server
+2026-11-15T04:59:53.574Z WARN  [client] connection dropped, reconnecting was_authorized=false
+[       OK ] ClientFakeDc.UnexpectedDropIsDetectedAndReconnected (728 ms)
+[ RUN      ] ClientFakeDc.RepeatedDropsEachRecover
+2026-11-15T04:59:54.242Z WARN  [transport] connection closed by server
+2026-11-15T04:59:54.242Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T04:59:54.253Z WARN  [transport] connection closed by server
+2026-11-15T04:59:54.253Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T04:59:54.263Z WARN  [transport] connection closed by server
+2026-11-15T04:59:54.263Z WARN  [client] connection dropped, reconnecting was_authorized=false
+[       OK ] ClientFakeDc.RepeatedDropsEachRecover (688 ms)
+[ RUN      ] ClientFakeDc.ReconnectFailureExhaustsBudgetAndRunThrows
+2026-11-15T04:59:55.152Z WARN  [transport] connection closed by server
+2026-11-15T04:59:55.152Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T04:59:55.162Z WARN  [transport] connection closed by server
+2026-11-15T04:59:55.162Z ERROR [client] connect failed category=network reason=connection closed by server
+2026-11-15T04:59:55.177Z WARN  [transport] connection closed by server
+2026-11-15T04:59:55.177Z ERROR [client] connect failed category=network reason=connection closed by server
+2026-11-15T04:59:55.205Z WARN  [transport] recv failed errno=104
+2026-11-15T04:59:55.205Z ERROR [client] connect failed category=network reason=recv: Connection reset by peer
+2026-11-15T04:59:55.205Z ERROR [client] reconnect budget exhausted max_reconnects=3
+[       OK ] ClientFakeDc.ReconnectFailureExhaustsBudgetAndRunThrows (780 ms)
+[ RUN      ] ClientFakeDc.StopDuringReconnectBackoffReturnsCleanly
+2026-11-15T04:59:55.994Z WARN  [transport] connection closed by server
+2026-11-15T04:59:55.994Z WARN  [client] connection dropped, reconnecting was_authorized=false
+[       OK ] ClientFakeDc.StopDuringReconnectBackoffReturnsCleanly (940 ms)
+[ RUN      ] ClientFakeDc.StoppedClientDoesNotReconnectAfterwards
+[       OK ] ClientFakeDc.StoppedClientDoesNotReconnectAfterwards (1350 ms)
+[ RUN      ] ClientFakeDc.FloodWaitIsRetriedAfterServerDelay
+2026-11-15T04:59:57.988Z WARN  [rpc] flood wait, sleeping seconds=1 attempt=1
+2026-11-15T04:59:58.988Z WARN  [rpc] flood wait, sleeping seconds=1 attempt=2
+[       OK ] ClientFakeDc.FloodWaitIsRetriedAfterServerDelay (2492 ms)
+[ RUN      ] ClientFakeDc.FloodWaitBeyondPolicyLimitIsReturnedNotSlept
+[       OK ] ClientFakeDc.FloodWaitBeyondPolicyLimitIsReturnedNotSlept (435 ms)
+[ RUN      ] ClientFakeDc.ConsecutiveFloodWaitsAreBoundedByAttempts
+2026-11-15T05:00:01.137Z WARN  [rpc] flood wait, sleeping seconds=1 attempt=1
+[       OK ] ClientFakeDc.ConsecutiveFloodWaitsAreBoundedByAttempts (1713 ms)
+[ RUN      ] ClientFakeDc.StopCancelsAFloodWaitInProgress
+2026-11-15T05:00:02.721Z WARN  [rpc] flood wait, sleeping seconds=10 attempt=1
+[       OK ] ClientFakeDc.StopCancelsAFloodWaitInProgress (733 ms)
+[ RUN      ] ClientFakeDc.ConcurrentStopAndDropStress
+2026-11-15T05:00:03.439Z WARN  [transport] connection closed by server
+2026-11-15T05:00:03.439Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T05:00:04.525Z WARN  [transport] connection closed by server
+2026-11-15T05:00:04.525Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T05:00:05.241Z WARN  [transport] connection closed by server
+2026-11-15T05:00:05.241Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T05:00:05.831Z WARN  [transport] connection closed by server
+2026-11-15T05:00:05.831Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T05:00:06.270Z WARN  [transport] connection closed by server
+2026-11-15T05:00:06.270Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T05:00:06.764Z WARN  [transport] connection closed by server
+2026-11-15T05:00:06.764Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T05:00:07.365Z WARN  [transport] connection closed by server
+2026-11-15T05:00:07.365Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T05:00:07.960Z WARN  [transport] connection closed by server
+2026-11-15T05:00:07.960Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T05:00:08.479Z WARN  [transport] connection closed by server
+2026-11-15T05:00:08.479Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T05:00:09.220Z WARN  [transport] connection closed by server
+2026-11-15T05:00:09.220Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T05:00:10.062Z WARN  [transport] connection closed by server
+2026-11-15T05:00:10.062Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T05:00:10.859Z WARN  [transport] connection closed by server
+2026-11-15T05:00:10.859Z WARN  [client] connection dropped, reconnecting was_authorized=false
+[       OK ] ClientFakeDc.ConcurrentStopAndDropStress (8000 ms)
+[ RUN      ] ClientFakeDc.DropRecoveryReusesAuthKeyWithoutNewHandshake
+2026-11-15T05:00:11.350Z WARN  [transport] connection closed by server
+2026-11-15T05:00:11.350Z WARN  [client] connection dropped, reconnecting was_authorized=false
+[       OK ] ClientFakeDc.DropRecoveryReusesAuthKeyWithoutNewHandshake (641 ms)
+[----------] 12 tests from ClientFakeDc (19213 ms total)
+
+[----------] 5 tests from ClientLifecycle
+[ RUN      ] ClientLifecycle.ConnectDisconnectCyclesLeaveNoStaleState
+[       OK ] ClientLifecycle.ConnectDisconnectCyclesLeaveNoStaleState (486 ms)
+[ RUN      ] ClientLifecycle.DisconnectAndStopBeforeConnectAreSafe
+[       OK ] ClientLifecycle.DisconnectAndStopBeforeConnectAreSafe (292 ms)
+[ RUN      ] ClientLifecycle.ManyThreadsCallingStopWhileRunningReturnCleanly
+[       OK ] ClientLifecycle.ManyThreadsCallingStopWhileRunningReturnCleanly (848 ms)
+[ RUN      ] ClientLifecycle.ConnectionStateIsReadableFromOtherThreadsDuringReconnects
+2026-11-15T05:00:13.648Z WARN  [transport] connection closed by server
+2026-11-15T05:00:13.648Z WARN  [client] connection dropped, reconnecting was_authorized=false
+2026-11-15T05:00:13.661Z WARN  [transport] connection closed by server
+2026-11-15T05:00:13.661Z ERROR [client] connect failed category=network reason=connection closed by server
+[       OK ] ClientLifecycle.ConnectionStateIsReadableFromOtherThreadsDuringReconnects (537 ms)
+[ RUN      ] ClientLifecycle.HandlersDoNotRunAfterClientDestruction
+[       OK ] ClientLifecycle.HandlersDoNotRunAfterClientDestruction (764 ms)
+[----------] 5 tests from ClientLifecycle (2929 ms total)
+
+[----------] 7 tests from EncryptedSession
+[ RUN      ] EncryptedSession.RoundTripWithPassphrase
+[       OK ] EncryptedSession.RoundTripWithPassphrase (189 ms)
+[ RUN      ] EncryptedSession.FileOnDiskHoldsNoPlaintextKeyMaterial
+[       OK ] EncryptedSession.FileOnDiskHoldsNoPlaintextKeyMaterial (93 ms)
+[ RUN      ] EncryptedSession.EncryptedFileNeedsPassphrase
+[       OK ] EncryptedSession.EncryptedFileNeedsPassphrase (93 ms)
+[ RUN      ] EncryptedSession.WrongPassphraseIsCorruptNotSilent
+[       OK ] EncryptedSession.WrongPassphraseIsCorruptNotSilent (187 ms)
+[ RUN      ] EncryptedSession.TamperedFileIsRejected
+[       OK ] EncryptedSession.TamperedFileIsRejected (194 ms)
+[ RUN      ] EncryptedSession.PlainFileIsReadAndMigratedOnNextSave
+[       OK ] EncryptedSession.PlainFileIsReadAndMigratedOnNextSave (189 ms)
+[ RUN      ] EncryptedSession.EncryptedFileIsOwnerReadableOnly
+[       OK ] EncryptedSession.EncryptedFileIsOwnerReadableOnly (96 ms)
+[----------] 7 tests from EncryptedSession (1045 ms total)
+
+[----------] 4 tests from SqliteEncrypted
+[ RUN      ] SqliteEncrypted.KeyIsStoredEncryptedAndRoundTrips
+[       OK ] SqliteEncrypted.KeyIsStoredEncryptedAndRoundTrips (195 ms)
+[ RUN      ] SqliteEncrypted.EncryptedKeyNeedsPassphrase
+[       OK ] SqliteEncrypted.EncryptedKeyNeedsPassphrase (97 ms)
+[ RUN      ] SqliteEncrypted.WrongPassphraseIsCorrupt
+[       OK ] SqliteEncrypted.WrongPassphraseIsCorrupt (188 ms)
+[ RUN      ] SqliteEncrypted.PlainKeyStillLoadsAndIsEncryptedOnNextSave
+[       OK ] SqliteEncrypted.PlainKeyStillLoadsAndIsEncryptedOnNextSave (216 ms)
+[----------] 4 tests from SqliteEncrypted (698 ms total)
+
+[----------] 5 tests from SessionStringEncrypted
+[ RUN      ] SessionStringEncrypted.PlainWithoutPassphraseAsBefore
+[       OK ] SessionStringEncrypted.PlainWithoutPassphraseAsBefore (0 ms)
+[ RUN      ] SessionStringEncrypted.EncryptedRoundTripWithPassphrase
+[       OK ] SessionStringEncrypted.EncryptedRoundTripWithPassphrase (188 ms)
+[ RUN      ] SessionStringEncrypted.EncryptedStringWithoutPassphraseIsAnError
+[       OK ] SessionStringEncrypted.EncryptedStringWithoutPassphraseIsAnError (97 ms)
+[ RUN      ] SessionStringEncrypted.WrongPassphraseIsAnError
+[       OK ] SessionStringEncrypted.WrongPassphraseIsAnError (187 ms)
+[ RUN      ] SessionStringEncrypted.TamperedEncryptedStringIsRejected
+[       OK ] SessionStringEncrypted.TamperedEncryptedStringIsRejected (179 ms)
+[----------] 5 tests from SessionStringEncrypted (652 ms total)
+
+[----------] 6 tests from StorageConcurrency
+[ RUN      ] StorageConcurrency.ConcurrentSaveAndLoadStateNeverTears
+[       OK ] StorageConcurrency.ConcurrentSaveAndLoadStateNeverTears (167 ms)
+[ RUN      ] StorageConcurrency.TwoStoresOnOneFileInterleaveWithoutErrors
+[       OK ] StorageConcurrency.TwoStoresOnOneFileInterleaveWithoutErrors (65 ms)
+[ RUN      ] StorageConcurrency.RepeatedOpenCloseCyclesLeaveAUsableFile
+[       OK ] StorageConcurrency.RepeatedOpenCloseCyclesLeaveAUsableFile (14 ms)
+[ RUN      ] StorageConcurrency.CorruptedFileIsRejectedAndNotModified
+[       OK ] StorageConcurrency.CorruptedFileIsRejectedAndNotModified (0 ms)
+[ RUN      ] StorageConcurrency.TruncatedDatabaseDoesNotLoadAsValidSession
+[       OK ] StorageConcurrency.TruncatedDatabaseDoesNotLoadAsValidSession (3 ms)
+[ RUN      ] StorageConcurrency.OpenErrorsDoNotLeakKeyMaterial
+[       OK ] StorageConcurrency.OpenErrorsDoNotLeakKeyMaterial (0 ms)
+[----------] 6 tests from StorageConcurrency (252 ms total)
+
+[----------] 8 tests from InFlightCancel
+[ RUN      ] InFlightCancel.CancelBeforeDispatchSendsNothing
+[       OK ] InFlightCancel.CancelBeforeDispatchSendsNothing (0 ms)
+[ RUN      ] InFlightCancel.CancelWhileWaitingReturnsPromptly
+[       OK ] InFlightCancel.CancelWhileWaitingReturnsPromptly (101 ms)
+[ RUN      ] InFlightCancel.CancelAfterResponseKeepsTheResult
+[       OK ] InFlightCancel.CancelAfterResponseKeepsTheResult (0 ms)
+[ RUN      ] InFlightCancel.TimeoutWinsWhenNoCancelArrives
+[       OK ] InFlightCancel.TimeoutWinsWhenNoCancelArrives (201 ms)
+[ RUN      ] InFlightCancel.CancelWinsWhenItArrivesBeforeTheTimeout
+[       OK ] InFlightCancel.CancelWinsWhenItArrivesBeforeTheTimeout (101 ms)
+[ RUN      ] InFlightCancel.LateReplyToACancelledRequestIsIgnored
+[       OK ] InFlightCancel.LateReplyToACancelledRequestIsIgnored (51 ms)
+[ RUN      ] InFlightCancel.ConcurrentCancellationsAreSafe
+[       OK ] InFlightCancel.ConcurrentCancellationsAreSafe (2 ms)
+[ RUN      ] InFlightCancel.RunnerShutdownStopsAnInFlightRequest
+[       OK ] InFlightCancel.RunnerShutdownStopsAnInFlightRequest (2 ms)
+[----------] 8 tests from InFlightCancel (461 ms total)
+
+[----------] 3 tests from InFlightCancelSocket
+[ RUN      ] InFlightCancelSocket.CancelStopsASilentWaitPromptly
+[       OK ] InFlightCancelSocket.CancelStopsASilentWaitPromptly (100 ms)
+[ RUN      ] InFlightCancelSocket.BytesArrivingAfterCancelAreKeptForTheNextReceive
+[       OK ] InFlightCancelSocket.BytesArrivingAfterCancelAreKeptForTheNextReceive (0 ms)
+[ RUN      ] InFlightCancelSocket.ReceiveTimeoutStillAppliesToTheCancellableWait
+[       OK ] InFlightCancelSocket.ReceiveTimeoutStillAppliesToTheCancellableWait (150 ms)
+[----------] 3 tests from InFlightCancelSocket (251 ms total)
+
+[----------] 1 test from DcMigrationParse
+[ RUN      ] DcMigrationParse.ReadsDcNumberFromMigrateErrorsOnly
+[       OK ] DcMigrationParse.ReadsDcNumberFromMigrateErrorsOnly (0 ms)
+[----------] 1 test from DcMigrationParse (0 ms total)
+
+[----------] 4 tests from DcMigrationFakeDc
+[ RUN      ] DcMigrationFakeDc.BotLoginFollowsUserMigrateToHomeDc
+[       OK ] DcMigrationFakeDc.BotLoginFollowsUserMigrateToHomeDc (1068 ms)
+[ RUN      ] DcMigrationFakeDc.RestartDialsTheDcOfTheSavedSession
+[       OK ] DcMigrationFakeDc.RestartDialsTheDcOfTheSavedSession (852 ms)
+[ RUN      ] DcMigrationFakeDc.MigrationLoopIsBounded
+[       OK ] DcMigrationFakeDc.MigrationLoopIsBounded (1598 ms)
+[ RUN      ] DcMigrationFakeDc.UnknownHomeDcFailsWithoutRetry
+[       OK ] DcMigrationFakeDc.UnknownHomeDcFailsWithoutRetry (756 ms)
+[----------] 4 tests from DcMigrationFakeDc (4274 ms total)
+
+[----------] 9 tests from PhoneMigrationFakeDc
+[ RUN      ] PhoneMigrationFakeDc.SendCodeFollowsPhoneMigrateAndRetriesOnTheNewDc
+[       OK ] PhoneMigrationFakeDc.SendCodeFollowsPhoneMigrateAndRetriesOnTheNewDc (899 ms)
+[ RUN      ] PhoneMigrationFakeDc.SignInUsesTheHashFromTheMigratedDc
+[       OK ] PhoneMigrationFakeDc.SignInUsesTheHashFromTheMigratedDc (1461 ms)
+[ RUN      ] PhoneMigrationFakeDc.SignInWithAHashFromAnotherDcIsRefused
+2026-11-15T05:00:25.572Z WARN  [login] sign-in rejected code=***
+[       OK ] PhoneMigrationFakeDc.SignInWithAHashFromAnotherDcIsRefused (1130 ms)
+[ RUN      ] PhoneMigrationFakeDc.PasswordRequiredAfterMigrationStaysOnTheNewDc
+2026-11-15T05:00:26.839Z WARN  [login] 2FA password rejected code=***
+[       OK ] PhoneMigrationFakeDc.PasswordRequiredAfterMigrationStaysOnTheNewDc (1266 ms)
+[ RUN      ] PhoneMigrationFakeDc.InvalidMigrationDcFailsWithoutRetry
+[       OK ] PhoneMigrationFakeDc.InvalidMigrationDcFailsWithoutRetry (1379 ms)
+[ RUN      ] PhoneMigrationFakeDc.RepeatedMigrationExhaustsTheRetries
+[       OK ] PhoneMigrationFakeDc.RepeatedMigrationExhaustsTheRetries (1434 ms)
+[ RUN      ] PhoneMigrationFakeDc.ConnectionFailureDuringMigrationLeavesNoLoginState
+2026-11-15T05:00:30.339Z WARN  [transport] connection closed by server
+2026-11-15T05:00:30.339Z ERROR [client] connect failed category=network reason=connection closed by server
+2026-11-15T05:00:30.339Z WARN  [client] migration failed; previous DC settings restored dc_id=5
+[       OK ] PhoneMigrationFakeDc.ConnectionFailureDuringMigrationLeavesNoLoginState (686 ms)
+[ RUN      ] PhoneMigrationFakeDc.RestartAfterPhoneMigrationDialsTheSavedDc
+[       OK ] PhoneMigrationFakeDc.RestartAfterPhoneMigrationDialsTheSavedDc (1196 ms)
+[ RUN      ] PhoneMigrationFakeDc.SignInAfterAnotherMigrationStillUsesTheIssuingDc
+[       OK ] PhoneMigrationFakeDc.SignInAfterAnotherMigrationStillUsesTheIssuingDc (1995 ms)
+[----------] 9 tests from PhoneMigrationFakeDc (11451 ms total)
+
+[----------] 9 tests from AuthMigrationState
+[ RUN      ] AuthMigrationState.PhoneCodeSurvivesUnrelatedMigrationAndSignsInOnTheIssuingDc
+[       OK ] AuthMigrationState.PhoneCodeSurvivesUnrelatedMigrationAndSignsInOnTheIssuingDc (2116 ms)
+[ RUN      ] AuthMigrationState.BotLoginMigrationStillWorksWithoutAPendingCode
+[       OK ] AuthMigrationState.BotLoginMigrationStillWorksWithoutAPendingCode (1320 ms)
+[ RUN      ] AuthMigrationState.BotLoginSuccessEndsAPendingPhoneLogin
+[       OK ] AuthMigrationState.BotLoginSuccessEndsAPendingPhoneLogin (1389 ms)
+[ RUN      ] AuthMigrationState.PhoneMigrationDuringSignInDropsTheCodeAndDoesNotSendItElsewhere
+2026-11-15T05:00:39.435Z WARN  [login] sign-in asked for another DC; pending code dropped issued_by=2 account_dc=5
+[       OK ] AuthMigrationState.PhoneMigrationDuringSignInDropsTheCodeAndDoesNotSendItElsewhere (1470 ms)
+[ RUN      ] AuthMigrationState.PasswordRequiredSurvivesUnrelatedMigration
+2026-11-15T05:00:41.514Z WARN  [login] 2FA password rejected code=***
+[       OK ] AuthMigrationState.PasswordRequiredSurvivesUnrelatedMigration (1685 ms)
+[ RUN      ] AuthMigrationState.ResendAfterUnrelatedMigrationUsesTheIssuingDc
+2026-11-15T05:00:43.863Z WARN  [login] sign-in rejected code=***
+[       OK ] AuthMigrationState.ResendAfterUnrelatedMigrationUsesTheIssuingDc (2349 ms)
+[ RUN      ] AuthMigrationState.FailedMigrationLeavesAConsistentStateAndRecovers
+2026-11-15T05:00:45.130Z WARN  [transport] recv failed errno=104
+2026-11-15T05:00:45.130Z ERROR [client] connect failed category=network reason=recv: Connection reset by peer
+2026-11-15T05:00:45.130Z WARN  [client] migration failed; previous DC settings restored dc_id=3
+[       OK ] AuthMigrationState.FailedMigrationLeavesAConsistentStateAndRecovers (1576 ms)
+[ RUN      ] AuthMigrationState.RepeatedMigrationStopsAndKeepsThePendingCode
+[       OK ] AuthMigrationState.RepeatedMigrationStopsAndKeepsThePendingCode (2059 ms)
+[ RUN      ] AuthMigrationState.ExplicitDisconnectThenFreshLoginDropsTheOldCode
+[       OK ] AuthMigrationState.ExplicitDisconnectThenFreshLoginDropsTheOldCode (1371 ms)
+[----------] 9 tests from AuthMigrationState (15340 ms total)
+
+[----------] 1 test from ProxyKnownAnswer
+[ RUN      ] ProxyKnownAnswer.MatchesIndependentReferenceForEveryCase
+[       OK ] ProxyKnownAnswer.MatchesIndependentReferenceForEveryCase (0 ms)
+[----------] 1 test from ProxyKnownAnswer (0 ms total)
+
+[----------] 2 tests from ObfuscatedAbridged
+[ RUN      ] ObfuscatedAbridged.FrameLengthEncoding
+[       OK ] ObfuscatedAbridged.FrameLengthEncoding (0 ms)
+[ RUN      ] ObfuscatedAbridged.RejectsPayloadNotAMultipleOfFour
+[       OK ] ObfuscatedAbridged.RejectsPayloadNotAMultipleOfFour (0 ms)
+[----------] 2 tests from ObfuscatedAbridged (0 ms total)
+
+[----------] 1 test from ObfuscatedPadded
+[ RUN      ] ObfuscatedPadded.PaddingIsZeroToFifteenBytesAndRandom
+[       OK ] ObfuscatedPadded.PaddingIsZeroToFifteenBytesAndRandom (0 ms)
+[----------] 1 test from ObfuscatedPadded (0 ms total)
+
+[----------] 1 test from ObfuscatedFramingGuard
+[ RUN      ] ObfuscatedFramingGuard.MismatchedFramingIsRejectedBeforeNetwork
+[       OK ] ObfuscatedFramingGuard.MismatchedFramingIsRejectedBeforeNetwork (0 ms)
+[----------] 1 test from ObfuscatedFramingGuard (0 ms total)
+
+[----------] 2 tests from ProxySecretParse
+[ RUN      ] ProxySecretParse.PrefixesAndCaseAreRecognised
+[       OK ] ProxySecretParse.PrefixesAndCaseAreRecognised (0 ms)
+[ RUN      ] ProxySecretParse.MalformedInputIsRejectedWithoutEchoingIt
+[       OK ] ProxySecretParse.MalformedInputIsRejectedWithoutEchoingIt (0 ms)
+[----------] 2 tests from ProxySecretParse (0 ms total)
+
+[----------] 12 tests from ProxyStub
+[ RUN      ] ProxyStub.IntermediateRoundTrip
+[       OK ] ProxyStub.IntermediateRoundTrip (0 ms)
+[ RUN      ] ProxyStub.PaddedIntermediateFollowsDdSecret
+[       OK ] ProxyStub.PaddedIntermediateFollowsDdSecret (0 ms)
+[ RUN      ] ProxyStub.AbridgedRoundTripWithExplicitFraming
+[       OK ] ProxyStub.AbridgedRoundTripWithExplicitFraming (0 ms)
+[ RUN      ] ProxyStub.DcIdIsCarriedInTheHandshake
+[       OK ] ProxyStub.DcIdIsCarriedInTheHandshake (0 ms)
+[ RUN      ] ProxyStub.FragmentedReplyIsReassembled
+[       OK ] ProxyStub.FragmentedReplyIsReassembled (40 ms)
+[ RUN      ] ProxyStub.OneMebibytePacketIsSentCompletely
+[       OK ] ProxyStub.OneMebibytePacketIsSentCompletely (5 ms)
+[ RUN      ] ProxyStub.NegativeTransportErrorIsNotAFrame
+[       OK ] ProxyStub.NegativeTransportErrorIsNotAFrame (0 ms)
+[ RUN      ] ProxyStub.SilentProxyIsAProxyErrorWithoutTheSecret
+[       OK ] ProxyStub.SilentProxyIsAProxyErrorWithoutTheSecret (320 ms)
+[ RUN      ] ProxyStub.ProxyClosingAfterHandshakeIsAProxyError
+2026-11-15T05:00:49.240Z WARN  [transport] connection closed by server
+[       OK ] ProxyStub.ProxyClosingAfterHandshakeIsAProxyError (0 ms)
+[ RUN      ] ProxyStub.WrongSecretIsAProxyErrorWithoutTheSecret
+2026-11-15T05:00:49.241Z WARN  [transport] connection closed by server
+[       OK ] ProxyStub.WrongSecretIsAProxyErrorWithoutTheSecret (0 ms)
+[ RUN      ] ProxyStub.ReconnectAfterFailureSucceeds
+2026-11-15T05:00:49.241Z WARN  [transport] connection closed by server
+[       OK ] ProxyStub.ReconnectAfterFailureSucceeds (0 ms)
+[ RUN      ] ProxyStub.PaddedReplyKeepsItsPaddingForTheMtprotoLayer
+[       OK ] ProxyStub.PaddedReplyKeepsItsPaddingForTheMtprotoLayer (0 ms)
+[----------] 12 tests from ProxyStub (368 ms total)
+
+[----------] 5 tests from Socks5Stub
+[ RUN      ] Socks5Stub.FragmentedMethodAndConnectRepliesAreAccepted
+[       OK ] Socks5Stub.FragmentedMethodAndConnectRepliesAreAccepted (42 ms)
+[ RUN      ] Socks5Stub.WrongVersionInGreetingIsRejected
+[       OK ] Socks5Stub.WrongVersionInGreetingIsRejected (0 ms)
+[ RUN      ] Socks5Stub.WrongVersionInConnectReplyIsRejected
+[       OK ] Socks5Stub.WrongVersionInConnectReplyIsRejected (0 ms)
+[ RUN      ] Socks5Stub.UnknownAddressTypeInReplyIsRejected
+[       OK ] Socks5Stub.UnknownAddressTypeInReplyIsRejected (0 ms)
+[ RUN      ] Socks5Stub.RefusedConnectCarriesTheReplyCode
+[       OK ] Socks5Stub.RefusedConnectCarriesTheReplyCode (0 ms)
+[----------] 5 tests from Socks5Stub (43 ms total)
+
+[----------] 3 tests from ProxySecretBase64Transport
+[ RUN      ] ProxySecretBase64Transport.PaddedBase64SecretSelectsPaddedFraming
+[       OK ] ProxySecretBase64Transport.PaddedBase64SecretSelectsPaddedFraming (0 ms)
+[ RUN      ] ProxySecretBase64Transport.PlainStandardBase64SecretSelectsIntermediate
+[       OK ] ProxySecretBase64Transport.PlainStandardBase64SecretSelectsIntermediate (0 ms)
+[ RUN      ] ProxySecretBase64Transport.FakeTlsBase64SecretIsStillRefused
+[       OK ] ProxySecretBase64Transport.FakeTlsBase64SecretIsStillRefused (0 ms)
+[----------] 3 tests from ProxySecretBase64Transport (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 457 tests from 96 test suites ran. (120151 ms total)
+[  PASSED  ] 457 tests.
+EXIT=0

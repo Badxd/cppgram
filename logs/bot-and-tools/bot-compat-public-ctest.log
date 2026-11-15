@@ -1,0 +1,8 @@
+Test project /tmp/claude-0/-home-claude/8b1f2cf3-d8a0-52e2-92a4-978325134559/scratchpad/pad-fix/bot-compat-public
+    Start 1: livebot_unit_tests
+1/1 Test #1: livebot_unit_tests ...............   Passed    0.03 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.03 sec
+CTEST=0

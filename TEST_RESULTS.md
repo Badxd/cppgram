@@ -1,249 +1,122 @@
-# Test results: login state across DC migration (limitation 62)
+# Test results: CppGram 0.1.0 (release-verification round, baseline 1cd09d0)
 
-Every result below comes from a command run in this pass, in the scratch build directory `build-audit` (GCC 13.3, Ninja,
-Release, `-DENABLE_TESTS=ON`). Nothing was run against Telegram. The tests use loopback fake DCs, fictional numbers and
-dummy credentials. Status key: **PASS**, **FAIL**, **SKIP**, **NOT RUN**.
+Log paths are relative to the evidence package root. Status values: PASS, FAIL, BLOCKED, NOT OBSERVED, NOT RUN,
+PENDING USER APPROVAL.
 
-## Totals
+## 1. Offline unit and integration tests (CTest, 711 cases)
 
-| Binary | Tests run | PASS | FAIL | SKIP | Exit code |
+| Binary | Test cases (GCC, clean) | Test cases (Clang, clean) | Status |
+|---|---|---|---|
+| cppgram_mtproto_test | 457 | 457 | PASS |
+| cppgram_async_test | 46 | 46 | PASS |
+| cppgram_bot_test | 110 | 110 | PASS |
+| cppgram_media_test | 22 | 22 | PASS |
+| cppgram_metrics_test | 23 | 23 | PASS |
+| cppgram_security_test | 53 | 53 | PASS |
+| **Total** | **711** | **711** | **PASS** |
+
+CTest totals: GCC `711/711` (`logs/ctest-gcc.log`, CTEST=0). Clang `711/711` (`logs/ctest-clang.log`, CTEST=0).
+The MTProto binary total is 457 on both compilers, matching the CTest count for that binary family.
+
+### Why the totals changed from 700/700 and 446/446
+
+The earlier accepted checkpoint reported 700 CTest cases and 446 MTProto-binary cases. The counts below come from
+counting `TEST(`, `TEST_F(` and `TEST_P(` macros in the source (`tests/**/*.cpp`) and from the test names in each tree.
+The three trees are the baseline commit 1cd09d0, the pre-mission backup (`backup-work-tree-before-mission4.tar.gz`,
+the state before this round), and the current tree.
+
+| Tree | All test macros | MTProto test macros |
+|---|---|---|
+| Baseline 1cd09d0 | 696 | 442 |
+| Pre-mission backup (this round's start) | 702 | 448 |
+| Current tree (this round's end) | 711 | 457 |
+
+Reconciliation:
+1. Baseline → pre-mission backup: +6 MTProto tests, added in the earlier round, not this round:
+   `Crypto.EveryTruncationOfAnEncryptedPacketIsRejected`, `Crypto.RandomEncryptedPacketsAreRejectedWithoutCrashing`,
+   `Session.FloodWaitSleepHonoursPerRequestCancel`, `Session.FloodWaitSleepIsNotTakenPastRequestDeadline`,
+   `TransportFraming.IntermediateRejectsFrameOneByteOverMaxFrame`,
+   `TransportFraming.IntermediateAcceptsFrameExactlyAtMaxFrameBoundary`.
+2. Pre-mission backup → current tree: +9 MTProto tests, added in this round (names from a per-test diff):
+   - `CryptoAudit` (6): `ExactLiveTrailingCounts22And102EncryptedAreIgnored`, `ForeignAuthKeyIdIsRejected`,
+     `InvalidMsgKeyEveryByteIsRejected`, `OversizedInnerLengthIsRejectedWithoutReading`,
+     `PacketUnderAnotherAuthKeyIsRejected`, `ValidBoundaryBodySizesRoundTrip`.
+   - `ClientFakeDc.DropRecoveryReusesAuthKeyWithoutNewHandshake` (1).
+   - `Session.FloodWaitRetryLoopIsBoundedByAttemptBudget` (1).
+   - `Retry.FloodWaitDigitBoundaryAndStrictFormat` (1).
+   No existing test was removed (the removed-test set is empty).
+3. The checkpoint reported 446 and 700, which is 2 below the pre-mission backup (448 and 702). Those two tests were
+   added after the checkpoint was accepted, in the earlier round. The preserved artifacts do not show which two; the
+   checkpoint tree was not kept. This is stated as a limitation, not inferred.
+
+Net change from the checkpoint: 700 → 711 (+11) and 446 → 457 (+11). That is 2 tests from the earlier round that the
+checkpoint did not count, plus the 9 tests added in this round. All 11 are in the MTProto binary.
+
+Note that the macro counts (696, 702, 711) are source counts. The CTest counts (711) equal the source count for the
+current tree, and the per-binary gtest totals equal the per-binary source counts. The 696 and 702 values are source
+counts only; the baseline and pre-mission CTest totals were not run in this round.
+
+## 2. Targeted sanitizer runs (mtproto binary only)
+
+All sanitizer binaries were built fresh from the current source tree in this round. Earlier sanitizer logs were NOT
+reused: some test files were edited after those logs were written, so they no longer describe the current tree.
+
+| Run | Build flags | Filter (gtest) | Result | Log |
+|---|---|---|---|---|
+| ASan + UBSan | clang++-18, Release, `ENABLE_SANITIZERS=ON` (`-fsanitize=address,undefined -fno-omit-frame-pointer`) | `CryptoAudit.*:Crypto.*:Session.FloodWait*:Retry.FloodWait*:ClientFakeDc.*:TransportFraming.*:DcMigration*:Socks*:ProxyStub*:ProxySecret*` | 118 PASS, exit 0, no sanitizer report | `logs/sanitizers/asan-ubsan.log` (build: `asan-ubsan-build.log`) |
+| TSan | clang++-18, Release, `-DCMAKE_CXX_FLAGS="-fsanitize=thread -fno-omit-frame-pointer"`, linker `-fsanitize=thread` | `Session.*:ClientFakeDc.*:Cancel*:InFlightCancel*:Connection*:CoroutineCancellation*` | 47 PASS, exit 0, 0 ThreadSanitizer warnings | `logs/sanitizers/tsan.log` (build: `tsan-build.log`) |
+
+Instrumentation was confirmed: the ASan binary contains `__asan_*` and `__ubsan_*` symbols; the TSan binary contains `__tsan_init`.
+
+Not run this round: sanitizer runs of the async, bot, media, metrics and security binaries, and of the full mtproto
+suite. Earlier-round sanitizer counts (for example 150/150 and 80/80) are not reproduced here and are not claimed.
+
+## 3. Fuzzing
+
+Full table: `logs/fuzz-results.log` (generated from the logs by `logs/gen_summaries.py`).
+
+| Target | Build | Executions | Duration | Exit | Crash or sanitizer report |
 |---|---|---|---|---|---|
-| `cppgram_mtproto_test` | 394 | 394 | 0 | 0 | 0 |
-| `cppgram_async_test` | 46 | 46 | 0 | 0 | 0 |
-| `cppgram_bot_test` | 110 | 110 | 0 | 0 | 0 |
-| `cppgram_media_test` | 22 | 22 | 0 | 0 | 0 |
-| `cppgram_metrics_test` | 23 | 23 | 0 | 0 | 0 |
-| `cppgram_security_test` | 53 | 53 | 0 | 0 | 0 |
-| **Total** | **648** | **648** | **0** | **0** | |
+| fuzz_plain_unwrap | ASan + UBSan, `-fsanitize=fuzzer-no-link` (instrumented campaign) | 1,950,126 | 241 s | 0 | none |
+| fuzz_decrypt_packet | same | 1,518,876 | 241 s | 0 | none |
+| fuzz_transport | same | 2,124,863 | 241 s | 0 | none |
+| fuzz_plain_unwrap | repo target, `BUILD_FUZZERS=ON`, clang++ 18 | 1,749,087 | 61 s | 0 | none |
+| fuzz_decrypt_packet | same | 1,526,817 | 61 s | 0 | none |
+| fuzz_transport_framing | same | 2,995,453 | 61 s | 0 | none |
+| fuzz_tl_reader | repo target, `BUILD_FUZZERS=ON`, built 18:28, after its harness (14:32) and every library source were last modified | 1,697,293 | 61 s | 0 | none |
 
-Previous release: 638 of 638. New in this pass: 10 tests (9 in `auth_migration_state_test.cpp`, 1 in `auth_state_test.cpp`).
-No test was disabled or skipped. The `SKIP` count is zero because no test calls `GTEST_SKIP`.
+- The campaign exit codes come from `fuzz/summary.txt` (`EXIT=0` for each target, then `FUZZ4_DONE`).
+- Campaign harnesses are the three `fuzz_*.cpp` files in `work/fuzz/`, compiled as instrumented copies in the scratch
+  area. Their sources are identical to the repository files.
+- Repo target smoke runs used empty starting corpora, so they show crash-freedom for 61 s only.
+- No crash, leak, timeout or OOM artifact was written by any run.
 
-## Build and checks
+Status: PASS for crash-freedom in these short runs. NOT RUN: long corpus runs (`tools/run_fuzz_long.sh`), the
+`fuzz_session_string`, `fuzz_html_parser` and `fuzz_session_crypto` targets, and the malformed-padding-grammar sub-case.
 
-| # | Command | Result |
+## 4. Network drop and flood wait
+
+Full table: `logs/network-drop-results.log`.
+
+| Category | Status | Evidence |
 |---|---|---|
-| 1 | `cmake --build <scratch>/build-audit --target cppgram_mtproto_test -j4` (full library rebuild, `client.h` changed) | **PASS**, exit 0, 73 of 73 steps |
-| 2 | `cmake --build <scratch>/build-audit -j2` (every target: library, all tests, examples, benchmarks, fuzz) | **PASS**, exit 0. The build tree was already current (`ninja: no work to do`), so this confirms the state of the tree rather than building again |
-| 3 | `python3 tools/check_cmake_sources.py` | **PASS**. Library 112 of 112 on disk, tests 67 of 67 on disk, 0 problems |
-| 4 | `clang++-18 -std=c++20 -fsyntax-only -Wall -Wextra` on `src/login.cpp`, `src/client.cpp`, `src/auth_state.cpp` | **PASS** (syntax only, no link, no run). `login.cpp` and `auth_state.cpp` have 0 warnings. `client.cpp` has 1 warning, `-Wmissing-field-initializers` at line 1216 (`InputReplyTo`). That line is unchanged from the previous pass. The check ran without the project's generated include and define flags |
+| Offline simulated drop recovery (fake DC on loopback) | PASS | `ClientFakeDc.DropRecoveryReusesAuthKeyWithoutNewHandshake` passes. A drop reuses the auth key without a new handshake. |
+| Offline simulated FLOOD_WAIT (no live rate limit) | PASS | `Session.FloodWait*` (6 tests), `Retry.FloodWait*` (2), `ClientFakeDc.StopCancelsAFloodWaitInProgress`. These are part of a 21-test targeted run (with CryptoAudit and DcMigration) that passes, exit 0. |
+| Actual network interruption (packet-level loss or socket reset on a real path) | NOT RUN | No packet-level loss tool was used in this round. |
+| Live drop against Telegram | NOT RUN | No live credentials were used. |
+| Live FLOOD_WAIT | NOT OBSERVED | No live run was made. Nothing in this round provoked a server rate limit. |
 
-## Commands for the test runs
+## 5. Trailing-byte and padding investigation
 
-```
-cppgram_mtproto_test                       # 394 PASS, exit 0
-cppgram_async_test                         # 46 PASS, exit 0
-cppgram_bot_test                           # 110 PASS, exit 0
-cppgram_media_test                         # 22 PASS, exit 0
-cppgram_metrics_test                       # 23 PASS, exit 0
-cppgram_security_test                      # 53 PASS, exit 0
-cppgram_mtproto_test --gtest_filter='AuthMigrationState*:PhoneMigration*:DcMigration*:AuthState*'   # 34 PASS
-```
+- The 22- and 102-byte cases are covered by `CryptoAudit.ExactLiveTrailingCounts22And102EncryptedAreIgnored`, which
+  passes on both compilers. Validation is not weakened: foreign key, bad msg_key and oversized length are still rejected
+  (`CryptoAudit` tests above).
+- Decision and evidence for plain (`auth_key_id = 0`) trailing bytes: `PROXY_AUDIT.md`, section 7.2.
+- TDLib parity of this behaviour: BLOCKED. The upstream source could not be fetched through the allowed fetch path, so
+  parity was not verified.
 
-## New regression tests (`tests/mtproto/auth_migration_state_test.cpp`)
+## 6. Tests not run
 
-| Test | Requirement it covers | Result |
-|---|---|---|
-| `PhoneCodeSurvivesUnrelatedMigrationAndSignsInOnTheIssuingDc` | Code issued on DC 5. An unrelated `login_bot` is moved to DC 3 and fails there. Sign-in succeeds on DC 5. DC 3 sees no sign-in | **PASS** |
-| `BotLoginMigrationStillWorksWithoutAPendingCode` | Bot login migration from DC 2 to DC 5 is unchanged | **PASS** |
-| `BotLoginSuccessEndsAPendingPhoneLogin` | A successful bot login clears a pending code. Later sign-in is refused | **PASS** |
-| `PhoneMigrationDuringSignInDropsTheCodeAndDoesNotSendItElsewhere` | `signIn` gets `PHONE_MIGRATE_5` for a code issued by DC 2. DC 5 gets no sign-in. A new code request then works | **PASS** |
-| `PasswordRequiredSurvivesUnrelatedMigration` | 2FA challenge kept across a move. Password step goes back to DC 5. DC 3 gets none | **PASS** |
-| `ResendAfterUnrelatedMigrationUsesTheIssuingDc` | Resend runs on DC 5. The new hash is accepted, the old hash is refused | **PASS** |
-| `FailedMigrationLeavesAConsistentStateAndRecovers` | A failed hop leaves the client `Disconnected` with no pending code. The saved key is unchanged. With no saved session, `connect()` dials the restored DC 5. A new code then works | **PASS** |
-| `RepeatedMigrationStopsAndKeepsThePendingCode` | Bot login bounces between DC 5 and DC 3. It stops after two hops (3 requests). The pending code is kept and sign-in works | **PASS** |
-| `ExplicitDisconnectThenFreshLoginDropsTheOldCode` | `disconnect()` ends the login. After `connect()` the old hash is refused. A new code works | **PASS** |
-
-Also in `tests/mtproto/auth_state_test.cpp`: `AuthState.LoginCanStartFromRecoverableError` **PASS**. The state table
-now allows `LoginStarted` from `RecoverableError`, which `auth_can_login()` already accepted.
-
-Updated in `tests/mtproto/phone_migration_fake_dc_test.cpp`: `SignInAfterAnotherMigrationStillUsesTheIssuingDc` **PASS**.
-In the previous pass this test pinned the limitation. It now asserts the fixed behaviour.
-
-Previous-pass tests, all still **PASS**: 8 phone-migration tests and 5 bot-login and saved-session tests (`DcMigrationFakeDc.*`,
-`DcMigrationParse.*`, `PhoneMigrationFakeDc.*`).
-
-## Mutation checks
-
-Each mutation changed one file in the scratch copy. The binary was rebuilt, the filter `AuthMigrationState*:PhoneMigration*:DcMigration*:AuthState*` was run, and the file was restored. Every restored file was then compared byte for byte with a saved copy of the fixed file.
-
-| Mutation | Change | Tests that failed | Result |
-|---|---|---|---|
-| **A** (required) | `sign_in_code` no longer goes back to the issuing DC before submitting the code | `AuthMigrationState.PhoneCodeSurvivesUnrelatedMigrationAndSignsInOnTheIssuingDc`, `PhoneMigrationFakeDc.SignInAfterAnotherMigrationStillUsesTheIssuingDc` | **KILLED** (2 FAIL) |
-| B | `migrate_to_dc` no longer keeps the login state | 14 tests, including all phone-migration tests | **KILLED** (14 FAIL) |
-| C | A failed hop no longer restores the previous DC settings | First run: `FailedMigrationLeavesAConsistentStateAndRecovers` did not fail, because the saved-session routing dialled DC 5 anyway. The test was then strengthened (session file removed before reconnect). Second run: that test FAILS | **KILLED after test fix** (1 FAIL) |
-| D | `sign_in_password` no longer goes back to the issuing DC | `AuthMigrationState.PasswordRequiredSurvivesUnrelatedMigration` | **KILLED** (1 FAIL) |
-| E | `resend_login_code` no longer goes back to the issuing DC | `AuthMigrationState.ResendAfterUnrelatedMigrationUsesTheIssuingDc` | **KILLED** (1 FAIL) |
-| F | A successful bot login no longer clears a pending phone login | `AuthMigrationState.BotLoginSuccessEndsAPendingPhoneLogin` | **KILLED** (1 FAIL) |
-| G | `sign_in_code` sends the code to the migrate DC (policy removed) | `AuthMigrationState.PhoneMigrationDuringSignInDropsTheCodeAndDoesNotSendItElsewhere` | **KILLED** (1 FAIL) |
-
-Final sources were restored and checked: `login.cpp`, `client.cpp`, `auth_state.cpp` and `client.h` are byte-identical to the
-fixed copies. The mtproto binary was rebuilt from them, and the full run in the table above was done on that build.
-
-Mutation C initially survived. The test was then made to cover the case it was missing, and that is recorded here rather
-than hidden.
-
-## Not run
-
-| Check | Status | Reason |
-|---|---|---|
-| AddressSanitizer | **NOT RUN** | The machine has 2 cores and 7 GB RAM. The repository notes a sanitizer build needs about 8 GB and about 1.5 hours at `-j1`. A full sanitizer build of the library was not attempted |
-| UndefinedBehaviorSanitizer | **NOT RUN** | Same reason |
-| ThreadSanitizer | **NOT RUN** | Same reason. The connect and disconnect paths touched here are not run concurrently by these tests |
-| Clang full build and test run | **NOT RUN** | Only the Clang 18 syntax check above was run. No Clang build, link or test run |
-| Valgrind | **NOT RUN** | Not run in this pass |
-| `make checks`, `make format-check`, `make schema-check` | **NOT RUN** | Not rerun in this pass |
-| `tools/check_examples.sh` | **NOT RUN** | The examples were built as part of the full build, but the example check script was not run |
-| Live Telegram, phone login against real DCs | **NOT RUN** | No phone number, account or credential used. Restricted by the task |
-| Connection drop on the same DC during a pending login | **NOT TESTED** | The fake DC cannot drop an open connection. See KNOWN_LIMITATIONS item 62 |
-
-## Skipped
-
-None. No test was skipped or disabled. No failure was hidden. The one initial survivor (mutation C) and the one wrong
-expectation found during the pass (a disconnected client raising `runtime_error`, not `AuthenticationError`) are described above.
-
-## Proxy and transport phase
-
-Run on this tree with the existing `build-audit` directory (Release, `/usr/bin/c++` = GCC 13.3.0).
-
-| Check | Command or source | Result |
-|---|---|---|
-| New proxy audit suite | `cppgram_mtproto_test` filtered to the proxy suites | 80 tests from 18 suites, PASS (includes the existing obfuscated, proxy secret, SOCKS5 and connection-net suites) |
-| New file alone | `tests/mtproto/proxy_transport_audit_test.cpp` | 23 tests, PASS |
-| mtproto binary, full | `cppgram_mtproto_test` | 417 PASSED, 0 failed. Includes the auth migration suites (bot, phone, DC, saved-session routing, pending code and 2FA across migration) |
-| bot binary | `cppgram_bot_test` | 110 PASSED |
-| media binary | `cppgram_media_test` | 22 PASSED |
-| metrics binary | `cppgram_metrics_test` | 23 PASSED |
-| security binary | `cppgram_security_test` | 53 PASSED |
-| async binary | `cppgram_async_test` | 46 PASSED |
-| Build, target | `cmake --build build-audit --target cppgram_mtproto_test -j2` | PASS, 0 warnings in the GCC build log |
-| Build, all targets | `cmake --build build-audit -j2` | PASS (rc 0). **Incremental**, not a clean build |
-| Clean build | from an empty directory | NOT RUN in this phase |
-| Clang C++20 | `clang++ -std=c++20 -fsyntax-only -Wall -Wextra` on the test file, `obfuscated.cpp`, `connection.cpp`, `client.cpp` | Test file, `obfuscated.cpp`, `connection.cpp`: 0 errors, 0 warnings. `client.cpp`: 1 warning at line 1231 (`missing field 'top_msg_id'`), also present in the baseline. Syntax check only, not a Clang build |
-| Clang full build | | NOT RUN |
-| ASan / UBSan / TSan | | NOT RUN (2 cores and 7 GB, as the sanitizer scripts expect more; not attempted in this phase) |
-| check_cmake_sources.py | | PASS (68 test names, all on disk) |
-| check_headers.sh | | PASS (rc 0) |
-| check_schema.sh (with codegen) | | PASS (rc 0) |
-| check_examples.sh, check_version.sh | | PASS (rc 0) |
-| format_check.sh | | PASS: 54 files, 0 failing. The new test file was added to the allowlist after formatting it |
-| clang-format, changed src files | | NOT CLEAN. These files were already unformatted in the baseline (client.cpp 604, connection.cpp 39, obfuscated.cpp 31, connection.h 10, obfuscated.h 11, client.h 288 violations). This phase added 34 more violations, all in lines it wrote. They were not reformatted, to keep the diff focused |
-| Live Telegram or proxy | | NOT RUN. No live operation was performed |
-
-### Known-answer and stub tests
-
-- `ProxyKnownAnswer`: 1 test, five vector sets (intermediate DC 2, padded DC 2, abridged DC 2, intermediate DC -2,
-  intermediate DC 10002). Each checks the handshake, the framing, the encrypted frame and the decrypted reply.
-- `ObfuscatedAbridged`, `ObfuscatedPadded`, `ObfuscatedFramingGuard`: framing length rules, padding range and
-  randomness, and mismatched framing rejected before any socket.
-- `ProxySecretParse`: prefixes, case, fake-TLS domain, malformed input with no echo of the input.
-- `ProxyStub` (loopback MTProxy stub): intermediate, padded and abridged round trips, DC ids, fragmented reply, 1 MiB
-  packet, -404 reply, silent proxy, early close, wrong secret, reconnect after failure.
-- `Socks5Stub` (loopback SOCKS5 stub): fragmented method and reply, wrong version (greeting and reply), unknown ATYP,
-  REP 5.
-
-### Mutation testing
-
-Each mutant was applied to one source file, the relevant suites were run, and the source was restored and checked with
-`cmp`. Every restore was byte-exact.
-
-| Mutant | Result | Restored byte-exact | Failing tests (first run) |
-|---|---|---|---|
-| M1 rx key from init instead of reversed init | KILLED | True | ProxyKnownAnswer.MatchesIndependentReferenceForEveryCase, ProxyStub.AbridgedRoundTripWithExplicitFraming, ProxyStub.DcIdIsCarriedInTheHandshake, ProxyStub.FragmentedReplyIsReassembled |
-| M2 abridged short-form threshold 0x7e | KILLED | True | ObfuscatedAbridged.FrameLengthEncoding |
-| M3 DC id bytes swapped | KILLED | True | ObfuscatedHandshake.ServerDecodesFramingAndDcForBothModes, ObfuscatedNet.PlainSecretRoundTripThroughScriptedProxy, ProxyKnownAnswer.MatchesIndependentReferenceForEveryCase, ProxyStub.DcIdIsCarriedInTheHandshake |
-| M4 padded frame without padding | KILLED | True | ObfuscatedFrame.PaddedServerFramesDecryptToTheOriginalPacket, ObfuscatedPadded.PaddingIsZeroToFifteenBytesAndRandom |
-| M5 silent-proxy diagnostic removed | KILLED | True | ProxyStub.SilentProxyIsAProxyErrorWithoutTheSecret |
-| M6 send_all ignores partial sends | SURVIVED | True | none |
-| M7 SOCKS5 reply version not checked | KILLED | True | Socks5Stub.WrongVersionInConnectReplyIsRejected |
-| M8 dd prefix not recognised | KILLED | True | ProxySecret.PaddedIntermediateSecret |
-
-- **M2** survived the first run. The existing test only covered 127 words, which is the first escape length. A
-  126-word case was added (one byte, `0x7e`), and the mutant is now killed.
-- **M5** could not be applied by the first runner because its pattern matched twice. It was rerun with the pattern
-  anchored to `throw_receive_timeout`, and it is killed.
-- **M6** survives and is treated as an equivalent mutant. On a blocking TCP socket, `send(2)` returns a partial count
-  only when a signal interrupts it. No test in this suite can force that, so the mutant is not killed and is not claimed
-  as killed.
-
-Mutation coverage is 7 of 8 killed, with 1 equivalent survivor. This covers only the eight mutants above, not the whole
-transport.
-
-### Test harness fixes made during the phase
-
-- The first draft of the abridged stub reply was 38 bytes. That is not a multiple of 4, so the abridged length was wrong.
-  Fixed to 32 bytes. This was a fixture bug, not a cppgram bug.
-- A stub thread threw from `write_all` when the client closed during a reply. That called `std::terminate` and killed the
-  whole test binary. The stub threads now catch and end the connection. A stub failure still shows up as a missing reply
-  in the test.
-- `Connection::set_receive_timeout` throws before a socket is connected. The tests call it after `connect_obfuscated`.
-
-
-## Secret format phase
-
-Source tree: `cppgram-main` (working tree, not a git checkout). Build: `build-audit`, Release, GCC 13.3.0.
-
-| Check | Result |
-|---|---|
-| Full offline CTest (`ctest -j2`) | 687 of 687 passed, 58 s |
-| `cppgram_mtproto_test` | 433 PASSED (417 before, plus 16 new: 13 in `proxy_secret_test.cpp`, 3 in `proxy_transport_audit_test.cpp`) |
-| `cppgram_bot_test` / `media` / `metrics` / `security` / `async` | 110 / 22 / 23 / 53 / 46 PASSED |
-| Proxy secret suites (`ProxySecret*`) | 28 PASSED |
-| GCC build (`cmake --build build-audit -j2`) | rc 0, 0 warnings in the build log |
-| Clang `-fsyntax-only -Wall -Wextra -Wpedantic -Wshadow` on `proxy_secret.cpp` | clean |
-| `live_tests.cpp` compile and link (GCC `-Wall -Wextra`) | 0 warnings. Linked by hand, since `BUILD_LIVE_TESTS` is OFF in this build |
-| Live proxy check, offline, four synthetic secrets | see table below |
-| `format_check.sh` | 57 files, 0 failing (`proxy_secret.h`, `proxy_secret.cpp`, `proxy_secret_test.cpp` and the audit test added to the allowlist after formatting) |
-| Whitespace (`git diff --no-index --check` per changed file) | no whitespace errors. Not a repository, so the repo-level `git diff --check` was not run |
-| Live VPS, Telegram, real credentials | NOT RUN |
-
-### Offline live proxy check
-
-Run with `TG_MTPROTO_PROXY_HOST=127.0.0.1` and `TG_MTPROTO_PROXY_PORT=9`. The synthetic secrets are not real.
-
-| Secret kind (synthetic) | Result |
-|---|---|
-| Plain, Base64URL | SKIP: set TG_API_ID and TG_API_HASH (secret accepted, no network used) |
-| Fake-TLS (`ee`), Base64URL | NOT_SUPPORTED: fake-TLS (ee) proxy secrets are not supported by cppgram |
-| Malformed text | FAIL: TG_MTPROTO_PROXY_SECRET was not accepted: proxy secret is not valid hex, Base64URL or Base64 (...) |
-| Dd, standard Base64 | SKIP: set TG_API_ID and TG_API_HASH (secret accepted, no network used) |
-
-Before this change, every malformed secret printed `has an invalid format (value not shown)`. The message now gives the
-rule that failed. It never repeats the secret.
-
-### Mutation testing of the new parser
-
-Eight mutants of `src/mtproto/proxy_secret.cpp`. Each run uses the proxy secret suites and the stub suites. Every source
-was restored byte-exact.
-
-| Mutant | Result | Restored byte-exact | Caught by (first run) |
-|---|---|---|---|
-| P1 url alphabet never tried | KILLED | True | ProxySecretBase64.FakeTlsSecretKeepsTheDomain, ProxySecretBase64.PaddedIntermediateSecretInBothAlphabets, ProxySecretBase64.PlainSecretInBase64URLPaddedAndUnpadded, ProxySecretBase64Transport.FakeTlsBase64SecretIsStillRefused, ProxySecretBase64Transport.PaddedBase64SecretSelectsPaddedFraming |
-| P2 trailing-bit check removed | KILLED | True | ProxySecretBase64.MalformedBase64IsRejected |
-| P3 length mod 4 == 1 not rejected | KILLED | True | ProxySecretBase64.DecodedLengthAndPrefixAreChecked |
-| P4 domain printable check removed | KILLED | True | ProxySecret.FakeTlsDomainRules, ProxySecretRegression.ExistingHexRejectionsStillHold |
-| P5 dd length check removed | KILLED | True | ProxySecret.RejectsWrongLengths, ProxySecretBase64.DecodedLengthAndPrefixAreChecked, ProxySecretRegression.ExistingHexRejectionsStillHold |
-| P6 hex-first rule removed | KILLED | True | ProxySecret.FakeTlsDomainRules, ProxySecret.FakeTlsSecretCarriesDomain, ProxySecret.PaddedIntermediateSecret, ProxySecret.PlainSecretParsesBothCases, ProxySecret.RejectsWrongLengths |
-| P7 base64 padding not checked | KILLED | True | ProxySecretBase64.MalformedBase64IsRejected |
-| P8 wipe removed (not observable by tests) | SURVIVED | True | none |
-
-- P8 removes the wipe of the decode buffer. No test can observe memory contents, so it survives by design. It is
-  covered by code review, not by a test.
-- P3 (length mod 4 == 1 accepted) is killed by the 25-character vector in `DecodedLengthAndPrefixAreChecked`: 18
-  decoded bytes with zero trailing bits, which the mutant accepts as fake-TLS.
-
-Mutation coverage: 7 of 8 killed. The survivor is untestable from outside the module.
-
-## VPS run fix: padded plain replies
-
-Source: working tree, `build-audit`, GCC 13.3.0.
-
-| Step | Result |
-|---|---|
-| New tests before the fix (red) | `Handshake.PlainPacketIgnoresTransportPaddingUpToFifteenBytes` FAILED with `plain packet length mismatch`, the same error as the VPS run |
-| After the fix (green) | `Handshake.PlainPacket*` 4 of 4 PASSED. `Handshake*`, `DcMigration*`, `PhoneMigration*`, `AuthMigration*`, `AuthState*`: 44 PASSED |
-| `ProxyStub.PaddedReplyKeepsItsPaddingForTheMtprotoLayer` | PASSED. Confirms the transport passes padding up unchanged |
-| `cppgram_mtproto_test` | 437 PASSED (433 before, plus 4) |
-| Full offline CTest | 691 of 691 passed (687 before, plus 4). Build warnings: 0 |
-| clang-format on `src/mtproto/auth.cpp` | 61 violations, up from 57 in the baseline. The 4 are on lines added here. Not reformatted, to keep the fix small |
-| Live VPS run | NOT RUN by me. The log from the VPS is the only live evidence, and it predates this fix |
+- Live Telegram tests (`cppgram_live_check`, `cppgram_live_tests`): NOT RUN, no credentials used.
+- The public Cpplivetest bot's live run: NOT RUN.
+- ARM64: NOT RUN.

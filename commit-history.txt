@@ -1,54 +1,127 @@
-Local change history for the login-state pass (no git repository, no commits, no push, no branch, no PR).
-Base: cppgram-phone-migration-fix.zip, the previous release (638 of 638 offline tests).
-Changes listed in the order they were made.
+# Commit history (generated from the baseline clone, git log --all --date=iso)
+# Baseline: 1cd09d0701147e5ad799eb31d8bd58d4d74408ac on main.
+# This release-verification round created NO commits, tags or branches. HEAD before and after: 1cd09d0.
+# Tag count: 1 (V1 )
+# Remote-tracking refs: origin/HEAD->origin/main origin/feature/api-phases-1-14-sandbox origin/main origin/zip-23c7583-import 
+# This file replaces the earlier local change log that was tracked at baseline.
 
-1. include/cppgram/client.h
-   - call_login_rpc(): no longer saves and restores the auth state itself. migrate_to_dc() keeps it.
-   - Declarations of establish_connection() and drop_connection().
-2. src/client.cpp
-   - connect(): clears login_dc_, then calls establish_connection(). Public behaviour unchanged except the cleared login.
-   - establish_connection() (new): drop_connection(), then connect_impl(). Logs and rethrows on failure, as before.
-   - disconnect(): clears login_dc_, then calls drop_connection().
-   - drop_connection() (new): the previous disconnect() body. It does not clear the login.
-   - migrate_to_dc(): keeps CodeRequired, PasswordRequired and Authenticating across the move. On failure restores the
-     previous DC settings, resets force_new_auth_key_, clears login_dc_, and rethrows. An unknown DC still throws before
-     any change.
-   - login_bot(): on success clears login_dc_ and moves a pending CodeRequired or PasswordRequired to Unauthenticated
-     before SessionRestored.
-3. src/login.cpp
-   - send_login_code(): clears login_dc_ before a new code starts. login_dc_ is set on success, as before.
-   - sign_in_code(): refuses without login_dc_. Moves to login_dc_ before LoginStarted. Calls call_rpc directly. A
-     PHONE/NETWORK/USER_MIGRATE_N reply drops the pending code and throws AuthenticationError (decision 1 in FINAL_REPORT.md).
-   - sign_in_password(): moves to login_dc_ before LoginStarted. Clears login_dc_ on success. Adds recover_login_state()
-     on non-RPC failures.
-   - resend_login_code(): with a pending login, moves to login_dc_ first. Records the answering DC for the new hash. Clears
-     login_dc_ when already authorized.
-4. src/auth_state.cpp
-   - RecoverableError accepts LoginStarted (goes to Authenticating). auth_can_login() already accepted this state.
-5. tests/mtproto/auth_migration_state_test.cpp (new)
-   - Nine tests on a three-DC fleet (DC 2 home, DC 5 issuing, DC 3 unrelated target). Described in TEST_RESULTS.md.
-6. tests/mtproto/auth_state_test.cpp
-   - AuthState.LoginCanStartFromRecoverableError.
-7. tests/mtproto/phone_migration_fake_dc_test.cpp
-   - SignInAfterAnotherMigrationNeedsANewCode renamed to SignInAfterAnotherMigrationStillUsesTheIssuingDc. It now asserts
-     the fixed behaviour (it pinned the old limitation).
-8. tests/CMakeLists.txt
-   - Adds auth_migration_state_test.cpp to cppgram_mtproto_test.
-9. CHANGELOG.md
-   - New "Login state across DC migration" subsection in the Unreleased section.
-10. REFERENCE_COMPARISON.md
-    - Migration row updated for the login steps and the remaining gaps.
-11. KNOWN_LIMITATIONS.md
-    - Item 62 rewritten (same-DC drop still clears a pending code). Items 77 to 81 added.
-12. TEST_RESULTS.md, FINAL_REPORT.md, commit-history.txt rewritten for this pass.
-
-Not changed in this pass: the bot-login migration hop logic, saved-session routing, reconnect_after_drop(), the obfuscated
-transport, the auth key handshake, the TL schema and generated files, the session file format, and all other public API.
-
-Proxy and transport phase
-- No commits were created in this phase. The change set is the working tree of this archive, relative to
-  cppgram-login-state-fix.zip.
-- Changed: include/cppgram/mtproto/obfuscated.h, src/mtproto/obfuscated.cpp, include/cppgram/mtproto/connection.h,
-  src/mtproto/connection.cpp, include/cppgram/client.h, src/client.cpp, tests/CMakeLists.txt, tools/format_allowlist.txt.
-- Added: tests/mtproto/proxy_transport_audit_test.cpp, PROXY_AUDIT.md, VPS_LIVE_TEST_GUIDE.md.
-- Documents appended: TEST_RESULTS.md, KNOWN_LIMITATIONS.md, REFERENCE_COMPARISON.md, FINAL_REPORT.md.
+1cd09d0701147e5ad799eb31d8bd58d4d74408ac  2026-11-14 14:40:40 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+7458fdeed0aadfc2eb037812ca4920f7769e2445  2026-11-14 13:03:35 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+b3b48b326fb82234f144bff5a1ffa9cd7885583f  2026-11-11 14:32:24 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+0c77e5fc356ad27d533c8810016767f7b6cb041d  2026-11-11 13:38:07 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+bae6d717c60a50bd2774e7f2e44102e8f2719fa1  2026-11-10 14:04:48 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+e71282472f5c15461e9c0add08600d477b9ad70d  2026-11-09 17:34:12 +0530  Badxd  Create release.yml
+3e7915610a89fe9edba674efa9c7fea3a777f46c  2026-11-09 17:33:42 +0530  Badxd  Create live.yml
+04a755ae0f649fc38be45530f07d64006b6a18d0  2026-11-09 17:33:22 +0530  Badxd  Create ci.yml
+95806f755510a5cebabaf931f6a7da64693a484d  2026-11-09 11:58:04 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+cee098579956ef3c25309fcd555de3121591ebe0  2026-11-09 07:43:35 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+ba006cd967dea06a3c937b126d9d4e026a2e4257  2026-11-06 11:13:55 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+6798e2e2d1409b1b5917b384f054710efafbbe02  2026-11-06 09:00:32 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+f193647236780cd973f4d01fd2917b61699981ae  2026-11-04 14:27:25 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+a73058aafbfbb212cd8bb2cede41c37594ed406d  2026-11-04 13:41:34 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+b203254647c9ad94260c05708d0ffedd06a7505d  2026-11-04 08:49:01 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+37123aa581f28232d49866d817cba7c768bc511c  2026-11-04 07:41:17 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+30e17e44dcd10259460dff542293657afcb92890  2026-11-03 12:09:48 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+65daf2cab0495b7ad5de75e53e72eeb21070b210  2026-11-03 13:21:25 +0530  Badxd  Merge pull request #8 from Badxd/zip-23c7583-import
+b3ecf1a93ea3e0e9119aee0ed85b610ea4b53724  2026-11-03 07:48:48 +0000  sukhh  Merge origin/main with Claude CppGram improvements
+025148b5e01bd924fd8f33dca9bb796c61636e8b  2026-11-03 07:31:12 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+23c7583c9730c84de3ccbbfd8166bbfba0b2fc7c  2026-11-03 06:57:33 +0000  Claude  chore: ignore build-fuzz output directory
+fd43f3340e42dd08b53ca2b9d98b9bd55971d4f9  2026-11-03 06:47:04 +0000  Claude  docs: changelog entry for MTProto proxy transport and connect timeouts
+ae82b0a2a494ed803e0fd2b49fca87bb8b2099d6  2026-11-03 06:03:47 +0000  Claude  tools: add timed libFuzzer runner for the three fuzz targets
+755560a4837469dbc49b971642378390d54e66b5  2026-11-03 05:36:25 +0000  Claude  mtproto: obfuscated MTProto proxy transport, connect/send timeouts, offline network tests
+80dabf73606b0c1aebc7d0c3b3146d17f5790ed3  2026-11-02 16:32:31 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+ddd3f0fe5bacfc1028f7bb1cc7c17cee6df5d64a  2026-11-02 16:22:02 +0000  Claude  fix(bot): include <utility> before Boost.Asio in webhook server headers
+cd7cd70c2456b7ac385e58871b238d7f3c731b0d  2026-11-02 12:01:18 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+791601b1381cfc2c85112e27fa66086d324e3cdd  2026-11-02 11:58:20 +0000  Claude  docs: long-fuzz results and proxy status in release report
+c8fae999ab68ff4effcbd38edaa521f688a8a278  2026-11-02 11:54:14 +0000  Claude  mtproto: proxy secret parser (format only), 9 offline tests
+ba7743e071807f6af1a535772c90fc4f37b3c0bc  2026-11-02 11:36:01 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+9772893609493402c92983ee7d72c49b5d3bfa45  2026-11-02 11:23:13 +0000  Claude  docs: record ASan and UBSan full-suite result
+69809f0cf47288da0b0699e78b83271dae1da536  2026-11-02 10:52:30 +0000  Claude  docs: release report with measured results and explicit gaps
+a602feb549ab3847f97784967f2da2b8996d4939  2026-11-02 10:52:19 +0000  Claude  chore: ignore ThreadSanitizer build directory
+4ac7e6c3f0e126305886bf1ba642978fee956886  2026-11-02 10:46:53 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+03073a14abdc9c1863e08e50fcb596dda06edee4  2026-11-02 10:43:40 +0000  Claude  cancel: fix lost stop wakeup in sleep_cancellable
+c8a63830dd52597852b1e8533a36644ad6585c9d  2026-11-02 10:09:57 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+57b93bfa378db1cfd00f4fd9082d016b94085c63  2026-11-02 10:08:22 +0000  Claude  docs: obfuscated proxy plan (design only)
+e03e96565506c52b927ac7be3c94b1b4615fcde9  2026-11-02 10:07:44 +0000  Claude  tools: ThreadSanitizer run script
+e27c375ecf6308347b2ccaa2f2efb329de1d6ab1  2026-11-02 10:02:29 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+7584e0cce8c48886e7fe9f5863f4700d2d95ef52  2026-11-02 10:01:49 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+160838afae498731271d187f3ecc11f10e1857ca  2026-11-02 08:37:47 +0000  Claude  session string: passphrase-encrypted export and import
+915916c98262ef5d44010f9da562f02a080cdf11  2026-11-02 08:21:31 +0000  Claude  storage: encrypted auth key in the SQLite session store
+da8033df15199dbe1a5554b1ed399d297f720e81  2026-11-02 08:16:03 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+cbfe86557d9e43dc65c9d9cb1a19725ef87a9266  2026-11-02 08:14:22 +0000  Claude  client: optional SOCKS5 proxy for the main DC connection
+b114a3da0602faeb364cbe1d730e2e6ce1b806ca  2026-11-02 08:06:24 +0000  Claude  docs: encrypted session files, backup and recovery
+c7669fef4c1618b11b1b640a85960fd041b98d07  2026-11-02 08:06:16 +0000  Claude  session: encrypted session files via CPPGRAM_SESSION_PASSPHRASE
+ebdf0019ad77ce3ddbc8213e4460faff79e8f8f9  2026-11-02 07:58:34 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+7c9137d467d3a74caa250d8711092c783ed49168  2026-11-02 07:53:01 +0000  Claude  mtproto: SOCKS5 CONNECT with username/password auth
+237557a1480d4219dcfe7dd94265dd0759a17dd4  2026-11-02 07:48:10 +0000  Claude  session: passphrase-encrypted session blobs (scrypt + AES-256-GCM)
+12657b4a3c2c86c359c6575b56ef30b3cd974b52  2026-11-02 07:20:13 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+aa76882941109aeef1e0734752f3e92d66015552  2026-11-02 07:17:13 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+e9c5cb84f8a7b5fca6dc12f57e7e9a4977c55def  2026-11-02 07:06:20 +0000  Claude  client: typed events for connection, authorization and RPC errors
+c80bb978520b14cd60722a417bf7ad66ffa0f8d3  2026-11-02 06:37:38 +0000  Claude  tests: concurrent stop/wait stress test for sleep_cancellable
+b0f682b56c055dd7e82034bb9006703f602d697b  2026-11-02 06:27:50 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+fdbf3e98314e14fbc31513c4da4e27df937cc36d  2026-11-02 06:26:11 +0000  Claude  transfer: streamed upload parts and resumable downloads
+a64d01d9bd8aebb1f2009afef130b704fa8d65cd  2026-11-02 06:13:01 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+d581b2c071550eb842bfd3cad47f803d65fd68bb  2026-11-02 11:35:27 +0530  Badxd  Merge pull request #7 from Badxd/feature/api-phases-1-14-sandbox
+f3a18f3bad4f70b4085dad090f66b582b00c8fdd  2026-11-02 05:46:04 +0000  sukhh  Merge remote-tracking branch 'origin/main' into phase-api-latest-import
+a7c84b17780a986b4d90b950296044281a4eb5f0  2026-10-31 19:29:11 +0000  Claude  chore: ignore sanitizer build directory
+1eabf07a732ebf372a4184c567f36f9cb28d7187  2026-10-31 19:29:01 +0000  Claude  client: wire per-channel pts into the update loop
+a747459ad7fac221b6f4e0edaf066907c1bebdc4  2026-10-31 19:12:39 +0000  Claude  protocol: replay detection for server messages (F16), per-channel pts tracker, seed corpus
+4ae603ad2c01fd72b4a13e7d4fc179a710de2f87  2026-10-31 20:04:12 +0530  Badxd  Merge pull request #6 from Badxd/feature/api-phases-1-14-sandbox
+f824565a0ac93c6acb4c331515e7ba20d725acea  2026-10-31 14:29:45 +0000  Claude  Merge remote-tracking branch 'origin/main' into feature/api-phases-1-14
+2f71172f395d7c4c20ecc8cc004c07e69d14170c  2026-10-31 14:22:27 +0000  Claude  ci, tooling, examples, guides: fix CI dependencies and sanitizer configure, header check, more examples
+167bd99223ce35bc9bf556a8016fb5eb667958e5  2026-10-31 19:36:09 +0530  Badxd  Merge pull request #4 from Badxd/feature/api-phases-1-14-sandbox
+f449beb5aa68d196e0ffb94921f341807f7cc9d9  2026-10-31 14:04:27 +0000  badbby  ci: fix Boost dependencies and sanitizer configuration
+2aa444b08152a9fb62e15ddd53c962b4e05767ed  2026-10-31 13:58:08 +0000  badbby  Merge remote-tracking branch 'origin/main' into phase-1-14-import
+887a81583caf0f8b9bcac27ec5d3e2d22a267ab3  2026-10-31 13:37:10 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+a747106cd5aa58e7332bca74c830f27cb96f7bc1  2026-10-31 11:23:23 +0000  Claude  tests, fuzzing, schema, docs: fuzz runs, generator fix, guides, mtproto example
+2000a1716b7cada0c457b769c97e610f1e3e6bdf  2026-10-31 11:00:25 +0000  Claude  auth, networking, files, benchmarks: login state machine, cancellable waits, safe downloads, measured numbers
+93f36e6c5278e92e320d2d52d936ae793eae26a1  2026-10-31 07:30:50 +0000  Claude  storage: checksummed session format v2, sqlite schema versioning, schema check
+8b4bbab208c71e04837690d916eb1f47c5552e0c  2026-10-31 07:12:46 +0000  Claude  ci/tools: sanitizer build without debug info; record ASan/UBSan results
+a928b4419f440a9ed6bc6a4292bbe9e7820b4b15  2026-10-31 06:25:44 +0000  Claude  updates: bounded queue with backpressure
+be6022fc39e9b13691848477b08f9e80a266063f  2026-10-31 06:13:41 +0000  Claude  networking and updates: reconnect on drop, pure pts gate
+2bf62f7b4e290886ee5ad191e71e644fe7ec619d  2026-10-31 05:51:03 +0000  Claude  protocol and networking: time sync, flood-wait resend, connect retry
+b2cdc12b34508e2a40d890d6668fa2c8241af5f2  2026-10-31 05:05:54 +0000  Claude  docs: record working-tree build and ctest results in AUDIT.md
+e5405b9469657b1a39b78a244283b526a13c7ef4  2026-10-31 05:05:49 +0000  Claude  cleanup: remove unused helpers flagged by the baseline build
+697add3b7c4024e14d362b023f8ae13382af4247  2026-10-31 05:02:25 +0000  Claude  docs: correct new-API method count in AUDIT.md
+bd4f7e4c7dc717410264f4fdac4dc7d573fd586a  2026-10-31 05:02:21 +0000  Claude  docs: AUDIT.md with checkpoint status, Release baseline (2bdbd22: 147/147 ctest, 9 warnings), and findings F1-F10
+d7f802bd94f015cddc0fa0f0fab5c4377e130d1a  2026-10-31 04:59:09 +0000  Claude  session: request deadline, atomic session save, transport framing tests
+2bdbd22caef2292b1369239a1b0979635d0fc583  2026-10-31 04:23:15 +0000  Claude  api: account TTL, chat TTL/username/discussion group, forum and accent settings
+b2a819b3d8ad641e892c190b8da0b43f0ee6bfc1  2026-10-31 04:10:31 +0000  Claude  api: unpin_all_messages, set_contact_note, accept_terms_of_service
+d9e8a7fb145ee6a9e7526a45ffd7943371657dae  2026-10-30 18:34:51 +0000  Claude  api: archive_chats, recent stickers, gift codes, and boosts
+91566a9a0d1fa046d074c807401d6f8ed666c0f0  2026-10-30 18:09:52 +0000  Claude  fuzz: libFuzzer targets for TL reader, session string, and HTML parser
+b4d4ac0eee9833552fe08026a3c7307fbf2bee30  2026-10-30 04:36:25 +0000  Claude  ci, docs, and constant-time msg_key check
+2b19ed6ac4f5dbf9cd8a51cd354af9c654386b5c  2026-10-30 04:31:17 +0000  Claude  security: CSPRNG random_id and owner-only session files
+67febdeeb30df5c1f0b2f786dbd4794cc82feadd  2026-10-29 17:43:34 +0000  Claude  mtproto: validate server DH parameters during handshake
+62f3062c5d285b8327f1792514104dacb46ff68f  2026-10-29 17:02:40 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+3f9306145d25c48ec3c1130d5135cf3aee7ca89e  2026-10-29 10:00:55 +0000  Claude  Expose DC addresses and migrate-error parsing (dc.h)
+6c3cf06459a8a8940488ed080abf23ed44102e4d  2026-10-26 23:52:34 +0530  Badxd  Merge pull request #3 from Badxd/feature/api-phases-1-14
+0f450f0780a2c48988cfa2e4310d9bda873a6e46  2026-10-26 18:17:17 +0000  Claude  Rename phase source files to descriptive names
+688167cd3c92cf5e585d38ef4166cac852597b41  2026-10-26 23:35:50 +0530  Badxd  Merge pull request #2 from Badxd/feature/api-phases-1-14
+542a397b1bb56d3a13c6702bc010d2492400ef51  2026-10-26 17:51:01 +0000  Claude  Add read-only cloud password status (phase 29)
+708edddde16f5c34287e9eb9be6a961542b81d26  2026-10-26 22:58:08 +0530  Badxd  Merge pull request #1 from Badxd/feature/api-phases-1-14
+c7b7c2de64adf27c717037d1ecd2f4c9de6bf043  2026-10-26 17:11:47 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+f0fc1aee901c42a82b12513a72605e68b41e783c  2026-10-26 17:01:51 +0000  Claude  Add story posting from a local file (phase 27)
+4b530880902988d605fef24078d7adc6fa5c28bd  2026-10-26 16:33:42 +0000  Claude  Add checklists, inline message edit, payment receipt (phases 24-26)
+2ac77232396565ebfeab4cd8735fed03ed0b2c7c  2026-10-26 13:13:14 +0000  Claude  Add stop_poll for account-created polls (phase 23)
+36dea6ca43c53eac214cc5519e54864def21ac4a  2026-10-26 13:00:11 +0000  Claude  Add connected business bot list and disconnect (phase 22)
+dabe4692059609d5cfdfafa8ddfaffeb46aa98c3  2026-10-26 12:46:21 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+acf53643f47209a985042a5ed8c3d83062d48e93  2026-10-26 12:41:25 +0000  Claude  Add bot command reset and default admin rights (phase 21)
+8030500dec1f6850b5a27c44d14a855c27fa1d75  2026-10-26 12:31:01 +0000  Claude  Add story read, hide and reaction methods (phase 20)
+9fd73a12c1e06e9bd22921fb19807a7d790bcf91  2026-10-26 11:14:05 +0000  Claude  Add star gift collection create and update (phase 19)
+3374de609c0b598345b0fbc9adb3780f7f19f166  2026-10-26 10:49:58 +0000  Claude  Add star gift listing, collections, unique lookup, upgrade prices (phase 18)
+306eedb484b0319f4a26061380d291fc47e95ceb  2026-10-26 09:55:38 +0000  Claude  Add own star gift actions (phase 17)
+91cd0f6f58a0b6469b119095e60a33542a7365f0  2026-10-26 09:42:57 +0000  Claude  Add check_chat_invite (phase 16)
+821a955a6b3adbbdc4e4446168277ea695dff23a  2026-10-26 09:28:40 +0000  Claude  Add API phase 15: chat online count, history count, delete chat photo
+5c84b314befd99fb3202ad116471caab17f5ff92  2026-10-26 05:41:26 +0000  Claude  Add API phases 1-14: effects, invites, messages, stories, folders, stars, forum, account, business
+0dfa9817d6f1579e4371037c129c131f7c1b2347  2026-10-25 19:27:46 +0530  sukh  Ignore local build and session files
+fe77b7566bbb4ad8f6a49a82e620419e4891f43a  2026-10-25 12:37:26 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+3cb2e9e6d0b64c16b98535c00195343ad084470d  2026-10-25 11:47:44 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+dcd98854c394dee7121325a3d476f86bd6f2d462  2026-10-25 11:18:20 +0000  Claude  Fix handshake double wrap/unwrap in PlainConnection
+ddea6d228ba80514fcebf271e648edd540c57e81  2026-10-25 10:24:29 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+b7cc9db05f5a56288b5ef3534c8fba855877e9b3  2026-10-25 09:41:50 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+8ffa820f6cfa1060f30610b1e97194794a4af5ad  2026-10-25 15:10:27 +0530  Badxd  Delete app.json
+059bbdd05cd5f65ecaf4797eb1b356a79cc1ad5d  2026-10-25 15:10:13 +0530  Badxd  Delete HEROKU_TEST.md
+214d7fa7f489e807ead8c42bd0b4ffc133525ff6  2026-10-25 09:03:34 +0000  Badxd  Update app.json
+6e9eec57a8b9c7f3d8ae3e47adde22855f8993ae  2026-10-25 08:39:10 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+5bea84958cece4ebc452fbb8db1f908804c67714  2026-10-25 07:28:53 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!
+486e8930a8d70063980bfd40a444a3f818f08578  2026-10-25 04:15:23 +0000  Badhacker98  🚀 ʙᴀᴅ ʙᴏᴛꜱ !!

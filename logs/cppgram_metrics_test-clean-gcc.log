@@ -1,0 +1,82 @@
+Running main() from ./googletest/src/gtest_main.cc
+[==========] Running 23 tests from 8 test suites.
+[----------] Global test environment set-up.
+[----------] 1 test from MetricsCounter
+[ RUN      ] MetricsCounter.IncrementsAndIgnoresNegativeAndNaN
+[       OK ] MetricsCounter.IncrementsAndIgnoresNegativeAndNaN (0 ms)
+[----------] 1 test from MetricsCounter (0 ms total)
+
+[----------] 1 test from MetricsGauge
+[ RUN      ] MetricsGauge.SetAndAddTrackTheLatestValue
+[       OK ] MetricsGauge.SetAndAddTrackTheLatestValue (0 ms)
+[----------] 1 test from MetricsGauge (0 ms total)
+
+[----------] 1 test from MetricsHistogram
+[ RUN      ] MetricsHistogram.ObservationsFallIntoTheRightBuckets
+[       OK ] MetricsHistogram.ObservationsFallIntoTheRightBuckets (0 ms)
+[----------] 1 test from MetricsHistogram (0 ms total)
+
+[----------] 9 tests from MetricsRegistry
+[ RUN      ] MetricsRegistry.RegisteringTheSameDefinitionReturnsTheSameSeries
+[       OK ] MetricsRegistry.RegisteringTheSameDefinitionReturnsTheSameSeries (0 ms)
+[ RUN      ] MetricsRegistry.ConflictingRedefinitionThrows
+[       OK ] MetricsRegistry.ConflictingRedefinitionThrows (0 ms)
+[ RUN      ] MetricsRegistry.InvalidNamesAndBoundsAreRejected
+[       OK ] MetricsRegistry.InvalidNamesAndBoundsAreRejected (0 ms)
+[ RUN      ] MetricsRegistry.WrongLabelCountThrows
+[       OK ] MetricsRegistry.WrongLabelCountThrows (0 ms)
+[ RUN      ] MetricsRegistry.CardinalityCapFoldsIntoOverflowAndCountsDrops
+[       OK ] MetricsRegistry.CardinalityCapFoldsIntoOverflowAndCountsDrops (0 ms)
+[ RUN      ] MetricsRegistry.DisabledRegistryIgnoresUpdatesButStillSnapshots
+[       OK ] MetricsRegistry.DisabledRegistryIgnoresUpdatesButStillSnapshots (0 ms)
+[ RUN      ] MetricsRegistry.DefaultHandlesAreNoOps
+[       OK ] MetricsRegistry.DefaultHandlesAreNoOps (0 ms)
+[ RUN      ] MetricsRegistry.EmptyRegistrySnapshotIsEmpty
+[       OK ] MetricsRegistry.EmptyRegistrySnapshotIsEmpty (0 ms)
+[ RUN      ] MetricsRegistry.HandleOutlivesRegistry
+[       OK ] MetricsRegistry.HandleOutlivesRegistry (0 ms)
+[----------] 9 tests from MetricsRegistry (0 ms total)
+
+[----------] 2 tests from MetricsConcurrency
+[ RUN      ] MetricsConcurrency.ConcurrentUpdatesAreNotLost
+[       OK ] MetricsConcurrency.ConcurrentUpdatesAreNotLost (18 ms)
+[ RUN      ] MetricsConcurrency.SnapshotRunsWhileOtherThreadsUpdateAndCreateSeries
+[       OK ] MetricsConcurrency.SnapshotRunsWhileOtherThreadsUpdateAndCreateSeries (0 ms)
+[----------] 2 tests from MetricsConcurrency (19 ms total)
+
+[----------] 5 tests from PrometheusFormat
+[ RUN      ] PrometheusFormat.CounterGaugeAndHelpTypeLines
+[       OK ] PrometheusFormat.CounterGaugeAndHelpTypeLines (0 ms)
+[ RUN      ] PrometheusFormat.HistogramRendersCumulativeBucketsSumAndCount
+[       OK ] PrometheusFormat.HistogramRendersCumulativeBucketsSumAndCount (0 ms)
+[ RUN      ] PrometheusFormat.LabelValuesAndHelpAreEscaped
+[       OK ] PrometheusFormat.LabelValuesAndHelpAreEscaped (0 ms)
+[ RUN      ] PrometheusFormat.NonFiniteGaugeValuesUseExpositionSpellings
+[       OK ] PrometheusFormat.NonFiniteGaugeValuesUseExpositionSpellings (0 ms)
+[ RUN      ] PrometheusFormat.TokenLikeLabelValuesAreRedacted
+[       OK ] PrometheusFormat.TokenLikeLabelValuesAreRedacted (0 ms)
+[----------] 5 tests from PrometheusFormat (0 ms total)
+
+[----------] 2 tests from ClientMetrics
+[ RUN      ] ClientMetrics.FailedConnectRecordsAttemptTransportErrorAndDisconnectedGauge
+2026-11-15T05:01:05.562Z ERROR [client] connect failed category=network reason=connect 127.0.0.1:1: Connection refused
+[       OK ] ClientMetrics.FailedConnectRecordsAttemptTransportErrorAndDisconnectedGauge (0 ms)
+[ RUN      ] ClientMetrics.DisabledClientMetricsRecordNothing
+2026-11-15T05:01:05.562Z ERROR [client] connect failed category=network reason=connect 127.0.0.1:1: Connection refused
+[       OK ] ClientMetrics.DisabledClientMetricsRecordNothing (0 ms)
+[----------] 2 tests from ClientMetrics (0 ms total)
+
+[----------] 2 tests from BotApiMetrics
+[ RUN      ] BotApiMetrics.FailedRequestRecordsMethodErrorCodeAndDurationWithoutToken
+2026-11-15T05:01:05.562Z WARN  [bot_api] request failed method=getMe error_code=401 description=Unauthorized
+[       OK ] BotApiMetrics.FailedRequestRecordsMethodErrorCodeAndDurationWithoutToken (0 ms)
+[ RUN      ] BotApiMetrics.TransportFailureRecordsStatusZeroAndTransportError
+2026-11-15T05:01:05.564Z WARN  [bot_http] request failed method=getMe reason=Failed to connect to 127.0.0.1 port 1 after 0 ms: Couldn't connect to server
+
+[       OK ] BotApiMetrics.TransportFailureRecordsStatusZeroAndTransportError (1 ms)
+[----------] 2 tests from BotApiMetrics (1 ms total)
+
+[----------] Global test environment tear-down
+[==========] 23 tests from 8 test suites ran. (22 ms total)
+[  PASSED  ] 23 tests.
+EXIT=0

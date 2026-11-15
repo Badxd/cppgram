@@ -1,0 +1,5 @@
+The public Cpplivetest repository commits a 10.8 MB compiled binary at bin/cppgram_live_test_bot.
+It is not needed for the source, it cannot be audited, and it may go stale against the library.
+Remove it in a separate commit by the repository owner:
+  git rm --cached bin/cppgram_live_test_bot && rm -r bin
+The patch cpplivetest-docs-and-build-fixes.patch excludes the binary so it applies cleanly. The owner runs the removal.

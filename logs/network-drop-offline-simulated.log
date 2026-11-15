@@ -1,0 +1,76 @@
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = ClientFakeDc.DropRecovery*:ClientFakeDc.StopCancelsAFloodWaitInProgress:Session.FloodWait*:Retry.FloodWait*:Session.FloodWaitRetry*:CryptoAudit.*:DcMigration*
+[==========] Running 21 tests from 6 test suites.
+[----------] Global test environment set-up.
+[----------] 6 tests from CryptoAudit
+[ RUN      ] CryptoAudit.ExactLiveTrailingCounts22And102EncryptedAreIgnored
+[       OK ] CryptoAudit.ExactLiveTrailingCounts22And102EncryptedAreIgnored (3 ms)
+[ RUN      ] CryptoAudit.ValidBoundaryBodySizesRoundTrip
+[       OK ] CryptoAudit.ValidBoundaryBodySizesRoundTrip (0 ms)
+[ RUN      ] CryptoAudit.InvalidMsgKeyEveryByteIsRejected
+[       OK ] CryptoAudit.InvalidMsgKeyEveryByteIsRejected (0 ms)
+[ RUN      ] CryptoAudit.PacketUnderAnotherAuthKeyIsRejected
+[       OK ] CryptoAudit.PacketUnderAnotherAuthKeyIsRejected (0 ms)
+[ RUN      ] CryptoAudit.ForeignAuthKeyIdIsRejected
+[       OK ] CryptoAudit.ForeignAuthKeyIdIsRejected (0 ms)
+[ RUN      ] CryptoAudit.OversizedInnerLengthIsRejectedWithoutReading
+[       OK ] CryptoAudit.OversizedInnerLengthIsRejectedWithoutReading (0 ms)
+[----------] 6 tests from CryptoAudit (3 ms total)
+
+[----------] 6 tests from Session
+[ RUN      ] Session.FloodWaitWithinLimitSleepsAndResends
+2026-11-15T03:52:40.149Z WARN  [rpc] flood wait, sleeping seconds=1 attempt=1
+[       OK ] Session.FloodWaitWithinLimitSleepsAndResends (1000 ms)
+[ RUN      ] Session.FloodWaitBeyondLimitIsReturnedWithoutSleeping
+[       OK ] Session.FloodWaitBeyondLimitIsReturnedWithoutSleeping (0 ms)
+[ RUN      ] Session.FloodWaitSleepCanBeCancelledWithoutResending
+2026-11-15T03:52:41.149Z WARN  [rpc] flood wait, sleeping seconds=30 attempt=1
+[       OK ] Session.FloodWaitSleepCanBeCancelledWithoutResending (103 ms)
+[ RUN      ] Session.FloodWaitSleepHonoursPerRequestCancel
+2026-11-15T03:52:41.252Z WARN  [rpc] flood wait, sleeping seconds=30 attempt=1
+[       OK ] Session.FloodWaitSleepHonoursPerRequestCancel (150 ms)
+[ RUN      ] Session.FloodWaitSleepIsNotTakenPastRequestDeadline
+[       OK ] Session.FloodWaitSleepIsNotTakenPastRequestDeadline (0 ms)
+[ RUN      ] Session.FloodWaitRetryLoopIsBoundedByAttemptBudget
+2026-11-15T03:52:41.403Z WARN  [rpc] flood wait, sleeping seconds=0 attempt=1
+2026-11-15T03:52:41.403Z WARN  [rpc] flood wait, sleeping seconds=0 attempt=2
+[       OK ] Session.FloodWaitRetryLoopIsBoundedByAttemptBudget (0 ms)
+[----------] 6 tests from Session (1254 ms total)
+
+[----------] 2 tests from Retry
+[ RUN      ] Retry.FloodWaitIsParsedAndWithinLimit
+[       OK ] Retry.FloodWaitIsParsedAndWithinLimit (0 ms)
+[ RUN      ] Retry.FloodWaitDigitBoundaryAndStrictFormat
+[       OK ] Retry.FloodWaitDigitBoundaryAndStrictFormat (0 ms)
+[----------] 2 tests from Retry (0 ms total)
+
+[----------] 2 tests from ClientFakeDc
+[ RUN      ] ClientFakeDc.StopCancelsAFloodWaitInProgress
+2026-11-15T03:52:42.077Z WARN  [rpc] flood wait, sleeping seconds=10 attempt=1
+[       OK ] ClientFakeDc.StopCancelsAFloodWaitInProgress (832 ms)
+[ RUN      ] ClientFakeDc.DropRecoveryReusesAuthKeyWithoutNewHandshake
+2026-11-15T03:52:42.757Z WARN  [transport] connection closed by server
+2026-11-15T03:52:42.757Z WARN  [client] connection dropped, reconnecting was_authorized=false
+[       OK ] ClientFakeDc.DropRecoveryReusesAuthKeyWithoutNewHandshake (687 ms)
+[----------] 2 tests from ClientFakeDc (1520 ms total)
+
+[----------] 1 test from DcMigrationParse
+[ RUN      ] DcMigrationParse.ReadsDcNumberFromMigrateErrorsOnly
+[       OK ] DcMigrationParse.ReadsDcNumberFromMigrateErrorsOnly (0 ms)
+[----------] 1 test from DcMigrationParse (0 ms total)
+
+[----------] 4 tests from DcMigrationFakeDc
+[ RUN      ] DcMigrationFakeDc.BotLoginFollowsUserMigrateToHomeDc
+[       OK ] DcMigrationFakeDc.BotLoginFollowsUserMigrateToHomeDc (1134 ms)
+[ RUN      ] DcMigrationFakeDc.RestartDialsTheDcOfTheSavedSession
+[       OK ] DcMigrationFakeDc.RestartDialsTheDcOfTheSavedSession (1142 ms)
+[ RUN      ] DcMigrationFakeDc.MigrationLoopIsBounded
+[       OK ] DcMigrationFakeDc.MigrationLoopIsBounded (1527 ms)
+[ RUN      ] DcMigrationFakeDc.UnknownHomeDcFailsWithoutRetry
+[       OK ] DcMigrationFakeDc.UnknownHomeDcFailsWithoutRetry (1001 ms)
+[----------] 4 tests from DcMigrationFakeDc (4806 ms total)
+
+[----------] Global test environment tear-down
+[==========] 21 tests from 6 test suites ran. (7585 ms total)
+[  PASSED  ] 21 tests.
+EXIT=0

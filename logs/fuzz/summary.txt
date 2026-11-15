@@ -1,0 +1,4 @@
+fuzz_plain_unwrap EXIT=0
+fuzz_decrypt_packet EXIT=0
+fuzz_transport EXIT=0
+FUZZ4_DONE
