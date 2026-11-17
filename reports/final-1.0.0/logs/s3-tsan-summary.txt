@@ -1,0 +1,4 @@
+tsan cppgram_bot_test rc=0 reports=0
+tsan cppgram_security_test rc=0 reports=0
+tsan cppgram_metrics_test rc=0 reports=0
+tsan cppgram_media_test rc=0 reports=0

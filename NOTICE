@@ -1,0 +1,12 @@
+cppgram
+Maintainer: Badmunda05 (https://github.com/Badmunda05)
+Repository: https://github.com/Badmunda05/cppgram
+Group: https://t.me/PBXCHATS
+Updates: https://t.me/PBX_UPDATE
+Owner: https://t.me/BadMundaXD
+Contact: mumda.bad1322@gmail.com
+
+This project is derived from tgbot-cpp (MIT License), Copyright (c) 2015-2026
+Oleg Morozenkov and GitHub contributors. The original MIT license is kept in LICENSE.
+
+MTProto crypto uses OpenSSL (Apache-2.0). Telegram schema reference: Kurigram compiler/api/source (LGPL-3.0).

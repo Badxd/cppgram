@@ -1,0 +1,6 @@
+tsan cppgram_async_test rc=0 reports=0 [  PASSED  ] 46 tests.
+tsan cppgram_mtproto_test rc=0 reports=0 [  PASSED  ] 457 tests.
+asan build rc=2
+asan build (resume, -j1) rc=0
+asan+ubsan ctest rc=0 100% tests passed, 0 tests failed out of 711
+ASAN DONE

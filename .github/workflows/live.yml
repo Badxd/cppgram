@@ -1,0 +1,67 @@
+# Optional live Telegram check. Manual start only. Never runs on push or pull requests, so forks and untrusted code
+# cannot reach the secrets.
+#
+# Secrets: TG_API_ID, TG_API_HASH, TG_BOT_TOKEN (a bot account only). This workflow never prints them and never
+# uploads a session file or any credential as an artifact. If the secrets are not set, the run reports SKIPPED and
+# does nothing else.
+name: live-check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-check
+  cancel-in-progress: false
+
+jobs:
+  live-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Telegram secrets are configured
+        id: secrets-check
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+        run: |
+          if [ -n "$TG_API_ID" ] && [ -n "$TG_API_HASH" ] && [ -n "$TG_BOT_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "Telegram secrets are configured. Values are not printed."
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "SKIPPED: TG_API_ID, TG_API_HASH and TG_BOT_TOKEN must all be set. No live check was run."
+          fi
+      - name: Install dependencies
+        if: steps.secrets-check.outputs.enabled == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake ninja-build libboost-dev nlohmann-json3-dev \
+            libcurl4-openssl-dev libssl-dev zlib1g-dev libsqlite3-dev
+      - name: Build the live check
+        if: steps.secrets-check.outputs.enabled == 'true'
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_LIVE_CHECK=ON -DCPPGRAM_USE_CCACHE=OFF
+          cmake --build build --target cppgram_live_check -j2
+      - name: Run the live check
+        if: steps.secrets-check.outputs.enabled == 'true'
+        timeout-minutes: 15
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_LIVE_DIR: ${{ runner.temp }}/live
+        run: |
+          mkdir -p "$TG_LIVE_DIR"
+          ./build/cppgram_live_check
+      - name: Remove session files and scratch data
+        if: always()
+        run: |
+          find "$RUNNER_TEMP/live" -type f \( -name '*.session*' -o -name '*.sqlite*' \) -delete 2>/dev/null || true
+          find build -type f \( -name '*.session*' -o -name '*.sqlite' \) -delete 2>/dev/null || true
+          echo "cleanup done"
+          

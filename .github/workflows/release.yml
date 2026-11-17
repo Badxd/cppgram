@@ -1,0 +1,38 @@
+# Source release, started by hand only. It builds the archive, verifies it, and keeps it as a workflow artifact for
+# 14 days. It does not create a tag, a GitHub release or a push. Publishing is a manual step (HOW_TO_RELEASE.md).
+name: release-source-archive
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fast checks
+        run: |
+          python3 tools/check_cmake_sources.py
+          bash tools/check_version.sh
+          bash tools/format_check.sh
+      - name: Schema reproducibility (generator built with the host C++ compiler)
+        run: |
+          c++ -std=c++20 -O2 -o "$RUNNER_TEMP/cppgram_tl_codegen" tools/tl_codegen/tl_codegen.cpp
+          bash tools/check_schema.sh "$RUNNER_TEMP/cppgram_tl_codegen"
+      - name: Build the source archive
+        run: |
+          VERSION=$(tr -d '[:space:]' < VERSION)
+          python3 tools/package_release.py --output "dist/cppgram-${VERSION}-source.zip"
+      - name: Verify the archive
+        run: bash tools/verify_release.sh "dist/cppgram-$(tr -d '[:space:]' < VERSION)-source.zip"
+      - name: Upload archive (workflow artifact, 14 days)
+        uses: actions/upload-artifact@v4
+        with:
+          name: cppgram-source-archive
+          path: dist/*.zip
+          retention-days: 14
+          

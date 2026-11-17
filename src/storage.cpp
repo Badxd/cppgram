@@ -1,0 +1,210 @@
+#include "cppgram/storage.h"
+
+#include <sqlite3.h>
+
+#include "cppgram/mtproto/session.h"
+#include "cppgram/session_crypto.h"
+
+#include "secure_file.h"
+
+#include <mutex>
+#include <stdexcept>
+#include <vector>
+
+namespace cppgram {
+
+namespace {
+
+void check(int rc, sqlite3* db, const char* what) {
+    if (rc != SQLITE_OK && rc != SQLITE_DONE && rc != SQLITE_ROW) {
+        throw std::runtime_error(std::string(what) + ": " + sqlite3_errmsg(db));
+    }
+}
+
+}  // namespace
+
+namespace {
+constexpr int kStoreSchemaVersion = 2;
+}  // namespace
+
+SqliteStorage::SqliteStorage(const std::string& path) {
+    try {
+        open_store(path);
+    } catch (...) {
+        // A constructor that throws never runs the destructor, so release the handle here. sqlite3_open can
+        // return a handle even when it fails, and the checks below throw without closing it.
+        if (db_) sqlite3_close(db_);
+        db_ = nullptr;
+        throw;
+    }
+}
+
+void SqliteStorage::open_store(const std::string& path) {
+    detail::ensure_private_file(path);
+    check(sqlite3_open(path.c_str(), &db_), db_, "open sqlite session store");
+    sqlite3_busy_timeout(db_, 5000);  // wait for a competing writer instead of failing at once
+    char* pragma_err = nullptr;
+    if (sqlite3_exec(db_, "PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;", nullptr, nullptr, &pragma_err) != SQLITE_OK) {
+        const std::string msg = pragma_err ? pragma_err : "unknown error";
+        sqlite3_free(pragma_err);
+        sqlite3_close(db_);
+        db_ = nullptr;
+        throw std::runtime_error("configure sqlite session store: " + msg);
+    }
+    const char* schema =
+        "CREATE TABLE IF NOT EXISTS session ("
+        " id INTEGER PRIMARY KEY CHECK (id = 1),"
+        " dc_id INTEGER NOT NULL,"
+        " auth_key BLOB NOT NULL,"
+        " server_salt INTEGER NOT NULL,"
+        " time_offset INTEGER NOT NULL);"
+        "CREATE TABLE IF NOT EXISTS update_state ("
+        " id INTEGER PRIMARY KEY CHECK (id = 1),"
+        " pts INTEGER NOT NULL, qts INTEGER NOT NULL, date INTEGER NOT NULL, seq INTEGER NOT NULL);";
+    char* err = nullptr;
+    if (sqlite3_exec(db_, schema, nullptr, nullptr, &err) != SQLITE_OK) {
+        const std::string msg = err ? err : "unknown error";
+        sqlite3_free(err);
+        sqlite3_close(db_);
+        db_ = nullptr;
+        throw std::runtime_error("create sqlite schema: " + msg);
+    }
+
+    // Schema versioning: refuse a store written by a newer library, and stamp a fresh or legacy one.
+    sqlite3_stmt* ver = nullptr;
+    check(sqlite3_prepare_v2(db_, "PRAGMA user_version", -1, &ver, nullptr), db_, "read schema version");
+    const int version = sqlite3_step(ver) == SQLITE_ROW ? sqlite3_column_int(ver, 0) : 0;
+    sqlite3_finalize(ver);
+    if (version > kStoreSchemaVersion) {
+        sqlite3_close(db_);
+        db_ = nullptr;
+        throw mtproto::SessionCorruptError("session store schema version " + std::to_string(version) +
+                                           " is newer than this library supports (" +
+                                           std::to_string(kStoreSchemaVersion) + ")");
+    }
+    if (version < kStoreSchemaVersion) {
+        char* uerr = nullptr;
+        const std::string stamp = "PRAGMA user_version = " + std::to_string(kStoreSchemaVersion) + ";";
+        if (sqlite3_exec(db_, stamp.c_str(), nullptr, nullptr, &uerr) != SQLITE_OK) {
+            const std::string msg = uerr ? uerr : "unknown error";
+            sqlite3_free(uerr);
+            sqlite3_close(db_);
+            db_ = nullptr;
+            throw std::runtime_error("stamp sqlite schema version: " + msg);
+        }
+    }
+
+    // Integrity check on open: a damaged store is reported, never silently reused or overwritten.
+    sqlite3_stmt* qc = nullptr;
+    check(sqlite3_prepare_v2(db_, "PRAGMA quick_check", -1, &qc, nullptr), db_, "quick_check");
+    std::string verdict = "no result";
+    if (sqlite3_step(qc) == SQLITE_ROW) {
+        // sqlite3_column_text returns NULL when the value is NULL or allocation failed. Never build a string from NULL.
+        if (const unsigned char* text = sqlite3_column_text(qc, 0)) {
+            verdict = reinterpret_cast<const char*>(text);
+        }
+    }
+    sqlite3_finalize(qc);
+    if (verdict != "ok") {
+        sqlite3_close(db_);
+        db_ = nullptr;
+        throw mtproto::SessionCorruptError("session store failed integrity check: " + verdict);
+    }
+}
+
+SqliteStorage::~SqliteStorage() {
+    if (db_) sqlite3_close(db_);
+}
+
+bool SqliteStorage::load_session(mtproto::SessionData& out) const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    sqlite3_stmt* stmt = nullptr;
+    check(sqlite3_prepare_v2(db_, "SELECT dc_id, auth_key, server_salt, time_offset FROM session WHERE id = 1", -1, &stmt, nullptr),
+          db_, "prepare load_session");
+    bool found = false;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        out.dc_id = sqlite3_column_int(stmt, 0);
+        const auto* blob = static_cast<const std::uint8_t*>(sqlite3_column_blob(stmt, 1));
+        const int size = sqlite3_column_bytes(stmt, 1);
+        std::vector<std::uint8_t> stored(blob, blob + size);
+        out.server_salt = static_cast<std::uint64_t>(sqlite3_column_int64(stmt, 2));
+        out.time_offset = sqlite3_column_int64(stmt, 3);
+        if (session_crypto::is_encrypted(stored)) {
+            // The key is stored as a CGE1 envelope. The passphrase must come from the environment.
+            const auto passphrase = session_crypto::passphrase_from_env();
+            if (!passphrase) {
+                sqlite3_finalize(stmt);
+                throw mtproto::SessionCorruptError("session store holds an encrypted key; set CPPGRAM_SESSION_PASSPHRASE");
+            }
+            try {
+                out.auth_key = session_crypto::decrypt(*passphrase, stored);
+            } catch (const std::runtime_error& e) {
+                sqlite3_finalize(stmt);
+                throw mtproto::SessionCorruptError(e.what());
+            }
+        } else {
+            out.auth_key = std::move(stored);
+        }
+        found = out.auth_key.size() == 256;
+    }
+    sqlite3_finalize(stmt);
+    return found;
+}
+
+void SqliteStorage::save_session(const mtproto::SessionData& data) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    sqlite3_stmt* stmt = nullptr;
+    check(sqlite3_prepare_v2(db_,
+                             "INSERT OR REPLACE INTO session (id, dc_id, auth_key, server_salt, time_offset) "
+                             "VALUES (1, ?, ?, ?, ?)",
+                             -1, &stmt, nullptr),
+          db_, "prepare save_session");
+    sqlite3_bind_int(stmt, 1, data.dc_id);
+    // With a passphrase set, the key is stored as a CGE1 envelope; otherwise as the raw 256 bytes.
+    std::vector<std::uint8_t> stored = data.auth_key;
+    if (const auto passphrase = session_crypto::passphrase_from_env()) {
+        stored = session_crypto::encrypt(*passphrase, data.auth_key);
+    }
+    sqlite3_bind_blob(stmt, 2, stored.data(), static_cast<int>(stored.size()), SQLITE_TRANSIENT);
+    sqlite3_bind_int64(stmt, 3, static_cast<sqlite3_int64>(data.server_salt));
+    sqlite3_bind_int64(stmt, 4, data.time_offset);
+    const int rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+    check(rc, db_, "save_session");
+}
+
+std::optional<StoredUpdateState> SqliteStorage::load_state() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    sqlite3_stmt* stmt = nullptr;
+    check(sqlite3_prepare_v2(db_, "SELECT pts, qts, date, seq FROM update_state WHERE id = 1", -1, &stmt, nullptr),
+          db_, "prepare load_state");
+    std::optional<StoredUpdateState> out;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        StoredUpdateState st;
+        st.pts = sqlite3_column_int(stmt, 0);
+        st.qts = sqlite3_column_int(stmt, 1);
+        st.date = sqlite3_column_int(stmt, 2);
+        st.seq = sqlite3_column_int(stmt, 3);
+        out = st;
+    }
+    sqlite3_finalize(stmt);
+    return out;
+}
+
+void SqliteStorage::save_state(const StoredUpdateState& state) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    sqlite3_stmt* stmt = nullptr;
+    check(sqlite3_prepare_v2(db_,
+                             "INSERT OR REPLACE INTO update_state (id, pts, qts, date, seq) VALUES (1, ?, ?, ?, ?)",
+                             -1, &stmt, nullptr),
+          db_, "prepare save_state");
+    sqlite3_bind_int(stmt, 1, state.pts);
+    sqlite3_bind_int(stmt, 2, state.qts);
+    sqlite3_bind_int(stmt, 3, state.date);
+    sqlite3_bind_int(stmt, 4, state.seq);
+    const int rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+    check(rc, db_, "save_state");
+}
+
+}  // namespace cppgram

@@ -1,0 +1,12 @@
+{
+  "library_version": "1.0.0",
+  "library_tree_sha256": "57e313ea306c76c3f2de6cc97e6275b9e6664c1f53f3c4fb53daf409037ad58d",
+  "results": [
+    {"id": "live.handshake_intermediate_dc2", "category": "live_no_credentials", "status": "BLOCKED", "stage": "start", "error_class": "", "contacted_telegram": false, "duration_ms": 0, "detail": "not valid from this network: TCP to 10.255.255.1 was accepted, so connections are intercepted. Telegram was not contacted. Run on an unrestricted network with CGLT_NETWORK_UNRESTRICTED=1."},
+    {"id": "live.handshake_abridged_dc2", "category": "live_no_credentials", "status": "BLOCKED", "stage": "start", "error_class": "", "contacted_telegram": false, "duration_ms": 0, "detail": "not valid from this network: TCP to 10.255.255.1 was accepted, so connections are intercepted. Telegram was not contacted. Run on an unrestricted network with CGLT_NETWORK_UNRESTRICTED=1."},
+    {"id": "live.handshake_full_dc2", "category": "live_no_credentials", "status": "BLOCKED", "stage": "start", "error_class": "", "contacted_telegram": false, "duration_ms": 0, "detail": "not valid from this network: TCP to 10.255.255.1 was accepted, so connections are intercepted. Telegram was not contacted. Run on an unrestricted network with CGLT_NETWORK_UNRESTRICTED=1."},
+    {"id": "live.encrypted_ping_dc2", "category": "live_no_credentials", "status": "BLOCKED", "stage": "start", "error_class": "", "contacted_telegram": false, "duration_ms": 0, "detail": "not valid from this network: TCP to 10.255.255.1 was accepted, so connections are intercepted. Telegram was not contacted. Run on an unrestricted network with CGLT_NETWORK_UNRESTRICTED=1."},
+    {"id": "live.reconnect_restored_key_dc2", "category": "live_no_credentials", "status": "BLOCKED", "stage": "start", "error_class": "", "contacted_telegram": false, "duration_ms": 0, "detail": "not valid from this network: TCP to 10.255.255.1 was accepted, so connections are intercepted. Telegram was not contacted. Run on an unrestricted network with CGLT_NETWORK_UNRESTRICTED=1."},
+    {"id": "live.lifecycle_repeat_dc2", "category": "live_no_credentials", "status": "BLOCKED", "stage": "start", "error_class": "", "contacted_telegram": false, "duration_ms": 0, "detail": "not valid from this network: TCP to 10.255.255.1 was accepted, so connections are intercepted. Telegram was not contacted. Run on an unrestricted network with CGLT_NETWORK_UNRESTRICTED=1."}
+  ]
+}

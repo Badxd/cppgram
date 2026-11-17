@@ -1,69 +1,84 @@
-# Known limitations: CppGram 0.1.0 (release-verification round, baseline 1cd09d0)
+# Known limitations: CppGram 1.0.0 (release candidate)
 
-Status values: PASS, FAIL, BLOCKED, NOT OBSERVED, NOT RUN, PENDING USER APPROVAL. Nothing below is marked PASS unless it
-was run and checked in this round.
+Status values: PASS, FAIL, BLOCKED, NOT RUN, PENDING USER APPROVAL. An item is PASS only when it was run in this release,
+and `TEST_RESULTS.md` has the command, exit code and count.
 
-## Release-blocking and approval items
+## Release blockers (critical)
 
-| ID | Item | Status | Owner action |
-|---|---|---|---|
-| KL-1 | Rotation of the VPS and live-test credentials | PENDING USER APPROVAL | Owner decides. Nothing was rotated, and no live service was touched. |
-| KL-2 | telemt proxy public 8443, classic and secure modes | PENDING USER APPROVAL | Owner decides whether to keep it public. Not changed. |
-| KL-3 | Binary `bin/cppgram_live_test_bot` committed in the public Cpplivetest repository | PENDING USER APPROVAL | Remove from tracking and add `bin/` to `.gitignore`. See `cpplivetest-review.md`. Not changed here. |
+| ID | Item | Status | Why it blocks a stable release | Owner action |
+|---|---|---|---|---|
+| RB-1 | Live Telegram validation: bot login, session restore, direct handshake, encrypted ping, reconnect, lifecycle, dd-proxy handshake | BLOCKED | Every live result in this release is BLOCKED. The development sandbox intercepts connections to Telegram addresses, so no live result from it is valid. Stable status requires real results. | Run `cppgram_livetest` from `CppGramLiveTest` on an unrestricted network with `CGLT_NETWORK_UNRESTRICTED=1`, and bot credentials for the account tests. See `CppGramLiveTest/TESTS.md`. |
+| RB-2 | Rotation of the VPS and live-test credentials | PENDING USER APPROVAL | Operational security. Credentials used during development must be treated as exposed. | Owner decides and rotates. Nothing was rotated in this release. |
+| RB-3 | Public proxy port (telemt 8443, classic and secure modes) | PENDING USER APPROVAL | Infrastructure exposure, not library behaviour. | Owner decides whether to keep it public. Not changed. |
 
-## Not verified against Telegram
+RB-2 and RB-3 are infrastructure decisions. They do not change the library code, but a stable release should not be
+published while they are open.
 
-- Live Telegram tests (`cppgram_live_check`, `cppgram_live_tests`, and the six live cases): NOT RUN. No credentials
-  were used. No live login, session, reconnect, socks5, proxy or padded-framing result is claimed.
-- Live FLOOD_WAIT: NOT OBSERVED. Offline FLOOD_WAIT tests pass (fake DC), but they do not prove the server behaviour.
-- Public Cpplivetest bot run against Telegram: NOT RUN. The bot builds and its unit test passes against the current
-  library, which is all that was checked.
+## Live Telegram behaviour
 
-## Network
+- Dd-proxy padding was observed in earlier live captures at 22, 96, 102, 108, 116 and 123 trailing bytes after the
+  plain-reply length field. That evidence comes from earlier rounds. It is not re-verified in this release.
+- The encrypted path tries at most three extra 16-byte blocks beyond the minimal padded length when it locates a message
+  (`src/mtproto/crypto.cpp`). A server message whose inner padding is longer than that would be rejected with
+  `CryptoError`. The MTProto specification allows inner padding up to 1024 bytes. Telegram's servers were not observed
+  to use more than the minimum padding, but this is not verified live.
+- FLOOD_WAIT: no live FLOOD_WAIT has been observed. Handling is verified only against the fake DC. There is no safe
+  controlled trigger on a live account.
+- Drop recovery is verified only against the fake DC (a dropped connection reuses the key with no second handshake).
+  Real network interruptions have not been tested.
 
-- Offline simulated drop recovery passes on a fake DC. Actual interruption on a real network path (packet loss or
-  socket reset) is NOT RUN. Live drop against Telegram is NOT RUN.
-- Proxy coverage: plain and dd MTProxy modes are supported and tested offline. Fake-TLS (`ee`) secrets are refused by
-  design. That is a deliberate limit, not a bug.
+## Protocol scope
+
+- Fake-TLS (`ee`) MTProxy secrets are refused by design (`ProxySecretKind::FakeTls`). Plain and dd (padded
+  intermediate) secrets are supported.
+- Secret chats and calls are not implemented.
+- TDLib parity of the plain trailing-byte handling: BLOCKED. The upstream source could not be fetched through the
+  allowed path. The decision in `PROXY_AUDIT.md` section 7 rests on the specification and on CppGram's own tests.
+- Behavioural parity with Kurigram or other libraries is not claimed. `PARITY_MATRIX.md` classifies evidence only.
 
 ## Fuzzing
 
-- Campaigns are short: 241 s per target for the three instrumented harnesses, 61 s for the repo targets. Crash-freedom
-  in these runs is not evidence of absence of defects.
-- NOT RUN: long corpus runs (`tools/run_fuzz_long.sh`), `fuzz_session_string`, `fuzz_html_parser`,
-  `fuzz_session_crypto`.
-- NOT RUN: the malformed-padding-grammar sub-case. Its coverage is a documented gap.
+- Bounded runs: 120 s for each of the seven libFuzzer targets, on the final tree. 36,962,006 executions in total, no
+  findings (`TEST_RESULTS.md`, section 4). Crash-freedom in these runs does not prove the absence of defects.
+- The library is built with `-fsanitize=fuzzer-no-link`, so its code is coverage-instrumented. The coverage values
+  libFuzzer prints are counts of covered program counters, not percentages. No total was measured, so coverage is not
+  quantified.
+- `fuzz_session_crypto` ran only 7,184 executions in 120 s, because each input does authenticated key derivation.
+- Memory growth in earlier logs came from ASan's freed-memory quarantine. The release runs use
+  `ASAN_OPTIONS=quarantine_size_mb=1`, and peak RSS was 50 to 83 MB.
+- Long campaigns (`tools/run_fuzz_long.sh` with its default budgets) were not run in this release.
 
 ## Sanitizers
 
-- ASan+UBSan and TSan were run on targeted subsets of the mtproto binary only (118 and 47 tests). Other binaries (async,
-  bot, media, metrics, security) and the full suite were NOT RUN under sanitizers in this round.
-- Earlier-round sanitizer counts are not reproduced and are not claimed.
-
-## Standards and parity
-
-- TDLib parity of the plain trailing-byte handling: BLOCKED. The upstream source could not be fetched through the
-  allowed fetch path. The decision in `PROXY_AUDIT.md` section 7.2 is based on the spec and on CppGram's own tests, and
-  is not verified against TDLib.
-- Kurigram and other reference libraries: classification only (`PARITY_MATRIX.md`). No behavioural parity is claimed.
+- ASan and UBSan: the full suite, 711 of 711 with no sanitizer reports, Clang 18.1.3, `-O0`. A first parallel build
+  attempt failed on one object with no diagnostic. A standalone recompile succeeded and the serial rebuild passed
+  (`TEST_RESULTS.md`, section 3).
+- TSan: all six test binaries, 711 tests, no reports, Clang 18.1.3.
+- MSan: not run.
 
 ## Platforms and build
 
-- Verified: Linux x86_64, GCC 13.3.0 and Clang 18.1.3, Release, C++20.
-- NOT RUN: ARM64.
+- Verified: Linux x86_64, GCC 13.3.0 and Clang 18.1.3, Release and C++20. Linux kernel 6.18.44, Intel Xeon 2.10 GHz, two
+  cores.
+- NOT RUN: ARM64. Hardware was not available.
 - Unsupported: Windows.
-- NOT RUN: Doxygen documentation build, actionlint on the CI workflows, and the repo sanitizer and fuzz scripts as
-  scripts (equivalent runs were done by hand).
-- NOT RUN in this round: schema regeneration (`make schema-check`). The checked-in TL-generated files were not
-  regenerated.
+- The build does not use `-Werror`. Both compilers reported zero warnings in the full builds (`TEST_RESULTS.md`).
+- Static analysis: clang-tidy-18 reports 304 warnings, mostly style-level `performance-unnecessary-value-param`. The 12
+  `bugprone` findings were triaged with no confirmed defect. The warnings are not fixed in this release.
+- Documentation: Doxygen 1.9.8 builds with 899 warnings, mostly markup in comments. They are not fixed in this release.
 
-## Test-count history
+## Platforms and build
 
-- The earlier checkpoint numbers (700 CTest, 446 MTProto) are 2 below the pre-mission tree. The two tests are not
-  identifiable from preserved artifacts. See TEST_RESULTS.md section 1.
+- Verified: Linux x86_64, GCC 13.3.0 and Clang 18.1.3, Release and C++20. Linux kernel 6.18.44, Intel Xeon 2.10 GHz, two
+  cores.
+- NOT RUN: ARM64. Hardware was not available.
+- Unsupported: Windows.
+- The build does not use `-Werror`. Both compilers reported zero warnings in the full builds (`TEST_RESULTS.md`).
 
-## Repository state
+## Packaging and history
 
-- No commits, tags, branches or pushes were created in this round. HEAD is 1cd09d0 before and after.
-- The repository's tracked `SHA256SUMS.txt` and `commit-history.txt` were regenerated for this release. The earlier
-  `commit-history.txt` was a hand-written local change log, not git history. It was replaced.
+- This archive is not a git checkout. `commit-history.txt` is a change record written for this release, not git history.
+  No commits, tags or branches were created, and nothing was pushed.
+- `FINAL_REPORT.md`, `BUILD_RESULTS.md`, `TEST_RESULTS.md` history sections and `PROXY_AUDIT.md` describe the earlier
+  0.1.0 rounds. They are kept for the record. Where they disagree with this file, this file and
+  `FINAL_V1.0.0_READINESS_REPORT.md` are current.

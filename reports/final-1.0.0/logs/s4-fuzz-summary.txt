@@ -1,0 +1,8 @@
+fuzz fuzz_tl_reader rc=0 findings=0 stat::number_of_executed_units: 2909601
+fuzz fuzz_session_string rc=0 findings=0 stat::number_of_executed_units: 25323564
+fuzz fuzz_html_parser rc=0 findings=0 stat::number_of_executed_units: 979235
+fuzz fuzz_session_crypto rc=0 findings=0 stat::number_of_executed_units: 7184
+fuzz fuzz_plain_unwrap rc=0 findings=0 stat::number_of_executed_units: 1989665
+fuzz fuzz_decrypt_packet rc=0 findings=0 stat::number_of_executed_units: 1566108
+fuzz fuzz_transport_framing rc=0 findings=0 stat::number_of_executed_units: 4186649
+FUZZ DONE fail=0

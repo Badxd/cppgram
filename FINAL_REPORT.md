@@ -1,3 +1,5 @@
+> **Historical.** This file was written for an earlier pre-release round (0.1.0). It is kept for the record. The current status is in `README.md`, `KNOWN_LIMITATIONS.md` and `FINAL_V1.0.0_READINESS_REPORT.md`.
+
 # Final report: CppGram 0.1.0, release verification (baseline 1cd09d0)
 
 This report replaces the earlier release report. Every status below comes from a command run in this round, and each

@@ -1,7 +1,0 @@
-python3 tools/package_release.py --output /tmp/claude-0/-home-claude/8b1f2cf3-d8a0-52e2-92a4-978325134559/scratchpad/pad-fix/release-4/source/cppgram-0.1.0-source.zip
-archive: /tmp/claude-0/-home-claude/8b1f2cf3-d8a0-52e2-92a4-978325134559/scratchpad/pad-fix/release-4/source/cppgram-0.1.0-source.zip
-top-level folder: cppgram-0.1.0/
-files: 400 (plus SHA256SUMS.txt)
-bytes: 1507026
-sha256: 490ccde4d2206bfced99ab857a967957fd4596ae7511462458314a5991bb0a13
-PACKAGE=0

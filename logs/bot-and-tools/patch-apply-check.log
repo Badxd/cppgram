@@ -1,3 +1,0 @@
-# git apply --check of the local bot patch against a fresh clone of the public repo
-HEAD=b8db65c7d3c604f8009fd339670081bb6972b978
-APPLY_CHECK=0

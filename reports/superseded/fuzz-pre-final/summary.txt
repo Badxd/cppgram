@@ -1,0 +1,8 @@
+fuzz_plain_unwrap exit=0 wall_seconds=602 budget=600
+fuzz_decrypt_packet exit=0 wall_seconds=601 budget=600
+fuzz_transport_framing exit=0 wall_seconds=602 budget=600
+fuzz_tl_reader exit=0 wall_seconds=301 budget=300
+fuzz_session_string exit=0 wall_seconds=302 budget=300
+fuzz_html_parser exit=0 wall_seconds=301 budget=300
+fuzz_session_crypto exit=0 wall_seconds=301 budget=300
+DONE

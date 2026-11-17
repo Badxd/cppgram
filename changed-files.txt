@@ -1,38 +1,116 @@
-# Changed files: work tree vs baseline 1cd09d0 (excludes build/, dist/, .git; changed-files.txt excludes itself)
-# status  path  sha256 of the work-tree file (A/M) or - (D)
-M  BUILD_RESULTS.md  73a73a8dde848c4fae4fd0c5ab7d664cd8369a3740c3c2a0d5b12cc134ecae36
-M  CHANGELOG.md  bca9337d46d52a7ee766e41576114e085f19e43ded07df7db3af729626378873
-M  CMakeLists.txt  47bad9dea2376e01e9e911809e48930dd7b40411cb9d2f2f2a53272ef04e72e6
-M  FINAL_REPORT.md  994f6f2e386bd436070d526a675553a961d36f868f05c50c4f6855906973e224
-M  KNOWN_LIMITATIONS.md  ca31580bee407cf3ce1adb231012b8e855a09c096e93de418784d1094f1bf8d3
-A  LIVE_TESTING.md  2019f25ea75e6721e0f27d5b1145b4520f1c4e6df14422faa3596b56b91a9542
-M  PROXY_AUDIT.md  b0ca97d5b0c37bbec96c1ac19f0c3bc82ce10c10c1eaaa21b617f94156f3db21
-M  README.md  e7e512aff7393e5d0fc9d29bf8350094fb22ae1cc3768cfcca2e33e6cad078f3
-M  SHA256SUMS.txt  (see SHA256SUMS.txt: it cannot record its own hash)
-M  TEST_RESULTS.md  a125f66095aaa79afd34303ad2e67ce82ac33cb9966fb59db3beff530832e3d4
-M  commit-history.txt  108b31270631ef367bf0a777601d9ab0371682c0670e0055bd4c77b172bed2c7
-A  docs/API.md  da586ae449482e011bcbc4960d19856d6fa2b906e93ea7e8f62c6e87dbb08d3a
-A  docs/API_INDEX.md  2b8d072746a7c74919a02d7770ba2b97cf1ca7a7985afe05895a97dc49d60f66
-A  docs/BENCHMARKS.md  02c0331a40b785b401449ea8d41ba8e732f5225b1a8bc83a6af96ebb20d412fc
-A  docs/PORTABILITY.md  84e99c410c105daa24bc5bf1eee610a4700a945c9221891945bd1f8f62b677db
-A  docs/historical/BUILD_RESULTS-1cd09d0.md  18320ed2e6a7a4d4bfab1864e73803847cd6b4e89db6a18c1174d576fd6fe8ed
-A  docs/historical/FINAL_REPORT-1cd09d0.md  ea47cc9d3e3b77952d375477de95404997c6dbc71ace9c976786e7d6ef4103ac
-A  docs/historical/KNOWN_LIMITATIONS-1cd09d0.md  b3c9364d01505ad773ad03283087741cec0529ffd0b37479eaa81dce7759ba8b
-A  docs/historical/TEST_RESULTS-1cd09d0.md  2f7241576bc312e18a05ee2406c2dd4328da8ecd455fce3478cda0939d1e97b1
-M  fuzz/README.md  ea7666b586c89c4400d97e73226abb32240da98507d9f24c80d5cea1430521be
-A  fuzz/fuzz_decrypt_packet.cpp  08fdf4699dbcb5a805cb3ea4d463b43ac1486d144aa01135cb6953d8d55163a1
-A  fuzz/fuzz_plain_unwrap.cpp  2aa58d5ebed2462cee34956712bb0bdd935de8464c6caeb4855394837afda4ee
-A  fuzz/fuzz_transport_framing.cpp  93f3ee419f27be2f2c4b59dfa262b23e5fc28617d33185535e7356f094f8641c
-A  fuzz/make_mtproto_seeds.cpp  07f90e710cd03bdb64ea59434cfd0ba000f27dcb11a1344faa39fcd4e95eabbb
-A  security-review.md  ebfc03526c4795b650c6f0ee65dd714d23c90b1f6af478e028d45c5940a698ad
-M  src/dc.cpp  e5a7cef869deed34f295fed26a0c1038bdf5d5d29a9f0d5b01b71c80fbc1e680
-M  src/mtproto/session.cpp  9e56dfeab9b9a4c2925d5a67ff77499ca1260502fef9f0f91d4df2cf04408527
-M  tests/mtproto/client_fake_dc_test.cpp  5f50318386051cbfaecda3145c545abf4d57e6c1367cfe81438096e92f00154e
-M  tests/mtproto/dc_migration_fake_dc_test.cpp  fa554b539857d03365828039b41298ae11f731337416018d13f870452fc2a087
-M  tests/mtproto/fake_dc.h  b1d7b1ea1a5a1310d9f6ee5134ce39341fd210a68e6ed147f6a91f953db26675
-M  tests/mtproto/mtproto_test.cpp  f343f5e814325f9708a50cafd19f2bb21f17295c5d447019ac72daeebf1f3906
-M  tests/mtproto/retry_test.cpp  1788704aea5ab3a7aae4faa3438ab5c0cc1f4ad3bc9f0e6eac04413b8040d5bb
-M  tests/mtproto/session_test.cpp  56cd7ac4e86c51144b087eb29f99d7632dca537470401f6583c1f65572f63db6
-M  tests/mtproto/transport_test.cpp  9c20ca4991deba29e1184d9de7d5383a9d721f883ec6774de5075c51092422ff
-M  tools/run_fuzz_long.sh  aa11ab30c94486b197aa23fd5ffda5bfa4714c7bba7ae002e5edaf2b5fe1235f
-# totals: added=14 modified=21 deleted=0
+# Change record for CppGram 1.0.0: files changed against the attached snapshot b3b48b3
+# Status codes: M modified, A added, D deleted. Generated from a directory diff against the base tree, not from git.
+# reports/ (verification logs) and the two change-record files themselves are excluded from this list.
+M BUILD_RESULTS.md
+M CHANGELOG.md
+M CMakeLists.txt
+M CPPGRAM_IMPLEMENTATION_CHECKLIST.md
+M FINAL_REPORT.md
+A FINAL_V1.0.0_READINESS_REPORT.md
+M IMPLEMENTATION_STATUS.md
+M KNOWN_LIMITATIONS.md
+A LIVE_TESTING.md
+M PROXY_AUDIT.md
+M README.md
+M REFERENCE_COMPARISON.md
+M RELEASE_NOTES.md
+D SHA256SUMS.txt
+M TEST_RESULTS.md
+M VERSION
+A cmake/CppGramConfig.cmake.in
+D cmake/cppgramConfig.cmake.in
+A docs/API.md
+A docs/API_INDEX.md
+A docs/BENCHMARKS.md
+A docs/PORTABILITY.md
+A docs/historical/BUILD_RESULTS-1cd09d0.md
+A docs/historical/FINAL_REPORT-1cd09d0.md
+A docs/historical/KNOWN_LIMITATIONS-1cd09d0.md
+A docs/historical/TEST_RESULTS-1cd09d0.md
+M examples/echobot-proxy/CMakeLists.txt
+D examples/echobot-proxy/Dockerfile
+M examples/echobot-setmycommands/CMakeLists.txt
+D examples/echobot-setmycommands/Dockerfile
+D examples/echobot-submodule/CMakeLists.txt
+D examples/echobot-submodule/Dockerfile
+D examples/echobot-submodule/Makefile
+D examples/echobot-submodule/src/main.cpp
+M examples/echobot-webhook-server/CMakeLists.txt
+D examples/echobot-webhook-server/Dockerfile
+M examples/echobot/CMakeLists.txt
+D examples/echobot/Dockerfile
+M examples/inline-keyboard/CMakeLists.txt
+D examples/inline-keyboard/Dockerfile
+M examples/photo/CMakeLists.txt
+D examples/photo/Dockerfile
+M examples/receive-file/CMakeLists.txt
+D examples/receive-file/Dockerfile
+M examples/received-text-processing/CMakeLists.txt
+D examples/received-text-processing/Dockerfile
+M examples/reply-keyboard/CMakeLists.txt
+D examples/reply-keyboard/Dockerfile
+M fuzz/README.md
+A fuzz/fuzz_decrypt_packet.cpp
+A fuzz/fuzz_plain_unwrap.cpp
+A fuzz/fuzz_transport_framing.cpp
+A fuzz/make_mtproto_seeds.cpp
+M guides/LINUX_INSTALL.md
+M include/cppgram/client.h
+A reference/tgbot-cpp-upstream/README.md
+A reference/tgbot-cpp-upstream/dockerfiles/echobot-proxy.Dockerfile
+A reference/tgbot-cpp-upstream/dockerfiles/echobot-setmycommands.Dockerfile
+A reference/tgbot-cpp-upstream/dockerfiles/echobot-webhook-server.Dockerfile
+A reference/tgbot-cpp-upstream/dockerfiles/echobot.Dockerfile
+A reference/tgbot-cpp-upstream/dockerfiles/inline-keyboard.Dockerfile
+A reference/tgbot-cpp-upstream/dockerfiles/photo.Dockerfile
+A reference/tgbot-cpp-upstream/dockerfiles/receive-file.Dockerfile
+A reference/tgbot-cpp-upstream/dockerfiles/received-text-processing.Dockerfile
+A reference/tgbot-cpp-upstream/dockerfiles/reply-keyboard.Dockerfile
+A reference/tgbot-cpp-upstream/echobot-submodule/CMakeLists.txt
+A reference/tgbot-cpp-upstream/echobot-submodule/Dockerfile
+A reference/tgbot-cpp-upstream/echobot-submodule/Makefile
+A reference/tgbot-cpp-upstream/echobot-submodule/src/main.cpp
+M schema/SHA256SUMS.txt
+A security-review.md
+M src/dc.cpp
+M src/mtproto/auth.cpp
+M src/mtproto/crypto.cpp
+M src/mtproto/schema/api_impl_0.cpp
+M src/mtproto/schema/api_impl_1.cpp
+M src/mtproto/schema/api_impl_10.cpp
+M src/mtproto/schema/api_impl_11.cpp
+M src/mtproto/schema/api_impl_12.cpp
+M src/mtproto/schema/api_impl_14.cpp
+M src/mtproto/schema/api_impl_2.cpp
+M src/mtproto/schema/api_impl_3.cpp
+M src/mtproto/schema/api_impl_4.cpp
+M src/mtproto/schema/api_impl_5.cpp
+M src/mtproto/schema/api_impl_6.cpp
+M src/mtproto/schema/api_impl_7.cpp
+M src/mtproto/schema/api_impl_8.cpp
+M src/mtproto/schema/api_impl_9.cpp
+M src/mtproto/session.cpp
+M tests/mtproto/client_fake_dc_test.cpp
+M tests/mtproto/dc_migration_fake_dc_test.cpp
+M tests/mtproto/fake_dc.h
+M tests/mtproto/handshake_test.cpp
+M tests/mtproto/mtproto_test.cpp
+M tests/mtproto/obfuscated_test.cpp
+M tests/mtproto/proxy_transport_audit_test.cpp
+M tests/mtproto/retry_test.cpp
+M tests/mtproto/session_test.cpp
+M tests/mtproto/transport_test.cpp
+M tools/format_allowlist.txt
+A tools/mtproxy_harness/README.md
+A tools/mtproxy_harness/cppgram_dump.cpp
+A tools/mtproxy_harness/cppgram_frames.cpp
+A tools/mtproxy_harness/frames_reference.py
+A tools/mtproxy_harness/reference.py
+A tools/mtproxy_harness/vectors/frames_vectors.txt
+A tools/mtproxy_harness/vectors/handshake_vectors.txt
+M tools/package_release.py
+M tools/run_fuzz_long.sh
+M tools/verify_release.sh
+A verify/consumer/CMakeLists.txt
+A verify/consumer/README.md
+A verify/consumer/main.cpp
